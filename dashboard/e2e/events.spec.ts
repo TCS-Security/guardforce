@@ -3,16 +3,35 @@ import { admin, agencyDate, login, SEED } from "./helpers";
 
 test.describe("events", () => {
   test("shows today's feed and filters by activity group", async ({ page }) => {
-    await login(page);
-    await page.goto(`/events?from=${agencyDate(-1)}&to=${agencyDate(0)}`);
-    await expect(page.getByRole("heading", { name: "Events", level: 1 })).toBeVisible();
+    const db = admin();
+    // The feed is seeded relative to now, so raise one event of each group the filter must separate.
+    const { data: seeded } = await db
+      .from("events")
+      .insert([
+        { agency_id: SEED.agencyId, site_id: SEED.sites.sobha, type: "PATROL_MISSED", severity: "warn", title: "E2E patrol group probe" },
+        { agency_id: SEED.agencyId, site_id: SEED.sites.sobha, type: "CHECK_IN", severity: "info", title: "E2E attendance group probe" },
+      ])
+      .select("id");
 
-    await expect(page.getByTestId("event-feed").getByRole("listitem").first()).toBeVisible();
+    try {
+      await login(page);
+      await page.goto(`/events?from=${agencyDate(-1)}&to=${agencyDate(0)}`);
+      await expect(page.getByRole("heading", { name: "Events", level: 1 })).toBeVisible();
 
-    await page.goto(`/events?from=${agencyDate(-1)}&to=${agencyDate(0)}&group=patrol`);
-    const feed = page.getByTestId("event-feed");
-    await expect(feed.getByText("Patrol missed").first()).toBeVisible();
-    await expect(feed.getByText("Check-in")).toHaveCount(0);
+      const feed = page.getByTestId("event-feed");
+      await expect(feed.getByText("E2E patrol group probe")).toBeVisible();
+      await expect(feed.getByText("E2E attendance group probe")).toBeVisible();
+
+      await page.goto(`/events?from=${agencyDate(-1)}&to=${agencyDate(0)}&group=patrol`);
+      await expect(feed.getByText("E2E patrol group probe")).toBeVisible();
+      await expect(feed.getByText("E2E attendance group probe")).toHaveCount(0);
+    } finally {
+      const ids = (seeded ?? []).map((e) => e.id);
+      if (ids.length) {
+        await db.from("notifications").delete().in("event_id", ids);
+        await db.from("events").delete().in("id", ids);
+      }
+    }
   });
 
   test("filters by severity and by site", async ({ page }) => {

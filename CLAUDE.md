@@ -5,7 +5,7 @@ Guard management platform for Indian security agencies. Spec: `prd-v2-guard-plat
 ## Layout
 - `supabase/` — Postgres schema (`migrations/`), RPCs, RLS, storage buckets, demo `seed.sql`. Shared by the web dashboard and the Android guard app.
 - `dashboard/` — Next.js 16 (App Router, Turbopack) + Tailwind v4 + shadcn (base-nova style, **Base UI** primitives, not Radix). Package manager: **bun**.
-- `android/` — (next task) Kotlin guard app.
+- `android/` — (next task) Kotlin guard app. Most updates ship over the air, so keep the native permission surface wide in the first release.
 
 ## Local stack
 ```
@@ -25,8 +25,12 @@ Logins: owner@sentinel.test / priya@sentinel.test / arun@sentinel.test — passw
 - Design system: read `src/app/globals.css` tokens and `src/components/gf/*` first. Use `PageHeader`, `StatTile`, `Section`, `StatusPill`/badges, `GuardAvatar`, `Mono`, `KvList`, `EmptyState`, `ButtonLink`. Fonts: Bricolage Grotesque (display: h1–h3, big numbers), Schibsted Grotesk (body), JetBrains Mono (timestamps, ids, eyebrows). Status colours are tokens: `present`, `half-day`, `absent`, `on-leave`, `signal` (alerts), `primary` (olive). Never use raw Tailwind palette colours for status.
 - Look at `src/app/(app)/(overview)/page.tsx` for the reference page: eyebrow → display title → description → actions; tiles; sections with hairline headers; mono tabular numbers; `reveal` stagger via `--i`.
 - Base UI gotchas: `<Button render={<Link/>}>` needs `nativeButton={false}` (use `ButtonLink`). `DropdownMenuLabel` must sit inside `DropdownMenuGroup`. `DropdownMenuItem`/`SheetTrigger`/`PopoverTrigger` take `render`. Selects: `Select`, `SelectTrigger`, `SelectValue`, `SelectContent`, `SelectItem`.
-- Maps: MapLibre GL (`maplibre-gl`) with OpenFreeMap style `https://tiles.openfreemap.org/styles/liberty`; put maps in client components, import CSS `maplibre-gl/dist/maplibre-gl.css`. Fence rendering helpers: `fenceGeometry()` in `src/lib/domain/geo.ts`.
+- Maps: build on `src/components/map/base-map.tsx` (never instantiate MapLibre directly). It registers the worker from `/public/maplibre` — MapLibre derives that URL from its own module URL, which Turbopack rewrites, so without it every tile and GeoJSON source stays silently empty. It also probes the tile server and falls back to a flat canvas so fences still render offline. `bun run dev`/`build` sync the worker via `scripts/sync-maplibre-worker.mjs`. Fence geometry: `fenceGeometry()` in `src/lib/domain/geo.ts`.
+- RLS: never let one table's policy reference another table whose policy references back (tasks/task_assignments hit "infinite recursion in policy"); go through a `security definer` helper. A policy that calls a `stable` function reading the same table also breaks `INSERT ... RETURNING`, because the function cannot see the row being inserted — evaluate the rule against the candidate row instead.
+- PL/pgSQL: never name a local variable after a column you also write (`flags`, `in_fence`); Postgres raises `column reference is ambiguous` the first time the function runs. Prefix locals with `v_`.
 - Storage: buckets `kyc-docs`, `selfies`, `patrol-photos`, `task-photos` are private; object paths start with `<agency_id>/`. Serve via signed URLs (`createSignedUrl`, 10 min) from a server action or route handler; log KYC doc access in `document_access_logs`.
 - Time: agency timezone (`agency.timezone`, IST). Use helpers in `src/lib/domain/format.ts`.
-- Tests: unit (vitest, `*.test.ts(x)` beside code or in `__tests__`), e2e (Playwright in `dashboard/e2e`, seeded data ids in `e2e/helpers.ts`, `admin()` client to simulate the guard app via RPCs). Every feature ships with both. E2E tests must reset any state they mutate (or use fresh rows) so the suite is re-runnable without `db reset`.
+- Tests: unit (vitest, `*.test.ts(x)` beside code or in `__tests__`), e2e (Playwright in `dashboard/e2e`, seeded data ids in `e2e/helpers.ts`, `admin()` client to simulate the guard app via RPCs). Every feature ships with both. E2E tests must reset any state they mutate (or use fresh rows) so the suite is re-runnable without `db reset`; where a test needs a specific row, raise it in the test rather than relying on the seed's random half.
+- Dates in tests come from `agencyDate()` in `e2e/helpers.ts`: the app filters in IST, so a UTC "yesterday" silently queries the wrong day for most of the evening.
+- Assert on a state change the server produced (a row, a button that disappears), not on text that was already on screen — `getByText("Missed")` also matches the "Mark missed" button and will pass before the write lands.
 - Screenshots for visual review: `node scripts/shot.mjs /route ...` writes `/tmp/shot-<route>.png`.
