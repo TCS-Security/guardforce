@@ -1,0 +1,68 @@
+"use client";
+
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useTransition } from "react";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const STATUS = [
+  { value: "all", label: "Any status" },
+  { value: "pending", label: "Pending" },
+  { value: "in_progress", label: "In progress" },
+  { value: "done", label: "Done" },
+  { value: "missed", label: "Missed" },
+];
+
+const DUE = [
+  { value: "all", label: "Any time" },
+  { value: "overdue", label: "Overdue" },
+  { value: "today", label: "Due today" },
+  { value: "upcoming", label: "Upcoming" },
+];
+
+export function TaskFiltersBar({
+  sites,
+  guards,
+  current,
+}: {
+  sites: { id: string; name: string }[];
+  guards: { id: string; full_name: string }[];
+  current: { siteId: string | null; status: string | null; due: string | null; guardId: string | null };
+}) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const params = useSearchParams();
+  const [, startTransition] = useTransition();
+
+  function set(key: string, value: string) {
+    const q = new URLSearchParams(params.toString());
+    if (value && value !== "all") q.set(key, value);
+    else q.delete(key);
+    startTransition(() => router.replace(`${pathname}?${q.toString()}`, { scroll: false }));
+  }
+
+  const options = [
+    { key: "site", label: "Site", value: current.siteId ?? "all", items: [{ value: "all", label: "All sites" }, ...sites.map((s) => ({ value: s.id, label: s.name }))], width: "w-[210px]" },
+    { key: "status", label: "Status", value: current.status ?? "all", items: STATUS, width: "w-[140px]" },
+    { key: "due", label: "Due", value: current.due ?? "all", items: DUE, width: "w-[140px]" },
+    { key: "guard", label: "Assignee", value: current.guardId ?? "all", items: [{ value: "all", label: "Anyone" }, ...guards.map((g) => ({ value: g.id, label: g.full_name }))], width: "w-[170px]" },
+  ];
+
+  return (
+    <div className="reveal flex flex-wrap items-end gap-3 rounded-lg border bg-card p-3">
+      {options.map((o) => (
+        <div key={o.key} className="flex flex-col gap-1.5">
+          <Label className="eyebrow">{o.label}</Label>
+          <Select value={o.value} onValueChange={(v) => set(o.key, v as string)}>
+            <SelectTrigger size="sm" className={o.width} aria-label={o.label}>
+              <SelectValue>{(v: string) => o.items.find((i) => i.value === (v || "all"))?.label ?? o.items[0]!.label}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {o.items.map((i) => <SelectItem key={i.value} value={i.value}>{i.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+      ))}
+    </div>
+  );
+}
