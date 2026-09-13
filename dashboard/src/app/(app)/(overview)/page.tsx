@@ -101,7 +101,7 @@ export default async function OverviewPage() {
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-2.5 text-right font-mono tabular text-xs">
+                      <td className="px-4 py-2.5 text-right font-mono tabular text-xs whitespace-nowrap">
                         <span className="text-present">{s.present}P</span>{" "}
                         <span className="text-half-day-foreground dark:text-half-day">{s.half_day}H</span>{" "}
                         <span className="text-absent">{s.absent}A</span>{" "}
