@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { StatusPill } from "@/components/gf/status-pill";
 import { EmptyState } from "@/components/gf/empty-state";
+import { FormAlert } from "@/components/gf/form-alert";
 import { saveShiftType, deleteShiftType, type ActionState } from "@/app/(app)/sites/actions";
 import { SHIFT_TYPE_PRESETS, crossesMidnight, shiftDurationMinutes, shiftWindowLabel } from "@/lib/domain/sites";
 import { fmtMinutes } from "@/lib/domain/format";
@@ -139,7 +140,7 @@ function ShiftTypeDialog({ siteId, shiftType, open, onClose }: { siteId: string;
               <Input id="st-guards" name="guards_required" type="number" min={1} max={100} required defaultValue={shiftType?.guards_required ?? 2} />
             </div>
           </div>
-          {state?.error && <p role="alert" className="text-sm text-absent">{state.error}</p>}
+          {state?.error && <FormAlert>{state.error}</FormAlert>}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
             <Button type="submit" disabled={pending}>{pending && <Loader2 className="animate-spin" />}Save shift</Button>
@@ -167,7 +168,7 @@ function DeleteShiftTypeDialog({ siteId, shiftType, onClose }: { siteId: string;
         <form action={action} className="contents">
           <input type="hidden" name="id" value={shiftType?.id ?? ""} />
           <input type="hidden" name="site_id" value={siteId} />
-          {state?.error && <p role="alert" className="rounded-md border border-absent/30 bg-absent/8 px-3 py-2 text-sm text-absent">{state.error}</p>}
+          {state?.error && <FormAlert>{state.error}</FormAlert>}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
             <Button type="submit" variant="destructive" disabled={pending}>{pending && <Loader2 className="animate-spin" />}Delete shift</Button>

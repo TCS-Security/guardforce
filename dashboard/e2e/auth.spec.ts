@@ -12,7 +12,7 @@ test.describe("auth", () => {
     await page.getByLabel("Email").fill(SEED.owner.email);
     await page.getByLabel("Password").fill("nope-nope");
     await page.getByRole("button", { name: "Sign in" }).click();
-    await expect(page.getByRole("alert").filter({ hasText: "Wrong email or password" })).toBeVisible();
+    await expect(page.getByTestId("form-error")).toContainText("Wrong email or password");
   });
 
   test("owner signs in, sees the overview, and signs out", async ({ page }) => {

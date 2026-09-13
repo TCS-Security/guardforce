@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Section } from "@/components/gf/section";
+import { FormAlert } from "@/components/gf/form-alert";
 import { FenceEditor } from "@/components/sites/fence-editor";
 import { createSite, updateSite, type ActionState } from "./actions";
 import type { Site } from "@/lib/supabase/types";
@@ -104,16 +105,8 @@ export function SiteForm({
         </div>
       </Section>
 
-      {state?.error && (
-        <div role="alert" className="rounded-md border border-absent/30 bg-absent/8 px-3 py-2 text-sm text-absent">
-          {state.error}
-        </div>
-      )}
-      {state?.ok && (
-        <div role="status" className="rounded-md border border-present/30 bg-present/8 px-3 py-2 text-sm text-present">
-          Saved.
-        </div>
-      )}
+      {state?.error && <FormAlert>{state.error}</FormAlert>}
+      {state?.ok && <FormAlert tone="success">Saved.</FormAlert>}
 
       <div className="flex items-center gap-2">
         <Button type="submit" disabled={pending}>

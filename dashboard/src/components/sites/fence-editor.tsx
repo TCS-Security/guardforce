@@ -196,20 +196,14 @@ export function FenceEditor({
         </div>
 
         {value.fence_type === "radius" ? (
-          <div>
-            <div className="mb-1.5 flex items-baseline justify-between">
-              <Label htmlFor="radius-slider">Radius</Label>
-              <span className="font-mono tabular text-xs text-muted-foreground">{value.radius_m} m</span>
-            </div>
-            <Slider
-              id="radius-slider"
-              min={RADIUS_MIN_M}
-              max={RADIUS_MAX_M}
-              step={10}
-              value={value.radius_m}
-              onValueChange={(v) => setValue((prev) => ({ ...prev, radius_m: Array.isArray(v) ? v[0]! : v }))}
-            />
-          </div>
+          <MetreControl
+            id="radius"
+            label="Radius"
+            min={RADIUS_MIN_M}
+            max={RADIUS_MAX_M}
+            value={value.radius_m}
+            onChange={(radius_m) => setValue((prev) => ({ ...prev, radius_m }))}
+          />
         ) : (
           <div>
             <div className="mb-1.5 flex items-baseline justify-between">
@@ -230,23 +224,15 @@ export function FenceEditor({
           </div>
         )}
 
-        <div>
-          <div className="mb-1.5 flex items-baseline justify-between">
-            <Label htmlFor="leeway-slider">Leeway buffer</Label>
-            <span className="font-mono tabular text-xs text-muted-foreground">+{value.leeway_m} m</span>
-          </div>
-          <Slider
-            id="leeway-slider"
-            min={0}
-            max={LEEWAY_MAX_M}
-            step={10}
-            value={value.leeway_m}
-            onValueChange={(v) => setValue((prev) => ({ ...prev, leeway_m: Array.isArray(v) ? v[0]! : v }))}
-          />
-          <p className="mt-1.5 text-xs text-muted-foreground">
-            Site boundaries are rarely exact. Every fence check — attendance, away time, exit alerts — allows this much slack.
-          </p>
-        </div>
+        <MetreControl
+          id="leeway"
+          label="Leeway buffer"
+          min={0}
+          max={LEEWAY_MAX_M}
+          value={value.leeway_m}
+          onChange={(leeway_m) => setValue((prev) => ({ ...prev, leeway_m }))}
+          hint="Site boundaries are rarely exact. Every fence check — attendance, away time, exit alerts — allows this much slack."
+        />
 
         <div>
           <Label htmlFor="coords" className="mb-1.5">Coordinates</Label>
@@ -263,12 +249,65 @@ export function FenceEditor({
               <Crosshair />
             </Button>
           </div>
-          {coordError && <p className="mt-1.5 text-xs text-signal" role="alert">{coordError}</p>}
+          {coordError && <p className="mt-1.5 text-xs text-signal" role="alert" data-testid="form-error">{coordError}</p>}
           <button type="button" onClick={fitFence} className="mt-2 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline">
             Fit map to fence
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+/** A metre value editable either precisely (number field) or roughly (slider). */
+function MetreControl({
+  id,
+  label,
+  min,
+  max,
+  value,
+  onChange,
+  hint,
+}: {
+  id: string;
+  label: string;
+  min: number;
+  max: number;
+  value: number;
+  onChange: (v: number) => void;
+  hint?: string;
+}) {
+  return (
+    <div>
+      <div className="mb-1.5 flex items-center justify-between gap-2">
+        <Label htmlFor={`${id}-input`}>{label}</Label>
+        <div className="flex items-center gap-1">
+          <Input
+            id={`${id}-input`}
+            type="number"
+            inputMode="numeric"
+            min={min}
+            max={max}
+            step={5}
+            value={value}
+            onChange={(e) => {
+              const n = Number(e.target.value);
+              if (Number.isFinite(n)) onChange(Math.min(max, Math.max(min, Math.round(n))));
+            }}
+            className="h-7 w-20 text-right font-mono tabular text-xs"
+          />
+          <span className="font-mono text-[11px] text-muted-foreground">m</span>
+        </div>
+      </div>
+      <Slider
+        aria-label={`${label} slider`}
+        min={min}
+        max={max}
+        step={10}
+        value={value}
+        onValueChange={(v) => onChange(Array.isArray(v) ? v[0]! : v)}
+      />
+      {hint && <p className="mt-1.5 text-xs text-muted-foreground">{hint}</p>}
     </div>
   );
 }
