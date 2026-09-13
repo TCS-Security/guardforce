@@ -19,7 +19,7 @@ export function LeaveTabs({ tab, children }: { tab: string; children: React.Reac
     <Tabs value={value} className="gap-4">
       <TabsList variant="line">
         {TABS.map((t) => (
-          <TabsTrigger key={t.value} value={t.value} render={<Link href={`/leave?tab=${t.value}`} />}>
+          <TabsTrigger key={t.value} value={t.value} nativeButton={false} render={<Link href={`/leave?tab=${t.value}`} />}>
             {t.label}
           </TabsTrigger>
         ))}

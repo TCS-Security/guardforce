@@ -9,17 +9,23 @@ function hueFor(name: string) {
   return HUES[h % HUES.length]!;
 }
 
+/** Storage object paths are not loadable URLs — only render an image we can actually fetch. */
+function isRenderableSrc(src: string | null | undefined): src is string {
+  return !!src && /^(https?:|data:|blob:|\/)/.test(src);
+}
+
 /** Initials avatar tinted deterministically from the name. */
 export function GuardAvatar({ name, src, size = "md", className }: { name: string; src?: string | null; size?: "xs" | "sm" | "md" | "lg" | "xl"; className?: string }) {
   const dim = { xs: "size-6 text-[10px]", sm: "size-7 text-[11px]", md: "size-9 text-xs", lg: "size-12 text-sm", xl: "size-20 text-xl" }[size];
   const hue = hueFor(name);
+  const photo = isRenderableSrc(src) ? src : null;
   return (
     <span
       className={cn("inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full font-display font-semibold ring-1 ring-black/5 dark:ring-white/10", dim, className)}
       style={{ background: `oklch(0.90 0.05 ${hue})`, color: `oklch(0.36 0.09 ${hue})` }}
       aria-hidden="true"
     >
-      {src ? <img src={src} alt="" className="size-full object-cover" /> : initials(name)}
+      {photo ? <img src={photo} alt="" className="size-full object-cover" /> : initials(name)}
     </span>
   );
 }

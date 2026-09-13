@@ -46,7 +46,7 @@ export async function decideLeave(_prev: LeaveActionState, formData: FormData): 
   const { error } = await supabase.rpc("decide_leave", {
     p_leave_id: leaveId,
     p_approve: decision === "approve",
-    p_note: note?.length ? note : null,
+    p_note: note?.length ? note : undefined,
   });
   if (error) return { error: friendly(error) };
 
@@ -103,7 +103,7 @@ export async function logLeave(_prev: LeaveActionState, formData: FormData): Pro
     const { error } = await supabase.rpc("decide_leave", {
       p_leave_id: inserted.id,
       p_approve: true,
-      p_note: null,
+      p_note: undefined,
     });
     if (error) {
       revalidateLeave();

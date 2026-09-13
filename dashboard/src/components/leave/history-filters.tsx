@@ -26,7 +26,7 @@ export function HistoryFiltersForm({
         <Label htmlFor="f-status">Status</Label>
         <Select name="status" defaultValue={filters.status}>
           <SelectTrigger id="f-status" className="w-full" aria-label="Status">
-            <SelectValue />
+            <SelectValue>{(v: string) => (!v || v === "all" ? "All statuses" : (LEAVE_STATUS[v as keyof typeof LEAVE_STATUS]?.label ?? "All statuses"))}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All statuses</SelectItem>
@@ -40,7 +40,7 @@ export function HistoryFiltersForm({
         <Label htmlFor="f-type">Type</Label>
         <Select name="type" defaultValue={filters.type}>
           <SelectTrigger id="f-type" className="w-full" aria-label="Type">
-            <SelectValue />
+            <SelectValue>{(v: string) => (!v || v === "all" ? "All types" : (LEAVE_TYPE[v as keyof typeof LEAVE_TYPE] ?? "All types"))}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All types</SelectItem>
@@ -54,7 +54,7 @@ export function HistoryFiltersForm({
         <Label htmlFor="f-site">Site</Label>
         <Select name="siteId" defaultValue={filters.siteId}>
           <SelectTrigger id="f-site" className="w-full" aria-label="Site">
-            <SelectValue />
+            <SelectValue>{(v: string) => (!v || v === "all" ? "All sites" : (sites.find((s) => s.id === v)?.name ?? "All sites"))}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All sites</SelectItem>
@@ -68,7 +68,7 @@ export function HistoryFiltersForm({
         <Label htmlFor="f-guard">Guard</Label>
         <Select name="guardId" defaultValue={filters.guardId}>
           <SelectTrigger id="f-guard" className="w-full" aria-label="Guard">
-            <SelectValue />
+            <SelectValue>{(v: string) => (!v || v === "all" ? "All guards" : (guards.find((g) => g.id === v)?.label ?? "All guards"))}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All guards</SelectItem>

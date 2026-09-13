@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,14 +20,14 @@ export function DecisionDialog({
   leaveId: string;
   guardName: string;
   mode: "approve" | "decline";
-  trigger: React.ReactNode;
+  trigger: React.ReactElement;
 }) {
   const [open, setOpen] = useState(false);
-  const [state, action, pending] = useActionState<LeaveActionState, FormData>(decideLeave, undefined);
-
-  useEffect(() => {
-    if (state?.ok) setOpen(false);
-  }, [state?.ok]);
+  const [state, action, pending] = useActionState<LeaveActionState, FormData>(async (prev, formData) => {
+    const result = await decideLeave(prev, formData);
+    if (result?.ok) setOpen(false);
+    return result;
+  }, undefined);
 
   const approve = mode === "approve";
   return (

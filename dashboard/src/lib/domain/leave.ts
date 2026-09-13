@@ -1,4 +1,5 @@
 import { format } from "date-fns";
+import { formatInTimeZone } from "date-fns-tz";
 import type { LeaveBalance, LeaveType } from "@/lib/supabase/types";
 
 /** Column defaults from the schema (leave_balances). */
@@ -25,7 +26,7 @@ export function rangesOverlap(aStart: string, aEnd: string, bStart: string, bEnd
 }
 
 const utc = (s: string) => new Date(`${s}T00:00:00Z`);
-const f = (s: string, pattern: string) => format(utc(s), pattern, { timeZone: "UTC" });
+const f = (s: string, pattern: string) => formatInTimeZone(utc(s), "UTC", pattern);
 
 /** "16 Sep 2026" · "16–17 Sep 2026" · "30 Sep – 2 Oct 2026" · "30 Dec 2026 – 2 Jan 2027" */
 export function fmtLeaveRange(start: string, end: string): string {
@@ -72,7 +73,7 @@ export type ApprovedLeaveLite = {
 export type StaffingImpact = { count: number; names: string[]; maxPerDay: number };
 
 function nextDay(iso: string): string {
-  return format(new Date(Date.parse(`${iso}T00:00:00Z`) + 86_400_000), "yyyy-MM-dd", { timeZone: "UTC" });
+  return formatInTimeZone(new Date(Date.parse(`${iso}T00:00:00Z`) + 86_400_000), "UTC", "yyyy-MM-dd");
 }
 
 /**
@@ -118,7 +119,7 @@ export function monthGrid(year: number, month: number): MonthCell[] {
   const end = new Date(Date.UTC(year, month - 1, last.getUTCDate() + (6 - last.getUTCDay())));
   const cells: MonthCell[] = [];
   for (let d = start; d <= end; d = new Date(d.getTime() + 86_400_000)) {
-    cells.push({ date: format(d, "yyyy-MM-dd", { timeZone: "UTC" }), inMonth: d.getUTCMonth() === month - 1 });
+    cells.push({ date: formatInTimeZone(d, "UTC", "yyyy-MM-dd"), inMonth: d.getUTCMonth() === month - 1 });
   }
   return cells;
 }
@@ -139,10 +140,10 @@ export function parseMonthParam(value: string | undefined): { year: number; mont
 /** Neighboring month as "YYYY-MM" (delta −1/+1). */
 export function shiftMonth(year: number, month: number, delta: number): string {
   const d = new Date(Date.UTC(year, month - 1 + delta, 1));
-  return format(d, "yyyy-MM", { timeZone: "UTC" });
+  return formatInTimeZone(d, "UTC", "yyyy-MM");
 }
 
 /** "September 2026" */
 export function monthLabel(year: number, month: number): string {
-  return format(new Date(Date.UTC(year, month - 1, 1)), "MMMM yyyy", { timeZone: "UTC" });
+  return formatInTimeZone(new Date(Date.UTC(year, month - 1, 1)), "UTC", "MMMM yyyy");
 }

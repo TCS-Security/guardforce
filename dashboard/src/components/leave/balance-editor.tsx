@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useId, useState } from "react";
+import { useActionState, useId, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { GuardAvatar } from "@/components/gf/guard-avatar";
 import { Mono } from "@/components/gf/mono";
@@ -26,12 +26,12 @@ function Totals({ total, used }: { total: number; used: number }) {
  */
 export function BalanceRow({ guard, year, editable }: { guard: GuardBalance; year: number; editable: boolean }) {
   const [editing, setEditing] = useState(false);
-  const [state, action, pending] = useActionState<LeaveActionState, FormData>(saveBalance, undefined);
+  const [state, action, pending] = useActionState<LeaveActionState, FormData>(async (prev, formData) => {
+    const result = await saveBalance(prev, formData);
+    if (result?.ok) setEditing(false);
+    return result;
+  }, undefined);
   const formId = useId();
-
-  useEffect(() => {
-    if (state?.ok) setEditing(false);
-  }, [state?.ok]);
 
   const casualTotal = guard.balance?.casual_total ?? BALANCE_DEFAULTS.casual_total;
   const earnedTotal = guard.balance?.earned_total ?? BALANCE_DEFAULTS.earned_total;
@@ -80,10 +80,12 @@ export function BalanceRow({ guard, year, editable }: { guard: GuardBalance; yea
                 </Button>
                 <Button type="button" size="sm" variant="ghost" onClick={() => setEditing(false)}>Cancel</Button>
               </div>
-              {state?.error && <div role="alert" className="text-xs text-destructive">{state.error}</div>}
+              {state?.error && <div role="alert" data-testid="form-error" className="text-xs text-absent">{state.error}</div>}
             </form>
           ) : (
-            <Button size="sm" variant="ghost" onClick={() => setEditing(true)}>Edit{noRow ? <span className="sr-only"> — no row yet, saving creates it</span>}</Button>
+            <Button size="sm" variant="ghost" onClick={() => setEditing(true)}>
+              Edit{noRow && <span className="sr-only"> — no balance row yet; saving creates one</span>}
+            </Button>
           )
         ) : (
           <span className="text-xs text-muted-foreground">—</span>

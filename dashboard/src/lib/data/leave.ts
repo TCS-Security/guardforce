@@ -104,7 +104,7 @@ export async function loadPendingInbox(session: Session): Promise<PendingItem[]>
     .eq("status", "pending")
     .order("created_at", { ascending: true });
 
-  const rows = (pending ?? []).map(toRow);
+  const rows = ((pending ?? []) as unknown as RawLeave[]).map(toRow);
   if (rows.length === 0) return [];
 
   const minStart = rows.reduce((m, r) => (r.start_date < m ? r.start_date : m), rows[0]!.start_date);
@@ -156,7 +156,7 @@ export async function loadUpcoming(session: Session): Promise<LeaveRow[]> {
     .eq("status", "approved")
     .gte("end_date", today)
     .order("start_date", { ascending: true });
-  return (data ?? []).map(toRow);
+  return ((data ?? []) as unknown as RawLeave[]).map(toRow);
 }
 
 /* ---------------------------------------------------------------------------
@@ -185,15 +185,18 @@ export async function loadHistory(session: Session, f: HistoryFilters) {
   if (f.from) q = q.gte("end_date", f.from); // overlap semantics
   if (f.to) q = q.lte("start_date", f.to);
 
-  const total = (await q.count()).count ?? 0;
+  // One query: PostgREST returns the exact count alongside the page window.
+  const first = await q.order("created_at", { ascending: false }).range(0, HISTORY_PAGE_SIZE - 1);
+  const total = first.count ?? 0;
   const pageCount = Math.max(1, Math.ceil(total / HISTORY_PAGE_SIZE));
   const page = Math.min(Math.max(1, f.page), pageCount);
 
-  const { data } = await q
-    .order("created_at", { ascending: false })
-    .range((page - 1) * HISTORY_PAGE_SIZE, page * HISTORY_PAGE_SIZE - 1);
+  const { data } =
+    page === 1
+      ? first
+      : await q.order("created_at", { ascending: false }).range((page - 1) * HISTORY_PAGE_SIZE, page * HISTORY_PAGE_SIZE - 1);
 
-  return { rows: (data ?? []).map(toRow), total, page, pageCount };
+  return { rows: ((data ?? []) as unknown as RawLeave[]).map(toRow), total, page, pageCount };
 }
 
 /* ---------------------------------------------------------------------------

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { format } from "date-fns";
+import { formatInTimeZone } from "date-fns-tz";
 import { GuardAvatar } from "@/components/gf/guard-avatar";
 import { Mono } from "@/components/gf/mono";
 import { StatusPill } from "@/components/gf/status-pill";
@@ -83,7 +84,7 @@ export function LeaveCalendarGrid({ days, today }: { days: CalendarDay[]; today:
                   const isToday = day.date === today;
                   const isSelected = day.date === selected;
                   const label =
-                    `${format(new Date(`${day.date}T00:00:00Z`), "d MMMM", { timeZone: "UTC" })}: ` +
+                    `${formatInTimeZone(new Date(`${day.date}T00:00:00Z`), "UTC", "d MMMM")}: ` +
                     `${day.approved.length} approved, ${day.pending.length} pending` +
                     (day.thinCover ? `, thin cover (${THIN_COVER_THRESHOLD}+ guards out)` : "");
                   return (
@@ -124,7 +125,7 @@ export function LeaveCalendarGrid({ days, today }: { days: CalendarDay[]; today:
         <div className="rounded-lg border bg-card p-4" data-testid="calendar-day-detail">
           <div className="flex items-baseline justify-between gap-3">
             <h3 className="font-display text-[15px] font-semibold tracking-tight">
-              {format(new Date(`${selectedDay.date}T00:00:00Z`), "EEEE d MMMM yyyy", { timeZone: "UTC" })}
+              {formatInTimeZone(new Date(`${selectedDay.date}T00:00:00Z`), "UTC", "EEEE d MMMM yyyy")}
               {selectedDay.date === today && <span className="ml-2 text-xs font-normal text-muted-foreground">today</span>}
             </h3>
             <span className="text-xs text-muted-foreground">

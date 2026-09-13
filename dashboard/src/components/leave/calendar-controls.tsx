@@ -28,7 +28,7 @@ export function CalendarControls({
         }}
       >
         <SelectTrigger aria-label="Site" className="min-w-56">
-          <SelectValue />
+          <SelectValue>{(v: string) => sites.find((s) => s.id === v)?.name ?? "Pick a site"}</SelectValue>
         </SelectTrigger>
         <SelectContent>
           {sites.map((s) => (

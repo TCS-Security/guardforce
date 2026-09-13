@@ -21,11 +21,16 @@ export const requireSession = cache(async (): Promise<Session> => {
   if (!user) redirect("/login");
 
   const [{ data: profile, error: profileError }, { data: sites }] = await Promise.all([
-    supabase.from("profiles").select("*, agencies(*)").eq("id", user.id).single(),
+    supabase.from("profiles").select("*, agencies(*)").eq("id", user.id).maybeSingle(),
     supabase.from("sites").select("id").eq("is_active", true).order("name"),
   ]);
+
+  if (profileError) {
+    // A transient read failure (clock skew on the JWT, a database blip) must not look
+    // like "this account has no profile" — signing the user out would hide the fault.
+    throw new Error(`Could not load your profile: ${profileError.message}`);
+  }
   if (!profile) {
-    console.error("requireSession: no profile for user", user.id, profileError?.message);
     await supabase.auth.signOut();
     redirect("/login?error=no-profile");
   }

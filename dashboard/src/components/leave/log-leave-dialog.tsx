@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import { Loader2, Plane } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,11 +20,11 @@ import { LEAVE_TYPE } from "@/lib/domain/status";
 /** Log a leave request on behalf of a guard (they asked on WhatsApp). */
 export function LogLeaveDialog({ guards }: { guards: GuardOption[] }) {
   const [open, setOpen] = useState(false);
-  const [state, action, pending] = useActionState<LeaveActionState, FormData>(logLeave, undefined);
-
-  useEffect(() => {
-    if (state?.ok) setOpen(false);
-  }, [state?.ok]);
+  const [state, action, pending] = useActionState<LeaveActionState, FormData>(async (prev, formData) => {
+    const result = await logLeave(prev, formData);
+    if (result?.ok) setOpen(false);
+    return result;
+  }, undefined);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
