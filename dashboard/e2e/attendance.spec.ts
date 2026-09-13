@@ -38,7 +38,6 @@ async function destroyTestShift(shiftId: string) {
   await db.from("location_pings").delete().eq("shift_id", shiftId);
   await db.from("notifications").delete().in("event_id", ((await db.from("events").select("id").eq("shift_id", shiftId)).data ?? []).map((e) => e.id));
   await db.from("events").delete().eq("shift_id", shiftId);
-  await db.from("audit_logs").delete().eq("entity_type", "shift").eq("entity_id", shiftId);
   await db.from("shift_exceptions").delete().eq("shift_id", shiftId);
   await db.from("shifts").update({ exception_id: null }).eq("id", shiftId);
   await db.from("shifts").delete().eq("id", shiftId);

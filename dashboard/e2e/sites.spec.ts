@@ -65,7 +65,6 @@ test.describe("sites", () => {
     const { data: off } = await admin().from("sites").select("is_active").eq("id", siteId).single();
     expect(off!.is_active).toBe(false);
 
-    await admin().from("audit_logs").delete().eq("entity_id", siteId);
     await admin().from("sites").delete().eq("id", siteId);
   });
 
@@ -98,7 +97,6 @@ test.describe("sites", () => {
     expect(poly.coordinates[0]).toHaveLength(4); // closed ring
     expect(poly.coordinates[0][0]).toEqual(poly.coordinates[0][3]);
 
-    await admin().from("audit_logs").delete().eq("entity_id", siteId);
     await admin().from("sites").delete().eq("id", siteId);
   });
 

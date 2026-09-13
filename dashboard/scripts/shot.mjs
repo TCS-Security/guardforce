@@ -12,7 +12,7 @@ await page.waitForURL(new RegExp(BASE.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "
 for (const p of paths.length ? paths : ["/"]) {
   await page.goto(BASE + p, { waitUntil: "domcontentloaded" });
   await page.waitForLoadState("load").catch(() => {});
-  await page.waitForTimeout(1800);
+  await page.waitForTimeout(Number(process.env.SHOT_WAIT ?? 1800));
   const name = p === "/" ? "overview" : p.replace(/\W+/g, "-").replace(/^-|-$/g, "");
   await page.screenshot({ path: `/tmp/shot-${name}.png`, fullPage: true });
   console.log("shot", name);
