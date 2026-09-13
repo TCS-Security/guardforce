@@ -30,6 +30,7 @@ export type ProfileShare = Tables<"profile_shares">;
 export type AuditLog = Tables<"audit_logs">;
 
 export type UserRole = Enums<"user_role">;
+export type GuardStatus = Enums<"guard_status">;
 export type AttendanceStatus = Enums<"attendance_status">;
 export type ShiftStatus = Enums<"shift_status">;
 export type TrustLevel = Enums<"trust_level">;
