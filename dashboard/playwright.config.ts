@@ -2,8 +2,12 @@ import { defineConfig, devices } from "@playwright/test";
 
 /**
  * E2E against the local Supabase stack (seeded) and `next dev`.
- * Run `supabase db reset` before a full run to get deterministic seed data.
+ * Set E2E_BASE_URL=http://localhost:<port> to run against a dev server on another port
+ * (each git worktree runs its own). Run `supabase db reset` for deterministic seed data.
  */
+const baseURL = process.env.E2E_BASE_URL ?? "http://localhost:3000";
+const port = new URL(baseURL).port || "3000";
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
@@ -13,16 +17,16 @@ export default defineConfig({
   expect: { timeout: 10_000 },
   reporter: [["list"], ["html", { open: "never" }]],
   use: {
-    baseURL: process.env.E2E_BASE_URL ?? "http://localhost:3000",
+    baseURL,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     viewport: { width: 1400, height: 900 },
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    command: "bun run dev",
-    url: "http://localhost:3000/login",
-    reuseExistingServer: !process.env.CI,
+    command: `bun run dev -- --port ${port}`,
+    url: `${baseURL}/login`,
+    reuseExistingServer: true,
     timeout: 120_000,
   },
 });
