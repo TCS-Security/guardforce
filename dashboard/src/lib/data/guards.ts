@@ -13,7 +13,7 @@ export type GuardRow = Guard & {
   sites: { id: string; name: string } | null;
   profiles: { id: string; full_name: string } | null;
   guard_documents: Pick<GuardDocument, "type" | "status" | "file_path">[];
-  last_shift: { shift_date: string; attendance: string; status: string } | null;
+  last_shift: { shift_date: string; attendance: string; status: string; started_at: string | null } | null;
 };
 
 export type GuardListFilters = {
@@ -45,15 +45,20 @@ export async function listGuards(session: Session, filters: GuardListFilters = {
   const { data: shifts } = ids.length
     ? await supabase
         .from("shifts")
-        .select("guard_id,shift_date,attendance,status")
+        .select("guard_id,shift_date,attendance,status,started_at")
         .in("guard_id", ids)
         .gte("shift_date", since)
         .lte("shift_date", toLocalDate(new Date(), session.agency.timezone))
         .order("shift_date", { ascending: false })
     : { data: [] };
 
-  const last = new Map<string, { shift_date: string; attendance: string; status: string }>();
-  for (const s of shifts ?? []) if (!last.has(s.guard_id)) last.set(s.guard_id, s);
+  // Prefer the most recent shift the guard actually worked; today's not-yet-started
+  // shift is only used when there is nothing worked in the window.
+  const last = new Map<string, { shift_date: string; attendance: string; status: string; started_at: string | null }>();
+  for (const s of shifts ?? []) {
+    const seen = last.get(s.guard_id);
+    if (!seen || (!seen.started_at && s.started_at)) last.set(s.guard_id, s);
+  }
 
   let rows = (guards ?? []).map((g) => ({ ...g, last_shift: last.get(g.id) ?? null })) as GuardRow[];
 
@@ -130,6 +135,7 @@ export async function loadGuard(session: Session, guardId: string): Promise<Guar
       .from("shifts")
       .select("id,shift_date,started_at,ended_at,attendance,status,trust,flags,sites(name)")
       .eq("guard_id", guardId)
+      .lte("shift_date", to)
       .order("shift_date", { ascending: false })
       .limit(12),
     supabase.from("leave_balances").select("*").eq("guard_id", guardId).eq("year", new Date().getFullYear()).maybeSingle(),

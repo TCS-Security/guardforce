@@ -8,6 +8,7 @@ import { ButtonLink } from "@/components/gf/button-link";
 import { EmptyState } from "@/components/gf/empty-state";
 import { GuardAvatar } from "@/components/gf/guard-avatar";
 import { Mono } from "@/components/gf/mono";
+import { StatusPill } from "@/components/gf/status-pill";
 import { AttendanceBadge } from "@/components/gf/attendance-badge";
 import { GuardFilters } from "@/components/guards/guard-filters";
 import { GuardStatusBadge } from "@/components/guards/guard-status-badge";
@@ -83,12 +84,16 @@ export default async function GuardsPage({ searchParams }: PageProps<"/guards">)
                   <td className="px-4 py-2.5 text-muted-foreground">{g.profiles?.full_name ?? "—"}</td>
                   <td className="px-4 py-2.5"><GuardStatusBadge status={g.status} size="xs" /></td>
                   <td className="px-4 py-2.5"><KycProgressCell guard={g} docs={g.guard_documents} /></td>
-                  <td className="px-4 py-2.5"><Mono>{fmtPhone(g.phone)}</Mono></td>
+                  <td className="px-4 py-2.5"><Mono className="whitespace-nowrap">{fmtPhone(g.phone)}</Mono></td>
                   <td className="px-4 py-2.5">
                     {g.last_shift ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">{fmtDate(g.last_shift.shift_date)}</span>
-                        <AttendanceBadge status={g.last_shift.attendance as never} size="xs" />
+                      <div className="flex items-center gap-2 whitespace-nowrap">
+                        <span className="text-xs text-muted-foreground">{fmtDate(g.last_shift.shift_date, undefined, "d MMM")}</span>
+                        {g.last_shift.started_at ? (
+                          <AttendanceBadge status={g.last_shift.attendance as never} size="xs" />
+                        ) : (
+                          <StatusPill tone="neutral" size="xs" dot={false}>Not started</StatusPill>
+                        )}
                       </div>
                     ) : (
                       <span className="text-xs text-muted-foreground">No shifts yet</span>
