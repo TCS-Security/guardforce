@@ -6,7 +6,14 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "db:reset": "supabase db reset --workdir ..",
+    "db:types": "supabase gen types typescript --local --workdir .. > src/lib/supabase/database.types.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

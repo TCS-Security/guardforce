@@ -1,0 +1,43 @@
+import type { Database } from "./database.types";
+
+export type Tables<T extends keyof Database["public"]["Tables"]> = Database["public"]["Tables"][T]["Row"];
+export type Inserts<T extends keyof Database["public"]["Tables"]> = Database["public"]["Tables"][T]["Insert"];
+export type Updates<T extends keyof Database["public"]["Tables"]> = Database["public"]["Tables"][T]["Update"];
+export type Enums<T extends keyof Database["public"]["Enums"]> = Database["public"]["Enums"][T];
+
+export type Agency = Tables<"agencies">;
+export type Profile = Tables<"profiles">;
+export type Site = Tables<"sites">;
+export type ShiftType = Tables<"shift_types">;
+export type Guard = Tables<"guards">;
+export type GuardDocument = Tables<"guard_documents">;
+export type Shift = Tables<"shifts">;
+export type ShiftAssignment = Tables<"shift_assignments">;
+export type RosterPattern = Tables<"roster_patterns">;
+export type LocationPing = Tables<"location_pings">;
+export type GuardPresence = Tables<"guard_presence">;
+export type Event = Tables<"events">;
+export type PatrolRoute = Tables<"patrol_routes">;
+export type Patrol = Tables<"patrols">;
+export type PatrolPhoto = Tables<"patrol_photos">;
+export type Task = Tables<"tasks">;
+export type TaskAssignment = Tables<"task_assignments">;
+export type TaskTemplate = Tables<"task_templates">;
+export type LeaveRequest = Tables<"leave_requests">;
+export type LeaveBalance = Tables<"leave_balances">;
+export type Notification = Tables<"notifications">;
+export type ProfileShare = Tables<"profile_shares">;
+export type AuditLog = Tables<"audit_logs">;
+
+export type UserRole = Enums<"user_role">;
+export type AttendanceStatus = Enums<"attendance_status">;
+export type ShiftStatus = Enums<"shift_status">;
+export type TrustLevel = Enums<"trust_level">;
+export type EventType = Enums<"event_type">;
+export type EventSeverity = Enums<"event_severity">;
+export type PatrolStatus = Enums<"patrol_status">;
+export type TaskStatus = Enums<"task_status">;
+export type LeaveStatus = Enums<"leave_status">;
+export type LeaveType = Enums<"leave_type">;
+export type DocumentType = Enums<"document_type">;
+export type DocumentStatus = Enums<"document_status">;

@@ -1,55 +1,32 @@
-# AGENTS.md — TCS Workspace Rules for AI Coding Agents
+# GuardForce — working conventions
 
-These rules apply to every AI coding agent (Claude Code, opencode, Codex, Cursor, etc.) working anywhere under this directory. A repo under `repos/` may add its own `AGENTS.md` with repo-specific commands; that file **extends** this one, and where they conflict, the repo's file wins for work inside that repo.
+Guard management platform for Indian security agencies. Spec: `prd-v2-guard-platform.md` (source of truth), founder notes in `guard-crm-notes.md`.
 
----
+## Layout
+- `supabase/` — Postgres schema (`migrations/`), RPCs, RLS, storage buckets, demo `seed.sql`. Shared by the web dashboard and the Android guard app.
+- `dashboard/` — Next.js 16 (App Router, Turbopack) + Tailwind v4 + shadcn (base-nova style, **Base UI** primitives, not Radix). Package manager: **bun**.
+- `android/` — (next task) Kotlin guard app.
 
-## 1. Testing — non-negotiable
-
-**No change lands without tests. Full stop.**
-
-Whatever you implement must be verified before the work counts as done:
-
-1. **Test as you build, not after.** A feature is not "done" until its tests exist and pass. "Implemented, tests to follow later" is never an acceptable end state.
-2. **Unit tests.** Every function, module, or behavior you add or change gets unit tests covering the happy path, edge cases, and failure modes.
-3. **End-to-end flow tests.** Every user-visible or cross-component flow gets at least one e2e test that exercises the real path (real API request → response, real DB read/write, real UI/CLI interaction) — not just the internals in isolation.
-4. **Zero regressions.** Before finishing any task, run the repo's **entire existing test suite**, not just the tests you wrote. If anything that passed before your change now fails, the change is not done — fix it or revert it. A green full suite is the only acceptable end state.
-5. **Bug fixes ship with a regression test** — a test that fails without the fix and passes with it.
-6. **Definition of done** = implementation + new tests covering it + full suite green + lint and typecheck clean.
-
-Practical rules:
-
-- If the repo has no test framework set up yet, stop and set one up (or ask the user) before building features on top of nothing.
-- If the full suite is slow, run targeted tests while iterating — but **always** run the full suite before declaring a task done.
-- Never weaken, skip, delete, or flake-mark an existing test to make your change pass. If a test's expectation is genuinely outdated, say so explicitly and get the user's approval first.
-- When bootstrapping a new repo, write the first tests with the first commit, and record the exact `test`, `lint`, and `typecheck` commands in that repo's `AGENTS.md` so future agents never have to guess how to verify their work.
-
----
-
-## 2. Workspace layout
-
-This directory is a **workspace container**, not a git repo. It holds multiple independent git repositories plus shared assets:
-
+## Local stack
 ```
-TCS/
-├── AGENTS.md            # shared agent rules (this file)
-├── CLAUDE.md            # symlink → AGENTS.md (same rules, for Claude Code)
-├── docs/                # product docs: PRDs, specs, founder notes — source of truth
-├── .agents/skills/      # workspace-level agent skills (SKILL.md format)
-├── .claude/skills       # symlink → .agents/skills (for Claude Code)
-└── repos/               # independent git repos, one subdirectory per repo
+supabase start --workdir /home/chirag/TCS      # local stack; Studio at :54323
+supabase db reset --workdir /home/chirag/TCS   # re-apply migrations + seed
+cd dashboard && bun run dev                    # http://localhost:3000
+bun run typecheck && bun run test && bun run test:e2e
 ```
+`supabase gen types typescript --local --workdir .. > src/lib/supabase/database.types.ts` after any schema change (`bun run db:types`).
+Logins: owner@sentinel.test / priya@sentinel.test / arun@sentinel.test — password `guardforce`. Guard PIN `1234`. Never use `npx` (private registry); use `bun`/`bunx` and the brew `supabase` binary.
 
-- **Never `git init` at the workspace root.** Every project is its own git repo under `repos/`, with its own history, remotes, branches, and CI. Do not create commits that span multiple repos.
-- **`docs/` is the product source of truth.** Read the relevant PRD/spec before implementing a feature (`prd-v2-guard-platform.md` supersedes `prd-mvp.md`; founder's notes in `guard-crm-notes.md` win over both). Update docs when product behavior or decisions change.
-- **Skills** follow the standard `SKILL.md` format: `.agents/skills/<name>/SKILL.md` with `name` and `description` frontmatter. Read and follow any skill relevant to your current task.
-- **When bootstrapping a new repo** under `repos/`, create its own `AGENTS.md` containing: stack, how to run locally, how to run tests, lint/typecheck commands, and repo-specific conventions.
-
----
-
-## 3. General conduct
-
-- Run lint and typecheck before declaring any task done — an agent that skips verification is not done, it is guessing.
-- Never commit, push, or create PRs unless the user explicitly asks. Never commit secrets, keys, or credentials.
-- Keep work scoped: one logical change per task; match the repo's existing code style and conventions over your own preferences.
-- If a requested change would break an existing flow and the docs don't cover the decision, stop and ask instead of guessing.
+## Dashboard code conventions
+- Server Components fetch data with `createClient()` from `@/lib/supabase/server` (RLS applies). Put loaders in `src/lib/data/<module>.ts`. Mutations are Server Actions in `actions.ts` next to the route, validated with zod, returning `{ error?: string }`; call `revalidatePath` after writes.
+- Service role (`@/lib/supabase/admin`) only for: creating auth users, public share pages, signed storage URLs, monitors.
+- `requireSession()` gives `{ profile, agency, siteIds, isOwner, isManager }`. Supervisors are site-scoped by RLS; never bypass it.
+- Domain rules live in SQL RPCs (`check_in`, `check_out`, `ingest_pings`, `report_location_state`, `log_shift_exception`, `override_attendance`, `start_patrol`, `complete_patrol`, `decide_leave`, `materialize_roster`, `run_monitors`, `site_day_summary`, `attendance_trend`, `guard_scorecard`, `resolve_profile_share`). Call them via `supabase.rpc(...)`; mirror pure logic in `src/lib/domain/*` with unit tests.
+- Design system: read `src/app/globals.css` tokens and `src/components/gf/*` first. Use `PageHeader`, `StatTile`, `Section`, `StatusPill`/badges, `GuardAvatar`, `Mono`, `KvList`, `EmptyState`, `ButtonLink`. Fonts: Bricolage Grotesque (display: h1–h3, big numbers), Schibsted Grotesk (body), JetBrains Mono (timestamps, ids, eyebrows). Status colours are tokens: `present`, `half-day`, `absent`, `on-leave`, `signal` (alerts), `primary` (olive). Never use raw Tailwind palette colours for status.
+- Look at `src/app/(app)/(overview)/page.tsx` for the reference page: eyebrow → display title → description → actions; tiles; sections with hairline headers; mono tabular numbers; `reveal` stagger via `--i`.
+- Base UI gotchas: `<Button render={<Link/>}>` needs `nativeButton={false}` (use `ButtonLink`). `DropdownMenuItem`/`SheetTrigger`/`PopoverTrigger` take `render`. Selects: `Select`, `SelectTrigger`, `SelectValue`, `SelectContent`, `SelectItem`.
+- Maps: MapLibre GL (`maplibre-gl`) with OpenFreeMap style `https://tiles.openfreemap.org/styles/liberty`; put maps in client components, import CSS `maplibre-gl/dist/maplibre-gl.css`. Fence rendering helpers: `fenceGeometry()` in `src/lib/domain/geo.ts`.
+- Storage: buckets `kyc-docs`, `selfies`, `patrol-photos`, `task-photos` are private; object paths start with `<agency_id>/`. Serve via signed URLs (`createSignedUrl`, 10 min) from a server action or route handler; log KYC doc access in `document_access_logs`.
+- Time: agency timezone (`agency.timezone`, IST). Use helpers in `src/lib/domain/format.ts`.
+- Tests: unit (vitest, `*.test.ts(x)` beside code or in `__tests__`), e2e (Playwright in `dashboard/e2e`, seeded data ids in `e2e/helpers.ts`, `admin()` client to simulate the guard app via RPCs). Every feature ships with both. E2E tests must reset any state they mutate (or use fresh rows) so the suite is re-runnable without `db reset`.
+- Screenshots for visual review: `node scripts/shot.mjs /route ...` writes `/tmp/shot-<route>.png`.
