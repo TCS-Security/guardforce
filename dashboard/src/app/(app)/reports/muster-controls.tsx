@@ -15,7 +15,7 @@ export function MusterControls({ sites, site, month }: { sites: FilterSite[]; si
         <Label className="eyebrow">Site</Label>
         <Select value={site || "all"} onValueChange={(v) => set({ musterSite: v === "all" ? null : v })}>
           <SelectTrigger size="sm" className="w-[200px]" aria-label="Muster site">
-            <SelectValue placeholder="All sites" />
+            <SelectValue>{(v: string) => (!v || v === "all" ? "All sites" : (sites.find((s) => s.id === v)?.name ?? "All sites"))}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All sites</SelectItem>

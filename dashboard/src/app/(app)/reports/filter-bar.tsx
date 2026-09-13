@@ -45,7 +45,7 @@ export function ReportFilterBar({
           <Label className="eyebrow">Site</Label>
           <Select value={current.site || "all"} onValueChange={(v) => set({ site: v === "all" ? null : v, guard: null })}>
             <SelectTrigger size="sm" className="w-[200px]" aria-label="Site">
-              <SelectValue placeholder="All sites" />
+              <SelectValue>{(v: string) => (!v || v === "all" ? "All sites" : (sites.find((s) => s.id === v)?.name ?? "All sites"))}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All sites</SelectItem>
@@ -59,7 +59,7 @@ export function ReportFilterBar({
           <Label className="eyebrow">Guard</Label>
           <Select value={current.guard || "all"} onValueChange={(v) => set({ guard: v === "all" ? null : v })}>
             <SelectTrigger size="sm" className="w-[200px]" aria-label="Guard">
-              <SelectValue placeholder="All guards" />
+              <SelectValue>{(v: string) => (!v || v === "all" ? "All guards" : (filteredGuards.find((g) => g.id === v)?.full_name ?? "All guards"))}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All guards</SelectItem>

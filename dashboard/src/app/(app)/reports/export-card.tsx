@@ -4,7 +4,8 @@ import { ButtonLink } from "@/components/gf/button-link";
 import { EmptyState } from "@/components/gf/empty-state";
 import type { CsvColumn } from "@/lib/domain/csv";
 
-const PREVIEW_LIMIT = 50;
+/** A peek, not a data dump — the CSV is the deliverable. */
+const PREVIEW_LIMIT = 8;
 
 /** A CSV report card: description, "Download CSV" link to the route handler, and a preview of the first 50 rows. */
 export function ExportCard<T>({
@@ -56,7 +57,7 @@ export function ExportCard<T>({
         </table>
       </div>
       <div className="border-t px-3 py-1.5 text-xs text-muted-foreground">
-        Showing {preview.length} of {total} row{total === 1 ? "" : "s"}.
+        Preview of {preview.length} · {total} row{total === 1 ? "" : "s"} in the download.
       </div>
     </>
   );
