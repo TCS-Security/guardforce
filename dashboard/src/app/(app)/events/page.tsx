@@ -61,7 +61,7 @@ export default async function EventsPage({ searchParams }: PageProps<"/events">)
             className="border-0"
           />
         ) : (
-          <ul className="divide-y">
+          <ul className="divide-y" data-testid="event-feed">
             {rows.map((e) => (
               <EventRow key={e.id} event={e} time={fmtTime(e.created_at, session.agency.timezone)} />
             ))}

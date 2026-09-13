@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { admin, login, SEED } from "./helpers";
+import { admin, agencyDate, login, SEED } from "./helpers";
 
 /**
  * The guard app is not part of this repo yet, so these tests drive the same SQL RPCs the
@@ -46,7 +46,7 @@ async function destroyTestShift(shiftId: string) {
 test.describe("attendance", () => {
   test("day view lists shifts with a summary", async ({ page }) => {
     await login(page);
-    const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+    const yesterday = agencyDate(-1);
     await page.goto(`/attendance?date=${yesterday}`);
 
     await expect(page.getByRole("heading", { name: "Attendance", level: 1 })).toBeVisible();
@@ -57,7 +57,7 @@ test.describe("attendance", () => {
 
   test("filters by site and status", async ({ page }) => {
     await login(page);
-    const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+    const yesterday = agencyDate(-1);
     await page.goto(`/attendance?date=${yesterday}&site=${SEED.sites.metro}`);
     const table = page.getByRole("table", { name: "Attendance" });
     await expect(table.getByText("Metro Cash & Carry, Yeshwanthpur").first()).toBeVisible();

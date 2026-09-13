@@ -71,9 +71,20 @@ export async function setTaskStatus(formData: FormData): Promise<void> {
   if (!["pending", "in_progress", "done", "missed"].includes(status)) return;
 
   const supabase = await createClient();
-  await supabase.from("tasks").update({ status: status as "pending" | "in_progress" | "done" | "missed" }).eq("id", id);
+  const { error: taskError } = await supabase
+    .from("tasks")
+    .update({ status: status as "pending" | "in_progress" | "done" | "missed" })
+    .eq("id", id);
+  if (taskError) throw new Error(`Could not update the task: ${taskError.message}`);
+
   if (status === "missed") {
-    await supabase.from("task_assignments").update({ status: "missed" }).eq("task_id", id).in("status", ["pending", "in_progress"]);
+    // Anyone who had not already closed it is missed too — that is what the report shows.
+    const { error } = await supabase
+      .from("task_assignments")
+      .update({ status: "missed" })
+      .eq("task_id", id)
+      .neq("status", "done");
+    if (error) throw new Error(`Could not update the assignees: ${error.message}`);
   }
   revalidatePath(`/tasks/${id}`);
   revalidatePath("/tasks");

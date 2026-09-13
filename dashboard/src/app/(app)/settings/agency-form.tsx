@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Section } from "@/components/gf/section";
+import { FormAlert } from "@/components/gf/form-alert";
 import { updateAgency, type ActionState } from "./actions";
 import type { Agency } from "@/lib/supabase/types";
 
@@ -107,16 +108,8 @@ export function AgencyForm({ agency, editable }: { agency: Agency; editable: boo
         </div>
       </Section>
 
-      {state?.error && (
-        <div role="alert" className="rounded-md border border-absent/30 bg-absent/8 px-3 py-2 text-sm text-absent">
-          {state.error}
-        </div>
-      )}
-      {state?.ok && (
-        <div role="status" className="rounded-md border border-present/30 bg-present/8 px-3 py-2 text-sm text-present">
-          Saved.
-        </div>
-      )}
+      {state?.error && <FormAlert>{state.error}</FormAlert>}
+      {state?.ok && <FormAlert tone="success">Saved.</FormAlert>}
       <div>
         <Button type="submit" disabled={pending}>
           {pending && <Loader2 className="animate-spin" />}

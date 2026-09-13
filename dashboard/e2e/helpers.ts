@@ -29,7 +29,7 @@ export async function login(page: Page, user = SEED.owner) {
   await page.getByLabel("Email").fill(user.email);
   await page.getByLabel("Password").fill(user.password);
   await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page).toHaveURL(/\/(?!login)/);
+  await page.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 20_000 });
   await page.waitForLoadState("networkidle");
 }
 
@@ -41,4 +41,10 @@ export function admin() {
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU",
     { auth: { persistSession: false } },
   );
+}
+
+/** A date in the agency's timezone (IST), which is what every page filters on. */
+export function agencyDate(offsetDays = 0) {
+  const now = new Date(Date.now() + offsetDays * 86_400_000);
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
 }
