@@ -18,6 +18,7 @@ export const SEED = {
     mohan: "e0000000-0000-4000-8000-000000000003",
     santoshIncompleteKyc: "e0000000-0000-4000-8000-000000000014",
     manjunathInvited: "e0000000-0000-4000-8000-000000000015",
+    rajniIncompleteKyc: "e0000000-0000-4000-8000-000000000016",
   },
   shareToken: "demo-share-suresh-gowda-7f3a9c",
 };
