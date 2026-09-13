@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, X } from "lucide-react";
 import { GuardAvatar } from "@/components/gf/guard-avatar";
 import { StatusPill } from "@/components/gf/status-pill";
@@ -105,6 +106,7 @@ export function RosterBoard({
                               <Button
                                 variant="ghost"
                                 size="xs"
+                                aria-label={`Fill ${st.name} on ${d}`}
                                 className="w-full justify-start border border-dashed border-signal/40 text-signal hover:bg-signal/10"
                                 onClick={() => setAssigning({ shiftType: st, day: d })}
                               >
@@ -121,7 +123,7 @@ export function RosterBoard({
                             size="xs"
                             className="w-full justify-start text-muted-foreground opacity-0 transition-opacity hover:opacity-100 focus-visible:opacity-100"
                             onClick={() => setAssigning({ shiftType: st, day: d })}
-                            aria-label={`Add a guard to ${st.name} on ${d}`}
+                            aria-label={`Add to ${st.name} on ${d}`}
                           >
                             <Plus data-icon="inline-start" /> Add
                           </Button>
@@ -180,6 +182,7 @@ function GuardChip({ shift, canEdit }: { shift: RosterShift; canEdit: boolean })
 
 function UnassignButton({ shiftId, name }: { shiftId: string; name: string }) {
   const [pending, setPending] = useState(false);
+  const router = useRouter();
   return (
     <button
       type="button"
@@ -194,6 +197,8 @@ function UnassignButton({ shiftId, name }: { shiftId: string; name: string }) {
         if (res?.error) {
           const { toast } = await import("sonner");
           toast.error(res.error);
+        } else {
+          router.refresh();
         }
         setPending(false);
       }}

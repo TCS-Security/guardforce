@@ -135,10 +135,10 @@ export function AssignDialog({
           )}
 
           <div className="rounded-md border p-3">
-            <label className="flex items-center gap-2 text-sm">
-              <Checkbox checked={repeat} onCheckedChange={(v) => setRepeat(!!v)} />
-              Repeat weekly
-            </label>
+            <div className="flex items-center gap-2">
+              <Checkbox id="repeat-weekly" checked={repeat} onCheckedChange={(v) => setRepeat(!!v)} />
+              <Label htmlFor="repeat-weekly" className="text-sm font-normal">Repeat weekly</Label>
+            </div>
             {repeat && (
               <div className="mt-3 flex flex-col gap-3">
                 <div>

@@ -17,9 +17,9 @@ export function GuardAvatar({ name, src, size = "md", className }: { name: strin
     <span
       className={cn("inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full font-display font-semibold ring-1 ring-black/5 dark:ring-white/10", dim, className)}
       style={{ background: `oklch(0.90 0.05 ${hue})`, color: `oklch(0.36 0.09 ${hue})` }}
-      aria-label={name}
+      aria-hidden="true"
     >
-      {src ? <img src={src} alt={name} className="size-full object-cover" /> : initials(name)}
+      {src ? <img src={src} alt="" className="size-full object-cover" /> : initials(name)}
     </span>
   );
 }
