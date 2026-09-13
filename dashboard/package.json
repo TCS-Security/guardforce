@@ -13,7 +13,9 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "db:reset": "supabase db reset --workdir ..",
-    "db:types": "supabase gen types typescript --local --workdir .. > src/lib/supabase/database.types.ts"
+    "db:types": "supabase gen types typescript --local --workdir .. > src/lib/supabase/database.types.ts",
+    "predev": "node scripts/sync-maplibre-worker.mjs",
+    "prebuild": "node scripts/sync-maplibre-worker.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

@@ -10,8 +10,9 @@ await page.getByLabel("Password").fill("guardforce");
 await page.getByRole("button", { name: "Sign in" }).click();
 await page.waitForURL(new RegExp(BASE.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "/(?!login)"), { timeout: 60000 });
 for (const p of paths.length ? paths : ["/"]) {
-  await page.goto(BASE + p, { waitUntil: "networkidle" });
-  await page.waitForTimeout(800);
+  await page.goto(BASE + p, { waitUntil: "domcontentloaded" });
+  await page.waitForLoadState("load").catch(() => {});
+  await page.waitForTimeout(1800);
   const name = p === "/" ? "overview" : p.replace(/\W+/g, "-").replace(/^-|-$/g, "");
   await page.screenshot({ path: `/tmp/shot-${name}.png`, fullPage: true });
   console.log("shot", name);

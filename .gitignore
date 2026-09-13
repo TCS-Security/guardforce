@@ -13,3 +13,9 @@ test-results/
 supabase/.branches
 supabase/.temp
 .worktrees/
+
+# generated: maplibre worker bundle (see dashboard/scripts/sync-maplibre-worker.mjs)
+dashboard/public/maplibre/
+
+# agent briefs (working notes, not part of the product)
+.agent-briefs/
