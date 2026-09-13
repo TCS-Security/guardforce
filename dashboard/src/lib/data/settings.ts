@@ -62,7 +62,9 @@ export async function loadAppConfig(session: Session) {
       .order("last_seen_at", { ascending: false })
       .limit(200),
   ]);
+  const staleBefore = Date.now() - 3 * 86_400_000;
   return {
+    staleBefore,
     config: config ?? {
       agency_id: session.agency.id,
       min_app_version: "1.0.0",

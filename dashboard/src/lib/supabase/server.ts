@@ -10,6 +10,10 @@ export async function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      // Only the proxy refreshes the session. If a Server Component also tried, two
+      // requests could race to spend the single-use refresh token and one of them
+      // would be signed out mid-navigation.
+      auth: { autoRefreshToken: false, persistSession: false },
       cookies: {
         getAll() {
           return cookieStore.getAll();

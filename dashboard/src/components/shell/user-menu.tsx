@@ -1,20 +1,27 @@
 "use client";
 
 import { LogOut, Moon, Sun, UserRound } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { GuardAvatar } from "@/components/gf/guard-avatar";
 import { signOut } from "@/app/(auth)/login/actions";
 
+/** The theme lives on <html>, so read it from there rather than mirroring it in state. */
+function subscribeToTheme(onChange: () => void) {
+  const observer = new MutationObserver(onChange);
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+  return () => observer.disconnect();
+}
+
 export function UserMenu({ name, role, email }: { name: string; role: string; email: string | null }) {
-  const [dark, setDark] = useState(false);
-  useEffect(() => {
-    const isDark = document.documentElement.classList.contains("dark");
-    setDark(isDark);
-  }, []);
+  const dark = useSyncExternalStore(
+    subscribeToTheme,
+    () => document.documentElement.classList.contains("dark"),
+    () => false,
+  );
+
   function toggleTheme() {
     const next = !dark;
-    setDark(next);
     document.documentElement.classList.toggle("dark", next);
     try { localStorage.setItem("gf-theme", next ? "dark" : "light"); } catch {}
   }

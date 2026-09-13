@@ -83,8 +83,11 @@ export function BaseMap({ center, zoom = 15, interactive = true, className, onRe
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
   const onReadyRef = useRef(onReady);
-  onReadyRef.current = onReady;
   const [tilesFailed, setTilesFailed] = useState(false);
+
+  useEffect(() => {
+    onReadyRef.current = onReady;
+  }, [onReady]);
 
   useEffect(() => {
     if (!containerRef.current) return;

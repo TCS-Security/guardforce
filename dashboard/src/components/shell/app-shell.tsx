@@ -6,8 +6,10 @@ import { UserMenu } from "./user-menu";
 import { MobileNav } from "./mobile-nav";
 import { Clock } from "./clock";
 import { AlertsBell } from "./alerts-bell";
+import { loadRecentAlerts } from "@/lib/data/alerts";
 
-export function AppShell({ session, children }: { session: Session; children: React.ReactNode }) {
+export async function AppShell({ session, children }: { session: Session; children: React.ReactNode }) {
+  const alerts = await loadRecentAlerts();
   return (
     <TooltipProvider delay={200}>
       <div className="flex min-h-dvh">
@@ -32,7 +34,7 @@ export function AppShell({ session, children }: { session: Session; children: Re
               <Clock tz={session.agency.timezone} />
             </div>
             <div className="ml-auto flex items-center gap-1">
-              <AlertsBell />
+              <AlertsBell initial={alerts} />
               <UserMenu name={session.profile.full_name} role={session.profile.role} email={session.profile.email} />
             </div>
           </header>

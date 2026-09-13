@@ -12,8 +12,8 @@ import { cn } from "cn";
 type Item = { id: string; title: string; body: string | null; created_at: string; read_at: string | null; payload: Record<string, unknown> };
 
 /** Unread in-app alerts (warn/critical events fanned out to managers). Realtime-refreshed. */
-export function AlertsBell() {
-  const [items, setItems] = useState<Item[]>([]);
+export function AlertsBell({ initial }: { initial: Item[] }) {
+  const [items, setItems] = useState<Item[]>(initial);
   const supabase = createClient();
 
   async function load() {
@@ -27,7 +27,6 @@ export function AlertsBell() {
   }
 
   useEffect(() => {
-    load();
     const ch = supabase
       .channel("alerts-bell")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "events" }, () => load())

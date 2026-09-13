@@ -47,7 +47,9 @@ export function FenceEditor({
   const mapRef = useRef<MlMap | null>(null);
   const markerRef = useRef<Marker | null>(null);
   const valueRef = useRef(value);
-  valueRef.current = value;
+  useEffect(() => {
+    valueRef.current = value;
+  }, [value]);
 
   const polygonCheck = value.fence_type === "polygon" ? validatePolygonRing(value.ring) : null;
 

@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 export default async function AppConfigPage() {
   const session = await requireSession();
   if (!session.isManager) notFound();
-  const { config, devices } = await loadAppConfig(session);
+  const { config, devices, staleBefore } = await loadAppConfig(session);
 
   return (
     <div className="flex flex-col gap-4">
@@ -46,7 +46,7 @@ export default async function AppConfigPage() {
               </thead>
               <tbody className="divide-y">
                 {devices.map((d) => {
-                  const stale = d.last_seen_at ? Date.now() - new Date(d.last_seen_at).getTime() > 3 * 86400_000 : true;
+                  const stale = d.last_seen_at ? new Date(d.last_seen_at).getTime() < staleBefore : true;
                   return (
                     <tr key={d.id} className="hover:bg-muted/40">
                       <td className="px-4 py-2">{d.holder_name}</td>
