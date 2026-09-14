@@ -55,15 +55,11 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
         <div className="flex flex-1 items-center justify-center">
           <div className="w-full max-w-[340px]">
             <h2 className="font-display text-[26px] font-semibold tracking-tight">Sign in</h2>
-            <p className="mt-1.5 text-sm text-muted-foreground">Use the email your agency registered.</p>
-            <div className="mt-8">
+            <div className="mt-6">
               <LoginForm next={next} initialError={error} />
             </div>
           </div>
         </div>
-        <p className="text-center font-mono text-[11px] text-muted-foreground/70 lg:text-left">
-          Guards sign in from the GuardForce Android app.
-        </p>
       </div>
     </div>
   );
