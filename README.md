@@ -1,10 +1,10 @@
 # GuardForce
 
-Guard management platform for Indian security agencies — a Next.js control-room dashboard on Supabase, with an Android guard app to follow.
+Guard management platform for Indian security agencies — a Next.js control-room dashboard and a Kotlin guard app, both on one Supabase schema.
 
 - Spec: [`prd-v2-guard-platform.md`](prd-v2-guard-platform.md)
 - Conventions for contributors and agents: [`CLAUDE.md`](CLAUDE.md)
-- Dashboard: [`dashboard/`](dashboard) · Database: [`supabase/`](supabase)
+- Dashboard: [`dashboard/`](dashboard) · Guard app: [`android/`](android) · Database: [`supabase/`](supabase)
 
 ## Quick start
 
@@ -37,6 +37,7 @@ provider console at `/platform`.
 | Reports | Attendance analytics, guard scorecards, five CSV exports, daily digest preview |
 | Settings | Agency defaults, team access, roles, notifications, guard-app remote config, audit log |
 | Platform console | Provider-side: onboard tenants, plans and seat caps, suspend and restore, owner password resets |
+| Guard app (Android) | Phone OTP + PIN, selfie and geofenced check-in/out, foreground tracking with location-off enforcement, patrols with photo proof, tasks, leave, offline outbox, Hindi and English |
 
 ## Multi-tenancy
 
@@ -56,5 +57,6 @@ bun run test        # unit
 bun run test:e2e    # Playwright, against the local stack
 ```
 
-End-to-end tests drive the same SQL functions the Android app will call, so the money path
-(check-in → tracking → location off → void → exception) is covered before the app exists.
+End-to-end tests drive the same SQL functions the Android app calls; `e2e/guard-app.spec.ts` signs in
+as a guard with phone + OTP and runs the whole contract (claim → PIN → check-in → pings → patrol →
+task → leave → check-out) under the guard's own row-level security.

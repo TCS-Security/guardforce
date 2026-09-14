@@ -5,7 +5,7 @@ Guard management platform for Indian security agencies. Spec: `prd-v2-guard-plat
 ## Layout
 - `supabase/` — Postgres schema (`migrations/`), RPCs, RLS, storage buckets, demo `seed.sql`. Shared by the web dashboard and the Android guard app.
 - `dashboard/` — Next.js 16 (App Router, Turbopack) + Tailwind v4 + shadcn (base-nova style, **Base UI** primitives, not Radix). Package manager: **bun**.
-- `android/` — (next task) Kotlin guard app. Most updates ship over the air, so keep the native permission surface wide in the first release.
+- `android/` — Kotlin + Compose guard app (`android/README.md`). Business rules stay in SQL and `app_config` is remote config, so behaviour changes ship without a Play release; the manifest claims the full permission surface up front.
 
 ## Local stack
 ```
@@ -35,3 +35,12 @@ Logins (password `guardforce`): `platform@guardforce.test` (our platform console
 - Dates in tests come from `agencyDate()` in `e2e/helpers.ts`: the app filters in IST, so a UTC "yesterday" silently queries the wrong day for most of the evening.
 - Assert on a state change the server produced (a row, a button that disappears), not on text that was already on screen — `getByText("Missed")` also matches the "Mark missed" button and will pass before the write lands.
 - Screenshots for visual review: `node scripts/shot.mjs /route ...` writes `/tmp/shot-<route>.png`.
+
+## Guard app conventions
+- Build: `cd android && ./gradlew :app:assembleDebug :app:testDebugUnitTest` with `JAVA_HOME` at a JDK 17+ and `ANDROID_HOME` at an SDK with platform 35. Library versions are pinned to the AGP 8.13 / compileSdk 35 line in `gradle/libs.versions.toml`; the newest androidx releases need AGP 9.1 and SDK 37, so bump both together or not at all.
+- The app never touches a table directly for writes: every write is an RPC in `0011_guard_app.sql` or the shift RPCs, queued in the Room outbox and replayed in order by `SyncEngine`. Add a guard action = one RPC (idempotent on retry) + one outbox `Kinds` entry + one `execute` branch.
+- Guards authenticate with phone + OTP (GoTrue SMS signups), then `claim_guard_account()` links the auth user to the `guards` row by phone and creates the guard-kind profile. Locally every seeded phone verifies with OTP `123456` (`[auth.sms.test_otp]`); the placeholder Twilio block in `config.toml` only exists because the CLI keeps phone sign-in off without a provider.
+- ROLE-1 is enforced in RLS: read policies give site scope to `is_manager()` only; guards get their own rows. Keep that shape when adding tables.
+- Pure logic goes in `android/.../domain/` with JUnit tests; `Geo` must mirror `site_distance_m` / `is_in_fence`.
+- Screens follow the dashboard: eyebrow (mono, uppercase) → display title (Bricolage) → body (Schibsted); status tones from `ui/theme` only; one `BigButton` per action screen.
+
