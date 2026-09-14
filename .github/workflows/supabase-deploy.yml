@@ -1,42 +1,28 @@
 name: Supabase migrations
 
 on:
-  pull_request:
-    paths: ['supabase/migrations/**']
   push:
     branches: [main]
     paths: ['supabase/migrations/**']
 
 concurrency:
-  group: supabase-deploy-${{ github.ref }}
+  group: supabase-deploy
   cancel-in-progress: false
 
+# Single cloud project for now (`guardforce-staging`): both Vercel previews and
+# the production deployment point at it, so migrations only ever apply on main.
+# Two-project split later: add a `pull_request` job that pushes to staging and
+# point this job at SUPABASE_PROJECT_REF_PRODUCTION / SUPABASE_DB_PASSWORD_PRODUCTION.
 jobs:
-  staging:
-    name: deploy to staging
-    if: github.event_name == 'pull_request'
+  deploy:
+    name: deploy to cloud project
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: supabase/setup-cli@v1
-      - run: supabase link --project-ref ${{ vars.SUPABASE_PROJECT_REF_STAGING }} --workdir .
+      - run: supabase link --project-ref ${{ vars.SUPABASE_PROJECT_REF }} --workdir .
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       - run: supabase db push --linked --workdir .
         env:
-          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD_STAGING }}
-
-  production:
-    name: deploy to production
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-      - uses: actions/checkout@v4
-      - uses: supabase/setup-cli@v1
-      - run: supabase link --project-ref ${{ vars.SUPABASE_PROJECT_REF_PRODUCTION }} --workdir .
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      - run: supabase db push --linked --workdir .
-        env:
-          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD_PRODUCTION }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
