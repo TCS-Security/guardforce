@@ -34,6 +34,6 @@ Logins: owner@sentinel.test / priya@sentinel.test / arun@sentinel.test — passw
 ## Git, CI & deployments
 - Remote: `github.com/TCS-Security/guardforce` (private). `main` is integration — **never push straight to `main`; open a PR** per feature/fix (`<area>/<slug>` branch names). Multiple agents work here concurrently: never `git commit`/`git add -A` more than your own change; use `git commit --only <paths>` so in-flight staged work from other worktrees is not swept in.
 - CI (`.github/workflows/ci.yml`): `lint`, `typecheck`, `vitest` on PRs that touch `dashboard/**` and on pushes to `main`. Run the same locally before opening a PR.
-- Migrations (`.github/workflows/supabase-deploy.yml`): PRs touching `supabase/migrations/**` deploy to the **staging** Supabase project; merges to `main` deploy to **production** (`production` GitHub environment).
-- Vercel import: repo `TCS-Security/guardforce`, root directory `dashboard`. Every PR gets a preview (staging Supabase); `main` deploys production.
-- Environments: local Supabase (per worktree) → staging cloud project (PR previews) → production cloud project (main). Keys live in Vercel env (Preview/Production scopes) and GitHub secrets/vars — never in the repo.
+- Migrations (`.github/workflows/supabase-deploy.yml`): merges to `main` touching `supabase/migrations/**` deploy to the cloud Supabase project.
+- Vercel import: repo `TCS-Security/guardforce`, root directory `dashboard`. Every PR gets a preview; `main` deploys production.
+- Environments: local Supabase (per worktree) → **one cloud project (`guardforce-staging`)** — for now it backs both PR previews and the production deployment, so both Vercel env scopes (Preview/Production) use its keys. When a second (`guardforce-prod`) project exists, restore the two-project split (PR → staging, main → prod). Keys live in Vercel env and GitHub secrets/vars — never in the repo.
