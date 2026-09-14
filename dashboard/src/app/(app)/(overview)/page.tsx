@@ -60,8 +60,8 @@ export default async function OverviewPage() {
         <StatTile label="Needs action" value={data.pendingLeave + kycIncomplete} tone={data.pendingLeave + kycIncomplete > 0 ? "signal" : "neutral"} hint={`${data.pendingLeave} leave · ${kycIncomplete} KYC incomplete`} style={{ ["--i" as string]: 6 }} />
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[1.6fr_1fr]">
-        <div className="flex flex-col gap-4">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+        <div className="flex min-w-0 flex-col gap-4">
           {/* Site staffing board */}
           <Section
             title="Site staffing right now"
@@ -70,51 +70,55 @@ export default async function OverviewPage() {
             bodyClassName="p-0"
             style={{ ["--i" as string]: 7 }}
           >
-            <table className="w-full text-sm" aria-label="Site staffing">
-              <thead>
-                <tr className="eyebrow border-b text-left [&>th]:px-4 [&>th]:py-2 [&>th]:font-normal">
-                  <th className="min-w-[220px]">Site</th>
-                  <th className="w-[38%]">Coverage</th>
-                  <th className="text-right">Today</th>
-                  <th className="text-right">Flags</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {sites.map((s) => {
-                  const gap = Math.max(0, s.guards_required - s.on_duty_now);
-                  return (
-                    <tr key={s.site_id} className="transition-colors hover:bg-muted/50">
-                      <td className="px-4 py-2.5">
-                        <Link href={`/sites/${s.site_id}`} className="font-medium hover:underline">{s.site_name}</Link>
-                        <div className="text-xs text-muted-foreground">{s.scheduled} scheduled · {s.pending} not yet started</div>
-                      </td>
-                      <td className="px-4 py-2.5">
-                        <div className="flex items-center gap-3">
-                          <CoverageBar filled={s.on_duty_now} required={s.guards_required} />
-                          <span className="font-mono tabular text-xs text-muted-foreground">
-                            {s.on_duty_now}/{s.guards_required}
-                          </span>
-                          {gap > 0 ? (
-                            <StatusPill tone="signal" size="xs">{gap} short</StatusPill>
-                          ) : (
-                            <StatusPill tone="present" size="xs" dot={false}>Covered</StatusPill>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-2.5 text-right font-mono tabular text-xs whitespace-nowrap">
-                        <span className="text-present">{s.present}P</span>{" "}
-                        <span className="text-half-day-foreground dark:text-half-day">{s.half_day}H</span>{" "}
-                        <span className="text-absent">{s.absent}A</span>{" "}
-                        <span className="text-on-leave">{s.on_leave}L</span>
-                      </td>
-                      <td className="px-4 py-2.5 text-right font-mono tabular text-xs">
-                        {s.flagged > 0 ? <span className="text-half-day-foreground dark:text-half-day">{s.flagged}</span> : <span className="text-muted-foreground">0</span>}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm" aria-label="Site staffing">
+                <thead>
+                  <tr className="eyebrow border-b text-left [&>th]:px-4 [&>th]:py-2 [&>th]:font-normal">
+                    <th className="min-w-[140px] sm:min-w-[220px]">Site</th>
+                    <th className="w-[38%]">Coverage</th>
+                    <th className="hidden text-right sm:table-cell">Today</th>
+                    <th className="hidden text-right sm:table-cell">Flags</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {sites.map((s) => {
+                    const gap = Math.max(0, s.guards_required - s.on_duty_now);
+                    return (
+                      <tr key={s.site_id} className="transition-colors hover:bg-muted/50">
+                        <td className="px-4 py-2.5">
+                          <Link href={`/sites/${s.site_id}`} className="font-medium hover:underline">{s.site_name}</Link>
+                          <div className="text-xs text-muted-foreground">{s.scheduled} scheduled · {s.pending} not yet started</div>
+                          {/* The two number columns are hidden on phones; fold them in under the name. */}
+                          <div className="mt-1 flex items-center gap-2 sm:hidden">
+                            <DayTally site={s} />
+                            {s.flagged > 0 && <StatusPill tone="half-day" size="xs">{s.flagged} flagged</StatusPill>}
+                          </div>
+                        </td>
+                        <td className="px-4 py-2.5">
+                          <div className="flex items-center gap-3">
+                            <CoverageBar filled={s.on_duty_now} required={s.guards_required} className="hidden sm:flex" />
+                            <span className="font-mono tabular text-xs text-muted-foreground">
+                              {s.on_duty_now}/{s.guards_required}
+                            </span>
+                            {gap > 0 ? (
+                              <StatusPill tone="signal" size="xs">{gap} short</StatusPill>
+                            ) : (
+                              <StatusPill tone="present" size="xs" dot={false}>Covered</StatusPill>
+                            )}
+                          </div>
+                        </td>
+                        <td className="hidden px-4 py-2.5 text-right sm:table-cell">
+                          <DayTally site={s} />
+                        </td>
+                        <td className="hidden px-4 py-2.5 text-right font-mono tabular text-xs sm:table-cell">
+                          {s.flagged > 0 ? <span className="text-half-day-foreground dark:text-half-day">{s.flagged}</span> : <span className="text-muted-foreground">0</span>}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </Section>
 
           <Section title="Attendance, last 14 days" description="Per shift, all sites in your scope" style={{ ["--i" as string]: 8 }}>
@@ -127,7 +131,7 @@ export default async function OverviewPage() {
           description={openAlerts > 0 ? `${openAlerts} unacknowledged` : "Nothing unacknowledged"}
           actions={<ButtonLink variant="ghost" size="sm" href="/events">Feed <ArrowRight data-icon="inline-end" /></ButtonLink>}
           bodyClassName="p-0"
-          className="xl:sticky xl:top-20 xl:self-start"
+          className="min-w-0 xl:sticky xl:top-20 xl:self-start"
           style={{ ["--i" as string]: 7 }}
         >
           <LiveAlerts initial={data.alerts as unknown as AlertRow[]} />
@@ -142,6 +146,18 @@ export default async function OverviewPage() {
   );
 }
 
+/** Today's P/H/A/L split for one site, in tabular mono. */
+function DayTally({ site }: { site: { present: number; half_day: number; absent: number; on_leave: number } }) {
+  return (
+    <span className="font-mono tabular text-xs whitespace-nowrap">
+      <span className="text-present">{site.present}P</span>{" "}
+      <span className="text-half-day-foreground dark:text-half-day">{site.half_day}H</span>{" "}
+      <span className="text-absent">{site.absent}A</span>{" "}
+      <span className="text-on-leave">{site.on_leave}L</span>
+    </span>
+  );
+}
+
 function greeting() {
   const h = Number(new Intl.DateTimeFormat("en-IN", { hour: "numeric", hour12: false, timeZone: "Asia/Kolkata" }).format(new Date()));
   if (h < 12) return "morning";
@@ -150,10 +166,10 @@ function greeting() {
 }
 
 /** Required posts as slots; filled slots are olive, open ones are hollow. */
-function CoverageBar({ filled, required }: { filled: number; required: number }) {
+function CoverageBar({ filled, required, className }: { filled: number; required: number; className?: string }) {
   const slots = Math.max(required, filled, 1);
   return (
-    <div className="flex h-2.5 flex-1 gap-[3px]" aria-label={`${filled} of ${required} posts covered`}>
+    <div className={cn("flex h-2.5 flex-1 gap-[3px]", className)} aria-label={`${filled} of ${required} posts covered`}>
       {Array.from({ length: slots }).map((_, i) => (
         <span
           key={i}

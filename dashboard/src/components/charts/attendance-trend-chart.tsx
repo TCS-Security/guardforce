@@ -16,8 +16,9 @@ const SERIES = [
 export function AttendanceTrendChart({ data }: { data: Row[] }) {
   const rows = data.map((r) => ({ ...r, label: format(new Date(`${r.day}T00:00:00`), "d MMM") }));
   return (
-    <div className="h-[220px] w-full">
-      <ResponsiveContainer width="100%" height="100%">
+    // The legend sits below the plot, so the fixed height belongs to the plot alone.
+    <div className="w-full">
+      <ResponsiveContainer width="100%" height={220}>
         <BarChart data={rows} margin={{ top: 4, right: 4, left: -22, bottom: 0 }} barCategoryGap={6}>
           <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="2 4" />
           <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 11, fontFamily: "var(--font-mono)", fill: "var(--muted-foreground)" }} interval={1} />
