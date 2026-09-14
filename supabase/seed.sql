@@ -1,8 +1,10 @@
 -- GuardForce demo seed. Everything is relative to now() so the dashboard always looks live.
 -- Logins (password for all: "guardforce"):
---   owner@sentinel.test       (owner)
---   priya@sentinel.test       (supervisor: Prestige Tech Park, Brigade Meadows)
---   arun@sentinel.test        (supervisor: Metro Cash & Carry)
+--   platform@guardforce.test  (platform admin — the SaaS provider, not a tenant member)
+--   owner@sentinel.test       (Sentinel owner)
+--   priya@sentinel.test       (Sentinel supervisor: Prestige Tech Park, Brigade Meadows)
+--   arun@sentinel.test        (Sentinel supervisor: Metro Cash & Carry)
+--   owner@falcon.test         (second tenant, on trial, empty)
 -- Guard app PIN for every seeded guard: 1234
 
 select setseed(0.42);
@@ -13,7 +15,6 @@ select setseed(0.42);
 insert into public.agencies (id, name, slug, city)
 values ('a0000000-0000-4000-8000-000000000001', 'Sentinel Security Services', 'sentinel', 'Bengaluru');
 
-insert into public.app_config (agency_id) values ('a0000000-0000-4000-8000-000000000001');
 
 -- ---------------------------------------------------------------------------
 -- Auth users + profiles
@@ -34,10 +35,28 @@ select pg_temp.seed_user('b0000000-0000-4000-8000-000000000001', 'owner@sentinel
 select pg_temp.seed_user('b0000000-0000-4000-8000-000000000002', 'priya@sentinel.test', 'guardforce');
 select pg_temp.seed_user('b0000000-0000-4000-8000-000000000003', 'arun@sentinel.test', 'guardforce');
 
-insert into public.profiles (id, agency_id, role, full_name, email, phone) values
-  ('b0000000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000001', 'owner', 'Rajesh Menon', 'owner@sentinel.test', '9845012345'),
-  ('b0000000-0000-4000-8000-000000000002', 'a0000000-0000-4000-8000-000000000001', 'supervisor', 'Priya Nair', 'priya@sentinel.test', '9845023456'),
-  ('b0000000-0000-4000-8000-000000000003', 'a0000000-0000-4000-8000-000000000001', 'supervisor', 'Arun Kumar', 'arun@sentinel.test', '9845034567');
+-- Roles were seeded by the agencies_bootstrap trigger; pick them up by system key.
+create or replace function pg_temp.role_of(p_agency uuid, p_key text) returns uuid language sql as $$
+  select id from public.roles where agency_id = p_agency and system_key = p_key
+$$;
+
+insert into public.profiles (id, agency_id, role, role_id, all_sites, full_name, email, phone) values
+  ('b0000000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000001', 'owner', pg_temp.role_of('a0000000-0000-4000-8000-000000000001', 'owner'), true, 'Rajesh Menon', 'owner@sentinel.test', '9845012345'),
+  ('b0000000-0000-4000-8000-000000000002', 'a0000000-0000-4000-8000-000000000001', 'staff', pg_temp.role_of('a0000000-0000-4000-8000-000000000001', 'supervisor'), false, 'Priya Nair', 'priya@sentinel.test', '9845023456'),
+  ('b0000000-0000-4000-8000-000000000003', 'a0000000-0000-4000-8000-000000000001', 'staff', pg_temp.role_of('a0000000-0000-4000-8000-000000000001', 'supervisor'), false, 'Arun Kumar', 'arun@sentinel.test', '9845034567');
+
+-- ---------------------------------------------------------------------------
+-- Platform admin (us) and a second, empty tenant on trial
+-- ---------------------------------------------------------------------------
+select pg_temp.seed_user('b0000000-0000-4000-8000-000000000099', 'platform@guardforce.test', 'guardforce');
+insert into public.platform_admins (user_id, email, full_name, role)
+values ('b0000000-0000-4000-8000-000000000099', 'platform@guardforce.test', 'GuardForce Ops', 'platform_owner');
+
+insert into public.agencies (id, name, slug, city, status, plan)
+values ('a0000000-0000-4000-8000-000000000002', 'Falcon Facility Services', 'falcon', 'Pune', 'trial', 'pilot');
+select pg_temp.seed_user('b0000000-0000-4000-8000-000000000011', 'owner@falcon.test', 'guardforce');
+insert into public.profiles (id, agency_id, role, role_id, all_sites, full_name, email)
+values ('b0000000-0000-4000-8000-000000000011', 'a0000000-0000-4000-8000-000000000002', 'owner', pg_temp.role_of('a0000000-0000-4000-8000-000000000002', 'owner'), true, 'Neha Kulkarni', 'owner@falcon.test');
 
 insert into public.notification_preferences (profile_id, agency_id, whatsapp_number) values
   ('b0000000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000001', '919845012345');

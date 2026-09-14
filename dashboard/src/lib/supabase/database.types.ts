@@ -46,11 +46,17 @@ export type Database = {
           late_threshold_min: number
           location_off_warn_min: number
           logo_path: string | null
+          max_guards: number | null
           name: string
+          notes: string | null
           outage_threshold_min: number
+          plan: string
           selfie_retention_days: number
           slug: string
           staleness_min: number
+          status: Database["public"]["Enums"]["agency_status"]
+          suspended_at: string | null
+          suspended_reason: string | null
           timezone: string
           updated_at: string
         }
@@ -65,11 +71,17 @@ export type Database = {
           late_threshold_min?: number
           location_off_warn_min?: number
           logo_path?: string | null
+          max_guards?: number | null
           name: string
+          notes?: string | null
           outage_threshold_min?: number
+          plan?: string
           selfie_retention_days?: number
           slug: string
           staleness_min?: number
+          status?: Database["public"]["Enums"]["agency_status"]
+          suspended_at?: string | null
+          suspended_reason?: string | null
           timezone?: string
           updated_at?: string
         }
@@ -84,11 +96,17 @@ export type Database = {
           late_threshold_min?: number
           location_off_warn_min?: number
           logo_path?: string | null
+          max_guards?: number | null
           name?: string
+          notes?: string | null
           outage_threshold_min?: number
+          plan?: string
           selfie_retention_days?: number
           slug?: string
           staleness_min?: number
+          status?: Database["public"]["Enums"]["agency_status"]
+          suspended_at?: string | null
+          suspended_reason?: string | null
           timezone?: string
           updated_at?: string
         }
@@ -149,6 +167,7 @@ export type Database = {
           entity_id: string | null
           entity_type: string
           id: number
+          platform_actor_id: string | null
           reason: string | null
         }
         Insert: {
@@ -161,6 +180,7 @@ export type Database = {
           entity_id?: string | null
           entity_type: string
           id?: number
+          platform_actor_id?: string | null
           reason?: string | null
         }
         Update: {
@@ -173,6 +193,7 @@ export type Database = {
           entity_id?: string | null
           entity_type?: string
           id?: number
+          platform_actor_id?: string | null
           reason?: string | null
         }
         Relationships: [
@@ -189,6 +210,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "agencies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_logs_platform_actor_id_fkey"
+            columns: ["platform_actor_id"]
+            isOneToOne: false
+            referencedRelation: "platform_admins"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -1264,6 +1292,57 @@ export type Database = {
           },
         ]
       }
+      permission_catalogue: {
+        Row: {
+          action: string
+          description: string
+          key: string
+          label: string
+          resource: string
+          sort: number
+        }
+        Insert: {
+          action: string
+          description: string
+          key: string
+          label: string
+          resource: string
+          sort: number
+        }
+        Update: {
+          action?: string
+          description?: string
+          key?: string
+          label?: string
+          resource?: string
+          sort?: number
+        }
+        Relationships: []
+      }
+      platform_admins: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string
+          role: Database["public"]["Enums"]["platform_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name: string
+          role?: Database["public"]["Enums"]["platform_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string
+          role?: Database["public"]["Enums"]["platform_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       profile_shares: {
         Row: {
           agency_id: string
@@ -1334,6 +1413,7 @@ export type Database = {
       profiles: {
         Row: {
           agency_id: string
+          all_sites: boolean
           avatar_path: string | null
           created_at: string
           email: string | null
@@ -1342,10 +1422,12 @@ export type Database = {
           is_active: boolean
           phone: string | null
           role: Database["public"]["Enums"]["user_role"]
+          role_id: string | null
           updated_at: string
         }
         Insert: {
           agency_id: string
+          all_sites?: boolean
           avatar_path?: string | null
           created_at?: string
           email?: string | null
@@ -1354,10 +1436,12 @@ export type Database = {
           is_active?: boolean
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          role_id?: string | null
           updated_at?: string
         }
         Update: {
           agency_id?: string
+          all_sites?: boolean
           avatar_path?: string | null
           created_at?: string
           email?: string | null
@@ -1366,11 +1450,63 @@ export type Database = {
           is_active?: boolean
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          role_id?: string | null
           updated_at?: string
         }
         Relationships: [
           {
             foreignKeyName: "profiles_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      roles: {
+        Row: {
+          agency_id: string
+          created_at: string
+          description: string | null
+          id: string
+          is_system: boolean
+          name: string
+          permissions: string[]
+          system_key: string | null
+          updated_at: string
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_system?: boolean
+          name: string
+          permissions?: string[]
+          system_key?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_system?: boolean
+          name?: string
+          permissions?: string[]
+          system_key?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roles_agency_id_fkey"
             columns: ["agency_id"]
             isOneToOne: false
             referencedRelation: "agencies"
@@ -2323,6 +2459,7 @@ export type Database = {
       }
       current_agency_id: { Args: never; Returns: string }
       current_guard_id: { Args: never; Returns: string }
+      current_permissions: { Args: never; Returns: string[] }
       current_role: {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
@@ -2364,12 +2501,17 @@ export type Database = {
         }
         Returns: string
       }
+      guard_is_assigned_to_task: {
+        Args: { p_task_id: string }
+        Returns: boolean
+      }
       guard_kyc_complete: { Args: { p_guard_id: string }; Returns: boolean }
       guard_kyc_missing: { Args: { p_guard_id: string }; Returns: string[] }
       guard_scorecard: {
         Args: { p_from: string; p_guard_id: string; p_to: string }
         Returns: Json
       }
+      has_permission: { Args: { p_key: string }; Returns: boolean }
       ingest_pings: {
         Args: { p_pings: Json; p_shift_id: string }
         Returns: number
@@ -2379,6 +2521,8 @@ export type Database = {
         Returns: boolean
       }
       is_manager: { Args: never; Returns: boolean }
+      is_owner: { Args: never; Returns: boolean }
+      is_platform_admin: { Args: never; Returns: boolean }
       log_shift_exception: {
         Args: { p_category?: string; p_reason: string; p_shift_id: string }
         Returns: {
@@ -2504,8 +2648,19 @@ export type Database = {
         Args: { p_at?: string; p_enabled: boolean; p_shift_id: string }
         Returns: undefined
       }
+      report_tamper: {
+        Args: {
+          p_detail?: string
+          p_guard_id: string
+          p_lat?: number
+          p_lng?: number
+          p_site_id: string
+        }
+        Returns: string
+      }
       resolve_profile_share: { Args: { p_token: string }; Returns: Json }
       run_monitors: { Args: { p_agency_id: string }; Returns: Json }
+      seed_system_roles: { Args: { p_agency_id: string }; Returns: undefined }
       shift_window: {
         Args: { p_date: string; p_end: string; p_start: string; p_tz: string }
         Returns: {
@@ -2560,8 +2715,10 @@ export type Database = {
         }
       }
       storage_agency_prefix: { Args: { p_name: string }; Returns: string }
+      task_site_id: { Args: { p_task_id: string }; Returns: string }
     }
     Enums: {
+      agency_status: "trial" | "active" | "suspended" | "churned"
       attendance_status:
         | "present"
         | "half_day"
@@ -2614,6 +2771,7 @@ export type Database = {
         | "completed"
         | "late"
         | "missed"
+      platform_role: "platform_owner" | "platform_support"
       shift_status:
         | "scheduled"
         | "in_progress"
@@ -2623,7 +2781,7 @@ export type Database = {
         | "cancelled"
       task_status: "pending" | "in_progress" | "done" | "missed"
       trust_level: "clean" | "flagged" | "suspicious"
-      user_role: "owner" | "admin" | "supervisor" | "guard"
+      user_role: "owner" | "admin" | "supervisor" | "guard" | "staff"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2754,6 +2912,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      agency_status: ["trial", "active", "suspended", "churned"],
       attendance_status: [
         "present",
         "half_day",
@@ -2810,6 +2969,7 @@ export const Constants = {
         "late",
         "missed",
       ],
+      platform_role: ["platform_owner", "platform_support"],
       shift_status: [
         "scheduled",
         "in_progress",
@@ -2820,7 +2980,7 @@ export const Constants = {
       ],
       task_status: ["pending", "in_progress", "done", "missed"],
       trust_level: ["clean", "flagged", "suspicious"],
-      user_role: ["owner", "admin", "supervisor", "guard"],
+      user_role: ["owner", "admin", "supervisor", "guard", "staff"],
     },
   },
 } as const

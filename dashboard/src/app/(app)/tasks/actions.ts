@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { requireSession } from "@/lib/auth/session";
+import { deny, requireSession } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 
 export type ActionState = { error?: string; ok?: boolean } | undefined;
@@ -21,7 +21,8 @@ const taskSchema = z.object({
 
 export async function saveTask(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const session = await requireSession();
-  if (!session.isManager) return { error: "Only supervisors and owners can manage tasks." };
+  const denied = deny(session, "tasks:write");
+  if (denied) return denied;
   const parsed = taskSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Check the form" };
 
@@ -65,7 +66,7 @@ export async function saveTask(_prev: ActionState, formData: FormData): Promise<
 
 export async function setTaskStatus(formData: FormData): Promise<void> {
   const session = await requireSession();
-  if (!session.isManager) return;
+  if (!session.can("tasks:write")) return;
   const id = String(formData.get("task_id") ?? "");
   const status = String(formData.get("status") ?? "");
   if (!["pending", "in_progress", "done", "missed"].includes(status)) return;
@@ -92,7 +93,7 @@ export async function setTaskStatus(formData: FormData): Promise<void> {
 
 export async function deleteTask(formData: FormData): Promise<void> {
   const session = await requireSession();
-  if (!session.isManager) return;
+  if (!session.can("tasks:write")) return;
   const id = String(formData.get("task_id") ?? "");
   const supabase = await createClient();
   await supabase.from("task_assignments").delete().eq("task_id", id);
@@ -109,7 +110,8 @@ const templateSchema = z.object({
 
 export async function createTemplate(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const session = await requireSession();
-  if (!session.isManager) return { error: "Only supervisors and owners can add templates." };
+  const denied = deny(session, "tasks:write");
+  if (denied) return denied;
   const parsed = templateSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Check the form" };
 

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { CalendarPlus } from "lucide-react";
-import { requireSession } from "@/lib/auth/session";
+import { requirePermission, requireSession } from "@/lib/auth/session";
 import { loadRosterSites, loadRosterWeek } from "@/lib/data/roster";
 import { PageHeader } from "@/components/gf/page-header";
 import { EmptyState } from "@/components/gf/empty-state";
@@ -16,6 +16,7 @@ export const dynamic = "force-dynamic";
 
 export default async function RosterPage({ searchParams }: PageProps<"/roster">) {
   const session = await requireSession();
+  requirePermission(session, "roster:read");
   const sp = await searchParams;
   const sites = await loadRosterSites(session);
   if (sites.length === 0) {
@@ -62,12 +63,12 @@ export default async function RosterPage({ searchParams }: PageProps<"/roster">)
           shiftTypes={data.shiftTypes}
           shifts={data.shifts}
           guards={data.guards}
-          canEdit={session.isManager}
+          canEdit={session.can("roster:write")}
           timezone={session.agency.timezone}
         />
       )}
 
-      <PatternsPanel patterns={data.patterns} canEdit={session.isManager} />
+      <PatternsPanel patterns={data.patterns} canEdit={session.can("roster:write")} />
     </div>
   );
 }

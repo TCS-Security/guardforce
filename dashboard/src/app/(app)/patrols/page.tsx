@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Footprints, Settings2 } from "lucide-react";
-import { requireSession } from "@/lib/auth/session";
+import { requirePermission, requireSession } from "@/lib/auth/session";
 import { loadPatrolBoard } from "@/lib/data/patrols";
 import { PageHeader } from "@/components/gf/page-header";
 import { Section } from "@/components/gf/section";
@@ -22,6 +22,7 @@ export const dynamic = "force-dynamic";
 
 export default async function PatrolsPage({ searchParams }: PageProps<"/patrols">) {
   const session = await requireSession();
+  requirePermission(session, "patrols:read");
   const sp = await searchParams;
   const date = typeof sp.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(sp.date) ? sp.date : toLocalDate(new Date(), session.agency.timezone);
   const siteId = typeof sp.site === "string" ? sp.site : null;

@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { requireSession } from "@/lib/auth/session";
+import { deny, requireSession } from "@/lib/auth/session";
+import { withImpliedReads } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Json } from "@/lib/supabase/database.types";
@@ -27,7 +28,8 @@ const schema = z.object({
 /** Updates the agency's operational defaults. Owner/admin only — audit-logged. */
 export async function updateAgency(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const session = await requireSession();
-  if (!session.isOwner) return { error: "Only the owner can edit agency settings." };
+  const denied = deny(session, "settings:write");
+  if (denied) return denied;
 
   const parsed = schema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
@@ -58,9 +60,19 @@ const inviteSchema = z.object({
   full_name: z.string().trim().min(2, "Name is required"),
   email: z.string().trim().email("Enter a valid email"),
   phone: z.string().trim().optional(),
-  role: z.enum(["admin", "supervisor"]),
+  role_id: z.string().uuid("Pick a role"),
+  all_sites: z.string().optional(),
   site_ids: z.string().optional(),
 });
+
+/** A role from this agency that is not the immutable Owner role. */
+async function assignableRole(agencyId: string, roleId: string) {
+  const supabase = await createClient();
+  const { data } = await supabase.from("roles").select("id,name,system_key").eq("id", roleId).eq("agency_id", agencyId).maybeSingle();
+  if (!data) return { error: "That role does not exist." } as const;
+  if (data.system_key === "owner") return { error: "The Owner role cannot be assigned here. Ownership is transferred by GuardForce support." } as const;
+  return { role: data } as const;
+}
 
 export type InviteState = { error?: string; password?: string; email?: string } | undefined;
 
@@ -70,15 +82,19 @@ export type InviteState = { error?: string; password?: string; email?: string } 
  */
 export async function inviteTeamMember(_prev: InviteState, formData: FormData): Promise<InviteState> {
   const session = await requireSession();
-  if (!session.isOwner) return { error: "Only owners and admins can invite team members." };
+  const denied = deny(session, "team:manage");
+  if (denied) return denied;
 
   const parsed = inviteSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Check the form" };
 
-  const siteIds = (parsed.data.site_ids ?? "").split(",").map((s) => s.trim()).filter(Boolean);
-  if (parsed.data.role === "supervisor" && siteIds.length === 0) {
-    return { error: "Pick at least one site — supervisors only see the sites they are scoped to." };
+  const allSites = parsed.data.all_sites === "true";
+  const siteIds = allSites ? [] : (parsed.data.site_ids ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  if (!allSites && siteIds.length === 0) {
+    return { error: "Pick at least one site, or give them every site." };
   }
+  const roleCheck = await assignableRole(session.agency.id, parsed.data.role_id);
+  if ("error" in roleCheck) return { error: roleCheck.error };
 
   const admin = createAdminClient();
   const password = generatePassword();
@@ -94,7 +110,9 @@ export async function inviteTeamMember(_prev: InviteState, formData: FormData): 
   const { error: profileError } = await admin.from("profiles").insert({
     id: created.user.id,
     agency_id: session.agency.id,
-    role: parsed.data.role,
+    role: "staff",
+    role_id: parsed.data.role_id,
+    all_sites: allSites,
     full_name: parsed.data.full_name,
     email: parsed.data.email,
     phone: parsed.data.phone || null,
@@ -117,7 +135,7 @@ export async function inviteTeamMember(_prev: InviteState, formData: FormData): 
     entity_type: "profile",
     entity_id: created.user.id,
     action: "team_member_invited",
-    after: { email: parsed.data.email, role: parsed.data.role, sites: siteIds.length },
+    after: { email: parsed.data.email, role: roleCheck.role.name, all_sites: allSites, sites: siteIds.length },
   });
 
   revalidatePath("/settings/team");
@@ -133,19 +151,26 @@ function generatePassword() {
 
 export async function updateTeamMember(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const session = await requireSession();
-  if (!session.isOwner) return { error: "Only owners and admins can change team access." };
+  const denied = deny(session, "team:manage");
+  if (denied) return denied;
   const profileId = String(formData.get("profile_id") ?? "");
-  const role = String(formData.get("role") ?? "");
-  const siteIds = String(formData.get("site_ids") ?? "").split(",").map((s) => s.trim()).filter(Boolean);
-  if (!["admin", "supervisor", "owner"].includes(role)) return { error: "Unknown role" };
-  if (role === "supervisor" && siteIds.length === 0) return { error: "A supervisor needs at least one site." };
+  const roleId = String(formData.get("role_id") ?? "");
+  const allSites = formData.get("all_sites") === "true";
+  const siteIds = allSites ? [] : String(formData.get("site_ids") ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  if (!allSites && siteIds.length === 0) return { error: "Pick at least one site, or give them every site." };
 
   const supabase = await createClient();
-  const { error } = await supabase.from("profiles").update({ role: role as "admin" | "supervisor" | "owner" }).eq("id", profileId);
+  const { data: target } = await supabase.from("profiles").select("role").eq("id", profileId).maybeSingle();
+  if (!target) return { error: "That person is no longer on the team." };
+  if (target.role === "owner") return { error: "Owners always hold every permission and every site." };
+  const roleCheck = await assignableRole(session.agency.id, roleId);
+  if ("error" in roleCheck) return { error: roleCheck.error };
+
+  const { error } = await supabase.from("profiles").update({ role: "staff", role_id: roleId, all_sites: allSites }).eq("id", profileId);
   if (error) return { error: error.message };
 
   await supabase.from("supervisor_sites").delete().eq("profile_id", profileId);
-  if (role !== "owner" && siteIds.length > 0) {
+  if (siteIds.length > 0) {
     await supabase.from("supervisor_sites").insert(siteIds.map((site_id) => ({ profile_id: profileId, site_id, agency_id: session.agency.id })));
   }
   await supabase.from("audit_logs").insert({
@@ -154,7 +179,7 @@ export async function updateTeamMember(_prev: ActionState, formData: FormData): 
     entity_type: "profile",
     entity_id: profileId,
     action: "team_member_updated",
-    after: { role, sites: siteIds.length },
+    after: { role: roleCheck.role.name, all_sites: allSites, sites: siteIds.length },
   });
   revalidatePath("/settings/team");
   return { ok: true };
@@ -162,7 +187,7 @@ export async function updateTeamMember(_prev: ActionState, formData: FormData): 
 
 export async function setTeamMemberActive(formData: FormData): Promise<void> {
   const session = await requireSession();
-  if (!session.isOwner) return;
+  if (!session.can("team:manage")) return;
   const profileId = String(formData.get("profile_id") ?? "");
   const active = formData.get("active") === "true";
   if (profileId === session.userId) return; // cannot lock yourself out
@@ -233,7 +258,8 @@ const appConfigSchema = z.object({
 
 export async function updateAppConfig(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const session = await requireSession();
-  if (!session.isOwner) return { error: "Only owners and admins can change the guard-app config." };
+  const denied = deny(session, "settings:write");
+  if (denied) return denied;
   const parsed = appConfigSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Check the form" };
 
@@ -305,5 +331,77 @@ export async function changeOwnPassword(_prev: ActionState, formData: FormData):
   const supabase = await createClient();
   const { error } = await supabase.auth.updateUser({ password });
   if (error) return { error: error.message };
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Roles (tenant RBAC)
+// ---------------------------------------------------------------------------
+const roleSchema = z.object({
+  id: z.string().uuid().optional().or(z.literal("")),
+  name: z.string().trim().min(2, "Name the role").max(40),
+  description: z.string().trim().max(200).optional(),
+  permissions: z.string().optional(),
+});
+
+export async function saveRole(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const session = await requireSession();
+  const denied = deny(session, "team:manage");
+  if (denied) return denied;
+  const parsed = roleSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Check the form" };
+
+  const permissions = withImpliedReads((parsed.data.permissions ?? "").split(",").map((s) => s.trim()).filter(Boolean));
+  if (permissions.length === 0) return { error: "Give the role at least one permission." };
+
+  const supabase = await createClient();
+  const payload = { name: parsed.data.name, description: parsed.data.description || null, permissions };
+  const { error } = parsed.data.id
+    ? await supabase.from("roles").update(payload).eq("id", parsed.data.id)
+    : await supabase.from("roles").insert({ ...payload, agency_id: session.agency.id });
+  if (error) {
+    if (error.message.includes("OWNER_ROLE_IMMUTABLE")) return { error: "The Owner role cannot be changed." };
+    if (error.message.includes("duplicate key")) return { error: "A role with that name already exists." };
+    return { error: error.message };
+  }
+
+  await supabase.from("audit_logs").insert({
+    agency_id: session.agency.id,
+    actor_id: session.userId,
+    entity_type: "role",
+    entity_id: parsed.data.id || null,
+    action: parsed.data.id ? "role_updated" : "role_created",
+    after: { name: parsed.data.name, permissions },
+  });
+  revalidatePath("/settings/roles");
+  revalidatePath("/settings/team");
+  return { ok: true };
+}
+
+export async function deleteRole(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const session = await requireSession();
+  const denied = deny(session, "team:manage");
+  if (denied) return denied;
+  const id = String(formData.get("id") ?? "");
+
+  const supabase = await createClient();
+  const { data: role } = await supabase.from("roles").select("name,is_system").eq("id", id).maybeSingle();
+  if (!role) return { error: "That role no longer exists." };
+  if (role.is_system) return { error: "System roles cannot be deleted. Edit their permissions instead." };
+
+  const { count } = await supabase.from("profiles").select("id", { count: "exact", head: true }).eq("role_id", id);
+  if ((count ?? 0) > 0) return { error: `${count} team member${count === 1 ? " still has" : "s still have"} this role. Reassign them first.` };
+
+  const { error } = await supabase.from("roles").delete().eq("id", id);
+  if (error) return { error: error.message };
+  await supabase.from("audit_logs").insert({
+    agency_id: session.agency.id,
+    actor_id: session.userId,
+    entity_type: "role",
+    entity_id: id,
+    action: "role_deleted",
+    before: { name: role.name },
+  });
+  revalidatePath("/settings/roles");
   return { ok: true };
 }

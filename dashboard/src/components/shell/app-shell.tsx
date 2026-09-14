@@ -10,6 +10,7 @@ import { loadRecentAlerts } from "@/lib/data/alerts";
 
 export async function AppShell({ session, children }: { session: Session; children: React.ReactNode }) {
   const alerts = await loadRecentAlerts();
+  const permissions = [...session.permissions];
   return (
     <TooltipProvider delay={200}>
       <div className="flex min-h-dvh">
@@ -18,24 +19,26 @@ export async function AppShell({ session, children }: { session: Session; childr
             <Brand />
           </div>
           <div className="relative z-10 flex-1 overflow-y-auto px-2 pb-4">
-            <SidebarNav />
+            <SidebarNav permissions={permissions} />
           </div>
           <div className="relative z-10 border-t border-sidebar-border px-5 py-3">
             <div className="eyebrow text-sidebar-foreground/45">Agency</div>
             <div className="truncate text-[13px] font-medium">{session.agency.name}</div>
-            <div className="truncate text-[11px] text-sidebar-foreground/55">{session.agency.city ?? ""}</div>
+            <div className="truncate text-[11px] text-sidebar-foreground/55">
+              {session.role?.name ?? "Guard"}{session.agency.status === "trial" ? " · trial" : ""}
+            </div>
           </div>
         </aside>
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b bg-background/85 px-4 backdrop-blur sm:px-6">
-            <MobileNav />
+            <MobileNav permissions={permissions} />
             <Brand className="lg:hidden" compact />
             <div className="hidden sm:block">
               <Clock tz={session.agency.timezone} />
             </div>
             <div className="ml-auto flex items-center gap-1">
               <AlertsBell initial={alerts} />
-              <UserMenu name={session.profile.full_name} role={session.profile.role} email={session.profile.email} />
+              <UserMenu name={session.profile.full_name} role={session.role?.name ?? "Guard"} email={session.profile.email} />
             </div>
           </header>
           <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">{children}</main>

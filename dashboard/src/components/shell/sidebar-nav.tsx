@@ -4,12 +4,23 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "cn";
 import { NAV_GROUPS } from "./nav";
+import { ROUTE_PERMISSION } from "@/lib/auth/permissions";
 
-export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
+/** Sidebar. Sections the user cannot read are omitted, not greyed out. */
+export function SidebarNav({ onNavigate, permissions }: { onNavigate?: () => void; permissions: readonly string[] }) {
   const pathname = usePathname();
+  const allowed = new Set(permissions);
+  const groups = NAV_GROUPS.map((g) => ({
+    ...g,
+    items: g.items.filter((item) => {
+      const key = ROUTE_PERMISSION[item.href];
+      return !key || allowed.has(key);
+    }),
+  })).filter((g) => g.items.length > 0);
+
   return (
     <nav className="flex flex-col gap-5">
-      {NAV_GROUPS.map((group) => (
+      {groups.map((group) => (
         <div key={group.label}>
           <div className="eyebrow mb-1.5 px-3 text-sidebar-foreground/45">{group.label}</div>
           <ul className="flex flex-col gap-px">

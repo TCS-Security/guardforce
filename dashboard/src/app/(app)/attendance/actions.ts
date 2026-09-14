@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { requireSession } from "@/lib/auth/session";
+import { deny, requireSession } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 
 export type ActionState = { error?: string; ok?: boolean } | undefined;
@@ -16,7 +16,8 @@ const overrideSchema = z.object({
 /** AUD-1: attendance corrections always carry a reason and are immutably logged. */
 export async function overrideAttendance(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const session = await requireSession();
-  if (!session.isManager) return { error: "Only supervisors and owners can correct attendance." };
+  const denied = deny(session, "attendance:correct");
+  if (denied) return denied;
   const parsed = overrideSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Check the form" };
 
@@ -42,7 +43,8 @@ const exceptionSchema = z.object({
 /** LOC-3: a manager can rescue a location-off shift with a documented reason. */
 export async function logShiftException(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const session = await requireSession();
-  if (!session.isManager) return { error: "Only supervisors and owners can log an exception." };
+  const denied = deny(session, "attendance:correct");
+  if (denied) return denied;
   const parsed = exceptionSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Check the form" };
 

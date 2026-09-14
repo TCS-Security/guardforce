@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { requireSession } from "@/lib/auth/session";
+import { requirePermission, requireSession } from "@/lib/auth/session";
 import { loadLive } from "@/lib/data/live";
 import { LiveBoard } from "@/components/live/live-board";
 
@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic";
 
 export default async function LivePage({ searchParams }: PageProps<"/live">) {
   const session = await requireSession();
+  requirePermission(session, "live:read");
   const sp = await searchParams;
   const { sites, presence } = await loadLive(session);
   const siteId = typeof sp.site === "string" && sites.some((s) => s.id === sp.site) ? sp.site : null;

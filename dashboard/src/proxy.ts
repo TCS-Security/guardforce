@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PREFIXES = ["/login", "/share", "/api/public", "/_next", "/favicon.ico", "/brand"];
+const PUBLIC_PREFIXES = ["/login", "/share", "/api/public", "/_next", "/favicon.ico", "/brand", "/maplibre"];
 
 /** Refreshes the Supabase session cookie on every request and gates the app behind login. */
 export async function proxy(request: NextRequest) {

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { requireSession } from "@/lib/auth/session";
+import { requirePermission, requireSession } from "@/lib/auth/session";
 import { loadTeam } from "@/lib/data/settings";
 import { TeamPanel } from "./team-panel";
 
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function TeamSettingsPage() {
   const session = await requireSession();
-  if (!session.isManager) notFound();
-  const { team, sites } = await loadTeam(session);
-  return <TeamPanel team={team} sites={sites} canEdit={session.isOwner} currentUserId={session.userId} />;
+  requirePermission(session, "team:read");
+  const { team, sites, roles } = await loadTeam(session);
+  return <TeamPanel team={team} sites={sites} roles={roles} canEdit={session.can("team:manage")} currentUserId={session.userId} />;
 }

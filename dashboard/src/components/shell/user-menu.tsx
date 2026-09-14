@@ -34,7 +34,7 @@ export function UserMenu({ name, role, email }: { name: string; role: string; em
         <GuardAvatar name={name} size="sm" />
         <span className="hidden text-sm leading-tight sm:block">
           <span className="block font-medium">{name}</span>
-          <span className="block text-[11px] capitalize text-muted-foreground">{role}</span>
+          <span className="block text-[11px] text-muted-foreground">{role}</span>
         </span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">

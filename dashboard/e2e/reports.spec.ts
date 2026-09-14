@@ -140,10 +140,10 @@ test.describe("settings", () => {
     }
   });
 
-  test("a supervisor sees agency settings read-only", async ({ page }) => {
+  test("a supervisor has no settings access at all", async ({ page }) => {
     await login(page, SEED.supervisor);
+    await expect(page.getByRole("link", { name: "Settings" })).toHaveCount(0);
     await page.goto("/settings");
-    await expect(page.getByText("Only the owner can edit agency settings")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Save changes" })).toHaveCount(0);
+    await expect(page.getByText(/404|not found/i).first()).toBeVisible();
   });
 });

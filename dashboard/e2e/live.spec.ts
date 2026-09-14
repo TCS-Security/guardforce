@@ -60,6 +60,7 @@ test.describe("live map", () => {
   test("a guard checking in appears on the map, then leaves when the shift ends", async ({ page }) => {
     await login(page);
     await page.goto("/live");
+    await expect(page.getByTestId("map")).toBeVisible();
 
     const shiftId = await startShift();
     try {

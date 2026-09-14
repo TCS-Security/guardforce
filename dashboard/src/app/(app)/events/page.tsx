@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Radio } from "lucide-react";
-import { requireSession } from "@/lib/auth/session";
+import { requirePermission, requireSession } from "@/lib/auth/session";
 import { loadEvents, parseEventFilters, EVENTS_PAGE_SIZE } from "@/lib/data/events";
 import { PageHeader } from "@/components/gf/page-header";
 import { Section } from "@/components/gf/section";
@@ -17,6 +17,7 @@ export const dynamic = "force-dynamic";
 
 export default async function EventsPage({ searchParams }: PageProps<"/events">) {
   const session = await requireSession();
+  requirePermission(session, "events:read");
   const sp = await searchParams;
   const today = toLocalDate(new Date(), session.agency.timezone);
   const filters = parseEventFilters(sp, today);
@@ -36,7 +37,7 @@ export default async function EventsPage({ searchParams }: PageProps<"/events">)
         title="Events"
         description="Everything the system saw: check-ins, fence crossings, outages, patrols, tasks and leave."
         actions={
-          open.length > 0 && session.isManager ? (
+          open.length > 0 && session.can("events:acknowledge") ? (
             <form action={acknowledgeEvents}>
               <input type="hidden" name="ids" value={open.map((e) => e.id).join(",")} />
               <Button type="submit" variant="outline">Acknowledge {open.length} shown</Button>

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { requireSession } from "@/lib/auth/session";
+import { deny, requireSession } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { canUnassign } from "@/lib/domain/roster";
 
@@ -30,7 +30,8 @@ const assignSchema = z.object({
 
 export async function assignShift(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const session = await requireSession();
-  if (!session.isManager) return { error: "Only supervisors and owners can change the roster." };
+  const denied = deny(session, "roster:write");
+  if (denied) return denied;
   const parsed = assignSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Check the form" };
 
@@ -92,7 +93,8 @@ export async function assignShift(_prev: ActionState, formData: FormData): Promi
 
 export async function unassignShift(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const session = await requireSession();
-  if (!session.isManager) return { error: "Only supervisors and owners can change the roster." };
+  const denied = deny(session, "roster:write");
+  if (denied) return denied;
   const shiftId = String(formData.get("shift_id") ?? "");
   const supabase = await createClient();
 
@@ -110,7 +112,7 @@ export async function unassignShift(_prev: ActionState, formData: FormData): Pro
 
 export async function endPattern(formData: FormData): Promise<void> {
   const session = await requireSession();
-  if (!session.isManager) return;
+  if (!session.can("roster:write")) return;
   const id = String(formData.get("pattern_id") ?? "");
   const supabase = await createClient();
   const today = new Date().toISOString().slice(0, 10);
@@ -128,7 +130,7 @@ export async function endPattern(formData: FormData): Promise<void> {
 
 export async function materializeWeek(formData: FormData): Promise<void> {
   const session = await requireSession();
-  if (!session.isManager) return;
+  if (!session.can("roster:write")) return;
   const from = String(formData.get("from") ?? "");
   const to = String(formData.get("to") ?? "");
   if (!from || !to) return;

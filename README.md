@@ -17,7 +17,8 @@ bun run dev
 ```
 
 Sign in at http://localhost:3000 as `owner@sentinel.test` / `guardforce`. Two supervisors
-(`priya@`, `arun@`) show the site-scoped view.
+(`priya@`, `arun@`) show the site-scoped view, and `platform@guardforce.test` opens the
+provider console at `/platform`.
 
 ## What is built
 
@@ -34,7 +35,17 @@ Sign in at http://localhost:3000 as `owner@sentinel.test` / `guardforce`. Two su
 | Tasks | Assignment, photo evidence, day report and CSV |
 | Leave | Approval inbox, calendar, balances |
 | Reports | Attendance analytics, guard scorecards, five CSV exports, daily digest preview |
-| Settings | Agency defaults, team access, notifications, guard-app remote config, audit log |
+| Settings | Agency defaults, team access, roles, notifications, guard-app remote config, audit log |
+| Platform console | Provider-side: onboard tenants, plans and seat caps, suspend and restore, owner password resets |
+
+## Multi-tenancy
+
+Two layers. **Platform**: we are the provider; platform admins manage tenants (agencies)
+through `/platform` and never see a tenant dashboard as a member. A suspended tenant's
+members are locked out at the database, not just the UI. **Tenant**: access is role × scope.
+Roles are sets of permissions from a fixed catalogue (four built in per tenant, Owner
+immutable, custom roles editable in a matrix); scope is "every site" or a list of sites.
+Every write policy in Postgres checks the same permission keys the UI does.
 
 ## Tests
 

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { ArrowRight } from "lucide-react";
-import { requireSession } from "@/lib/auth/session";
+import { requirePermission, requireSession } from "@/lib/auth/session";
 import { loadGuard, loadGuardFormOptions, siteOrigin } from "@/lib/data/guards";
 import { kycGaps, kycComplete } from "@/lib/domain/kyc";
 import { PageHeader } from "@/components/gf/page-header";
@@ -27,6 +27,7 @@ export const dynamic = "force-dynamic";
 export default async function GuardProfilePage({ params }: PageProps<"/guards/[id]">) {
   const { id } = await params;
   const session = await requireSession();
+  requirePermission(session, "guards:read");
   const [detail, { sites, supervisors }, origin] = await Promise.all([
     loadGuard(session, id),
     loadGuardFormOptions(),
@@ -64,14 +65,20 @@ export default async function GuardProfilePage({ params }: PageProps<"/guards/[i
         />
       </div>
 
-      {guard.status === "invited" && (
+      {guard.status === "invited" && session.can("guards:write") && (
         <InvitePanel guardId={guard.id} guardName={guard.full_name} agencyName={session.agency.name} phone={guard.phone} invite={invite} />
       )}
 
       <Section title="KYC vault" description="Typed document slots required before this guard can be rostered.">
         <div className="flex flex-col gap-3">
           <KycGapNotice gaps={gaps} />
-          <KycVault guardId={guard.id} docs={documents} uploaders={uploaderNames} />
+          {session.can("guards:kyc") ? (
+            <KycVault guardId={guard.id} docs={documents} uploaders={uploaderNames} />
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Identity documents are restricted. Your role can see KYC status but not open the documents themselves.
+            </p>
+          )}
         </div>
       </Section>
 
@@ -139,13 +146,13 @@ export default async function GuardProfilePage({ params }: PageProps<"/guards/[i
       </Section>
 
       <Section title="Share profile" description="One-click link with the guard's verified KYC status — for clients or audits.">
-        <SharePanel guardId={guard.id} shares={shares} origin={origin} guardPhone={guard.phone} guardName={guard.full_name} />
+        {session.can("guards:share") && <SharePanel guardId={guard.id} shares={shares} origin={origin} guardPhone={guard.phone} guardName={guard.full_name} />}
       </Section>
 
       <Section title="Lifecycle & access">
         <div className="flex flex-col gap-4">
           <LifecyclePanel guardId={guard.id} status={guard.status} guardName={guard.full_name} />
-          {session.isOwner && (
+          {session.can("guards:write") && (
             <div>
               <h3 className="mb-2 font-display text-sm font-semibold">Document access log</h3>
               {accessLogs.length === 0 ? (

@@ -80,7 +80,7 @@ export default async function SitePage({ params, searchParams }: PageProps<"/sit
             <ButtonLink href={`/live?site=${site.id}`} variant="outline" size="sm">
               <MapPinned data-icon="inline-start" /> Live
             </ButtonLink>
-            {session.isManager && tab !== "settings" && (
+            {session.can("sites:write") && tab !== "settings" && (
               <ButtonLink href={`/sites/${site.id}?tab=settings`} variant="outline" size="sm">
                 <Pencil data-icon="inline-start" /> Edit
               </ButtonLink>
@@ -221,14 +221,14 @@ export default async function SitePage({ params, searchParams }: PageProps<"/sit
 
       {tab === "shifts" && (
         <Section title="Shift types" description="The windows guards are rostered into. Overnight shifts end the next morning." style={{ ["--i" as string]: 1 }}>
-          <ShiftTypesPanel siteId={site.id} shiftTypes={shiftTypes} usage={usage} canEdit={session.isManager} />
+          <ShiftTypesPanel siteId={site.id} shiftTypes={shiftTypes} usage={usage} canEdit={session.can("sites:write")} />
         </Section>
       )}
 
       {tab === "team" && (
         <div className="grid gap-4 lg:grid-cols-2">
           <Section title="Supervisors" description="Scoped access — they see only their sites" style={{ ["--i" as string]: 1 }}>
-            <SupervisorsPanel siteId={site.id} assigned={supervisors} candidates={allSupervisors} canEdit={session.isOwner} />
+            <SupervisorsPanel siteId={site.id} assigned={supervisors} candidates={allSupervisors} canEdit={session.can("team:manage")} />
           </Section>
           <Section title={`Guards on roll (${guards.length})`} bodyClassName="p-0" style={{ ["--i" as string]: 2 }}>
             {guards.length === 0 ? (
@@ -258,7 +258,7 @@ export default async function SitePage({ params, searchParams }: PageProps<"/sit
             defaults={{ lat: site.lat, lng: site.lng, radius_m: site.radius_m, leeway_m: site.leeway_m }}
             submitLabel="Save changes"
           />
-          {session.isOwner && (
+          {session.can("sites:write") && (
             <Section title="Danger zone" style={{ ["--i" as string]: 4 }}>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <p className="max-w-md text-sm text-muted-foreground">

@@ -116,13 +116,15 @@ test.describe("tasks", () => {
   });
 
   test("the day report lists evidence and exports CSV", async ({ page }) => {
-    const yesterday = agencyDate(-1);
+    // The seeded briefing task is due relative to when the seed ran; ask for that day in IST.
+    const { data: briefing } = await admin().from("tasks").select("due_at").eq("id", "10000000-0000-4000-8000-000000000002").single();
+    const day = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(briefing!.due_at!));
     await login(page);
-    await page.goto(`/tasks/report?date=${yesterday}`);
+    await page.goto(`/tasks/report?date=${day}`);
     await expect(page.getByRole("heading", { name: "Task report", level: 1 })).toBeVisible();
     await expect(page.getByText("Shift-change briefing")).toBeVisible();
 
-    const res = await page.request.get(`/tasks/report/export?date=${yesterday}`);
+    const res = await page.request.get(`/tasks/report/export?date=${day}`);
     expect(res.status()).toBe(200);
     expect(res.headers()["content-type"]).toContain("text/csv");
     const body = await res.text();

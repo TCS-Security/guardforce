@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { format, startOfMonth, subDays } from "date-fns";
-import { requireSession } from "@/lib/auth/session";
+import { requirePermission, requireSession } from "@/lib/auth/session";
 import {
   loadFilterOptions,
   loadGuardScorecards,
@@ -46,6 +46,7 @@ export const dynamic = "force-dynamic";
 
 export default async function ReportsPage({ searchParams }: PageProps<"/reports">) {
   const session = await requireSession();
+  requirePermission(session, "reports:read");
   const sp = await searchParams;
   const str = (v: string | string[] | undefined) => (typeof v === "string" ? v : undefined);
   const tz = session.agency.timezone;

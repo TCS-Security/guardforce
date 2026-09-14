@@ -11,7 +11,7 @@ const FALLBACK_CENTER = { lat: 12.9716, lng: 77.5946 };
 
 export default async function NewSitePage() {
   const session = await requireSession();
-  if (!session.isOwner) notFound();
+  if (!session.can("sites:write")) notFound();
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6">

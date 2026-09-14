@@ -19,7 +19,7 @@ const STATUS_TONE = { queued: "half-day", sent: "olive", failed: "absent", read:
 export default async function NotificationSettingsPage() {
   const session = await requireSession();
   const prefs = await loadNotificationPreferences(session);
-  const outbox = session.isOwner ? await loadNotificationOutbox() : [];
+  const outbox = session.can("settings:read") ? await loadNotificationOutbox() : [];
   const unread = outbox.filter((n) => !n.read_at).map((n) => n.id);
 
   return (
@@ -28,7 +28,7 @@ export default async function NotificationSettingsPage() {
         <PreferencesForm prefs={prefs} />
       </Section>
 
-      {session.isOwner && (
+      {session.can("settings:read") && (
         <Section
           title="Outbox"
           description="Everything the platform queued for delivery — push, WhatsApp and in-app."

@@ -53,7 +53,7 @@ export default async function TaskPage({ params }: PageProps<"/tasks/[id]">) {
         actions={
           <div className="flex items-center gap-2">
             <TaskStatusBadge status={task.status} />
-            {session.isManager && <TaskAdminBar taskId={task.id} status={task.status} />}
+            {session.can("tasks:write") && <TaskAdminBar taskId={task.id} status={task.status} />}
           </div>
         }
       />

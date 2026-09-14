@@ -60,7 +60,15 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
           <h2 className="font-display text-2xl font-semibold tracking-tight">Welcome back</h2>
           <p className="mt-1 text-sm text-muted-foreground">Owners and supervisors sign in with email. Guards use the Android app.</p>
           <div className="mt-8">
-            <LoginForm next={next} initialError={error === "no-profile" ? "This account isn't linked to an agency." : undefined} />
+            <LoginForm
+              next={next}
+              initialError={
+                error === "no-profile" ? "This account isn't linked to an agency."
+                  : error === "disabled" ? "This login has been disabled. Ask your agency owner."
+                  : error === "not-platform" ? "That page is for GuardForce staff."
+                  : undefined
+              }
+            />
           </div>
           <p className="mt-10 font-mono text-[11px] text-muted-foreground">
             Demo: owner@sentinel.test / guardforce

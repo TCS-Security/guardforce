@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { SidebarNav } from "./sidebar-nav";
 import { Brand } from "./brand";
 
-export function MobileNav() {
+export function MobileNav({ permissions }: { permissions: readonly string[] }) {
   const [open, setOpen] = useState(false);
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -17,7 +17,7 @@ export function MobileNav() {
       <SheetContent side="left" className="w-64 bg-sidebar p-4 text-sidebar-foreground">
         <SheetTitle className="sr-only">Navigation</SheetTitle>
         <Brand className="mb-6 px-2 text-sidebar-foreground" />
-        <SidebarNav onNavigate={() => setOpen(false)} />
+        <SidebarNav onNavigate={() => setOpen(false)} permissions={permissions} />
       </SheetContent>
     </Sheet>
   );

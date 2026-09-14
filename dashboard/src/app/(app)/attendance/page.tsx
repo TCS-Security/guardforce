@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ClipboardCheck } from "lucide-react";
-import { requireSession } from "@/lib/auth/session";
+import { requirePermission, requireSession } from "@/lib/auth/session";
 import { defaultAttendanceDate, loadAttendanceDay } from "@/lib/data/attendance";
 import { PageHeader } from "@/components/gf/page-header";
 import { Section } from "@/components/gf/section";
@@ -20,6 +20,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AttendancePage({ searchParams }: PageProps<"/attendance">) {
   const session = await requireSession();
+  requirePermission(session, "attendance:read");
   const sp = await searchParams;
   const str = (v: unknown) => (typeof v === "string" && v.length > 0 ? v : null);
 

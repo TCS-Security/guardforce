@@ -5,10 +5,11 @@ import type { Session } from "@/lib/auth/session";
 /** Team roster: every profile in the agency, with a supervisor's site scope resolved. */
 export async function loadTeam(session: Session) {
   const supabase = await createClient();
-  const [{ data: profiles }, { data: scopes }, { data: sites }] = await Promise.all([
-    supabase.from("profiles").select("id,full_name,email,phone,role,is_active,created_at").eq("agency_id", session.agency.id).order("full_name"),
+  const [{ data: profiles }, { data: scopes }, { data: sites }, { data: roles }] = await Promise.all([
+    supabase.from("profiles").select("id,full_name,email,phone,role,role_id,all_sites,is_active,created_at,roles(name)").eq("agency_id", session.agency.id).neq("role", "guard").order("full_name"),
     supabase.from("supervisor_sites").select("profile_id,site_id,sites(name)"),
     supabase.from("sites").select("id,name").eq("is_active", true).order("name"),
+    supabase.from("roles").select("id,name,description,system_key,permissions").order("is_system", { ascending: false }).order("name"),
   ]);
   const scopeByProfile = new Map<string, { site_id: string; name: string }[]>();
   for (const s of scopes ?? []) {
@@ -16,8 +17,12 @@ export async function loadTeam(session: Session) {
     list.push({ site_id: s.site_id, name: s.sites?.name ?? "—" });
     scopeByProfile.set(s.profile_id, list);
   }
-  const team = (profiles ?? []).map((p) => ({ ...p, sites: scopeByProfile.get(p.id) ?? [] }));
-  return { team, sites: sites ?? [] };
+  const team = (profiles ?? []).map((p) => ({
+    ...p,
+    role_name: (p.roles as { name: string } | null)?.name ?? null,
+    sites: scopeByProfile.get(p.id) ?? [],
+  }));
+  return { team, sites: sites ?? [], roles: roles ?? [] };
 }
 
 /** The signed-in user's own notification preferences (created on first visit if missing). */

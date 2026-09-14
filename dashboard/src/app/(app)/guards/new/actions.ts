@@ -4,7 +4,7 @@ import { z } from "zod";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { requireSession } from "@/lib/auth/session";
+import { deny, requireSession } from "@/lib/auth/session";
 import { normalizePhone, isValidIndianMobile } from "@/lib/domain/guards";
 
 const schema = z.object({
@@ -25,7 +25,8 @@ export type CreateGuardState = { error?: string; fieldErrors?: Record<string, st
 /** F1/F2: add a guard to the roster and generate their invite. */
 export async function createGuard(_prev: CreateGuardState, formData: FormData): Promise<CreateGuardState> {
   const session = await requireSession();
-  if (!session.isManager) return { error: "Only owners and supervisors can add guards." };
+  const denied = deny(session, "guards:write");
+  if (denied) return denied;
 
   const parsed = schema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {

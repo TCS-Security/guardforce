@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 /** Acknowledging is a note that a human has seen the alert; it never edits the event. */
 export async function acknowledgeEvents(formData: FormData): Promise<void> {
   const session = await requireSession();
-  if (!session.isManager) return;
+  if (!session.can("events:acknowledge")) return;
   const ids = String(formData.get("ids") ?? "").split(",").filter(Boolean);
   if (ids.length === 0) return;
 

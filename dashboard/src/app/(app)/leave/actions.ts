@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { requireSession } from "@/lib/auth/session";
+import { deny, requireSession } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import type { LeaveType } from "@/lib/supabase/types";
 
@@ -36,7 +36,8 @@ const decisionSchema = z
 
 export async function decideLeave(_prev: LeaveActionState, formData: FormData): Promise<LeaveActionState> {
   const session = await requireSession();
-  if (!session.isManager) return { error: "Only managers can decide leave requests." };
+  const denied = deny(session, "leave:decide");
+  if (denied) return denied;
 
   const parsed = decisionSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
@@ -69,7 +70,8 @@ const logSchema = z
 
 export async function logLeave(_prev: LeaveActionState, formData: FormData): Promise<LeaveActionState> {
   const session = await requireSession();
-  if (!session.isManager) return { error: "Only managers can log leave for a guard." };
+  const denied = deny(session, "leave:decide");
+  if (denied) return denied;
 
   const parsed = logSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
@@ -126,7 +128,8 @@ const balanceSchema = z.object({
 
 export async function saveBalance(_prev: LeaveActionState, formData: FormData): Promise<LeaveActionState> {
   const session = await requireSession();
-  if (!session.isOwner) return { error: "Only owners can edit leave totals." };
+  const denied = deny(session, "leave:decide");
+  if (denied) return denied;
 
   const parsed = balanceSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid input" };

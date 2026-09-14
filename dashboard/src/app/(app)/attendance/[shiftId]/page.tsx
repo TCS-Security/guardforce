@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AlertTriangle, BatteryLow, Crosshair, ImageOff, MapPin, Smartphone } from "lucide-react";
-import { requireSession } from "@/lib/auth/session";
+import { requirePermission, requireSession } from "@/lib/auth/session";
 import { loadShift } from "@/lib/data/attendance";
 import { selfieUrl } from "../actions";
 import { PageHeader } from "@/components/gf/page-header";
@@ -32,6 +32,7 @@ export async function generateMetadata({ params }: PageProps<"/attendance/[shift
 
 export default async function ShiftPage({ params }: PageProps<"/attendance/[shiftId]">) {
   const session = await requireSession();
+  requirePermission(session, "attendance:read");
   const { shiftId } = await params;
   const data = await loadShift(session, shiftId);
   if (!data) notFound();
@@ -81,7 +82,7 @@ export default async function ShiftPage({ params }: PageProps<"/attendance/[shif
           </>
         }
         actions={
-          session.isManager ? (
+          session.can("attendance:correct") ? (
             <div className="flex items-center gap-2">
               {isVoid && !shift.exception_id && <LogExceptionButton shiftId={shift.id} />}
               <OverrideAttendanceButton shiftId={shift.id} current={shift.attendance} />
@@ -95,7 +96,7 @@ export default async function ShiftPage({ params }: PageProps<"/attendance/[shif
           <AlertTriangle className="size-4 shrink-0 text-absent" />
           <p className="min-w-0 flex-1 text-sm text-absent">
             <strong>Shift void — location was off.</strong> It was switched off for {fmtSeconds(shift.location_off_seconds)} and still off at shift end, so the shift does not count.
-            {session.isManager && !shift.exception_id && " Log an exception if this was a genuine device failure."}
+            {session.can("attendance:correct") && !shift.exception_id && " Log an exception if this was a genuine device failure."}
           </p>
         </div>
       )}

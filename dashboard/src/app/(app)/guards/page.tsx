@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { UserPlus, Users } from "lucide-react";
-import { requireSession } from "@/lib/auth/session";
+import { requirePermission, requireSession } from "@/lib/auth/session";
 import { listGuards, loadGuardFormOptions, type GuardListFilters } from "@/lib/data/guards";
 import { PageHeader } from "@/components/gf/page-header";
 import { Section } from "@/components/gf/section";
@@ -26,6 +26,7 @@ export default async function GuardsPage({ searchParams }: PageProps<"/guards">)
     q: typeof sp.q === "string" ? sp.q : undefined,
   };
   const session = await requireSession();
+  requirePermission(session, "guards:read");
   const [guards, { sites }] = await Promise.all([listGuards(session, filters), loadGuardFormOptions()]);
   const anyFilterActive = Object.values(filters).some(Boolean);
 

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { requireSession } from "@/lib/auth/session";
+import { deny, requireSession } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 
 export type ActionState = { error?: string; ok?: boolean } | undefined;
@@ -20,7 +20,8 @@ const routeSchema = z.object({
 
 export async function savePatrolRoute(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const session = await requireSession();
-  if (!session.isManager) return { error: "Only supervisors and owners can change patrol routes." };
+  const denied = deny(session, "patrols:write");
+  if (denied) return denied;
   const parsed = routeSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Check the form" };
 
@@ -52,7 +53,7 @@ export async function savePatrolRoute(_prev: ActionState, formData: FormData): P
  */
 export async function setRouteActive(formData: FormData): Promise<void> {
   const session = await requireSession();
-  if (!session.isManager) return;
+  if (!session.can("patrols:write")) return;
   const id = String(formData.get("id") ?? "");
   const active = formData.get("active") === "true";
   const supabase = await createClient();
@@ -62,7 +63,8 @@ export async function setRouteActive(formData: FormData): Promise<void> {
 
 export async function deletePatrolRoute(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const session = await requireSession();
-  if (!session.isManager) return { error: "Only supervisors and owners can remove patrol routes." };
+  const denied = deny(session, "patrols:write");
+  if (denied) return denied;
   const id = String(formData.get("id") ?? "");
   const supabase = await createClient();
 
@@ -80,7 +82,8 @@ export async function deletePatrolRoute(_prev: ActionState, formData: FormData):
 
 export async function addPatrolNote(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const session = await requireSession();
-  if (!session.isManager) return { error: "Only supervisors and owners can add notes." };
+  const denied = deny(session, "patrols:write");
+  if (denied) return denied;
   const id = String(formData.get("patrol_id") ?? "");
   const notes = String(formData.get("notes") ?? "").trim();
   const supabase = await createClient();

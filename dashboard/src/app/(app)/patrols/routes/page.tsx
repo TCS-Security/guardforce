@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { requireSession } from "@/lib/auth/session";
+import { requirePermission, requireSession } from "@/lib/auth/session";
 import { loadPatrolRoutes } from "@/lib/data/patrols";
 import { PageHeader } from "@/components/gf/page-header";
 import { ButtonLink } from "@/components/gf/button-link";
@@ -11,6 +11,7 @@ export const dynamic = "force-dynamic";
 
 export default async function PatrolRoutesPage() {
   const session = await requireSession();
+  requirePermission(session, "patrols:read");
   const { routes, sites, shiftTypes } = await loadPatrolRoutes(session);
 
   return (
@@ -25,7 +26,7 @@ export default async function PatrolRoutesPage() {
           </ButtonLink>
         }
       />
-      <RoutesPanel routes={routes} sites={sites} shiftTypes={shiftTypes} canEdit={session.isManager} />
+      <RoutesPanel routes={routes} sites={sites} shiftTypes={shiftTypes} canEdit={session.can("patrols:write")} />
     </div>
   );
 }

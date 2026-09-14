@@ -7,6 +7,7 @@ import { cn } from "cn";
 const ITEMS = [
   { href: "/settings", label: "Agency" },
   { href: "/settings/team", label: "Team" },
+  { href: "/settings/roles", label: "Roles" },
   { href: "/settings/notifications", label: "Notifications" },
   { href: "/settings/app", label: "App config" },
   { href: "/settings/audit", label: "Audit log" },

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Building2, Plus } from "lucide-react";
-import { requireSession } from "@/lib/auth/session";
+import { requirePermission, requireSession } from "@/lib/auth/session";
 import { loadSites } from "@/lib/data/sites";
 import { PageHeader } from "@/components/gf/page-header";
 import { Section } from "@/components/gf/section";
@@ -18,6 +18,7 @@ export const dynamic = "force-dynamic";
 
 export default async function SitesPage({ searchParams }: PageProps<"/sites">) {
   const session = await requireSession();
+  requirePermission(session, "sites:read");
   const sp = await searchParams;
   const q = typeof sp.q === "string" ? sp.q.toLowerCase().trim() : "";
   const showInactive = sp.inactive === "1";
@@ -40,7 +41,7 @@ export default async function SitesPage({ searchParams }: PageProps<"/sites">) {
         title="Sites"
         description="Each site carries its own perimeter, leeway buffer, staffing level and shift pattern."
         actions={
-          session.isOwner ? (
+          session.can("sites:write") ? (
             <ButtonLink href="/sites/new">
               <Plus data-icon="inline-start" /> New site
             </ButtonLink>
@@ -55,7 +56,7 @@ export default async function SitesPage({ searchParams }: PageProps<"/sites">) {
           icon={<Building2 />}
           title={q ? "No sites match that search" : "No sites yet"}
           description={q ? "Try the client name or the area instead." : "Add the first client site to start rostering guards against it."}
-          action={session.isOwner && !q ? <ButtonLink href="/sites/new"><Plus data-icon="inline-start" /> New site</ButtonLink> : null}
+          action={session.can("sites:write") && !q ? <ButtonLink href="/sites/new"><Plus data-icon="inline-start" /> New site</ButtonLink> : null}
         />
       ) : (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">

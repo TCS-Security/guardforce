@@ -49,11 +49,6 @@ export function LiveBoard({
   const supabase = createClient();
 
   useEffect(() => {
-    const id = setInterval(() => setTick((n) => n + 1), 30_000);
-    return () => clearInterval(id);
-  }, []);
-
-  useEffect(() => {
     async function refresh() {
       const { data } = await supabase
         .from("guard_presence")
@@ -63,12 +58,21 @@ export function LiveBoard({
         .not("shift_id", "is", null);
       if (data) setPresence(data as unknown as LivePresence[]);
     }
+    // Realtime pushes changes; the timer re-evaluates staleness and catches anything the
+    // socket missed while it was connecting, so a control room never quietly goes stale.
     const channel = supabase
       .channel("live-presence")
       .on("postgres_changes", { event: "*", schema: "public", table: "guard_presence" }, refresh)
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "shifts" }, refresh)
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") void refresh();
+      });
+    const id = setInterval(() => {
+      setTick((n) => n + 1);
+      void refresh();
+    }, 30_000);
     return () => {
+      clearInterval(id);
       supabase.removeChannel(channel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

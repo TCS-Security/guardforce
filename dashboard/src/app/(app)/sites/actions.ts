@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { requireSession } from "@/lib/auth/session";
+import { deny, requireSession } from "@/lib/auth/session";
 import { validatePolygonRing, type LngLat } from "@/lib/domain/sites";
 
 export type ActionState = { error?: string; ok?: boolean } | undefined;
@@ -49,7 +49,8 @@ function formValues(formData: FormData) {
 
 export async function createSite(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const session = await requireSession();
-  if (!session.isOwner) return { error: "Only owners and admins can add sites." };
+  const denied = deny(session, "sites:write");
+  if (denied) return denied;
   const parsed = siteSchema.safeParse(formValues(formData));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Check the form" };
   const { polygon, error } = parsePolygon(parsed.data.polygon, parsed.data.fence_type);
@@ -93,6 +94,8 @@ export async function createSite(_prev: ActionState, formData: FormData): Promis
 
 export async function updateSite(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const session = await requireSession();
+  const denied = deny(session, "sites:write");
+  if (denied) return denied;
   const id = String(formData.get("id") ?? "");
   if (!id) return { error: "Missing site" };
   const parsed = siteSchema.safeParse(formValues(formData));
@@ -139,6 +142,7 @@ export async function updateSite(_prev: ActionState, formData: FormData): Promis
 
 export async function setSiteActive(formData: FormData): Promise<void> {
   const session = await requireSession();
+  if (!session.can("sites:write")) return;
   const id = String(formData.get("id") ?? "");
   const active = formData.get("active") === "true";
   const supabase = await createClient();
@@ -168,6 +172,8 @@ const shiftTypeSchema = z.object({
 
 export async function saveShiftType(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const session = await requireSession();
+  const denied = deny(session, "sites:write");
+  if (denied) return denied;
   const parsed = shiftTypeSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Check the form" };
   if (parsed.data.start_time === parsed.data.end_time) return { error: "Start and end time cannot be the same." };
@@ -190,7 +196,9 @@ export async function saveShiftType(_prev: ActionState, formData: FormData): Pro
 }
 
 export async function deleteShiftType(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  await requireSession();
+  const session = await requireSession();
+  const denied = deny(session, "sites:write");
+  if (denied) return denied;
   const id = String(formData.get("id") ?? "");
   const siteId = String(formData.get("site_id") ?? "");
   const supabase = await createClient();
@@ -213,7 +221,7 @@ export async function deleteShiftType(_prev: ActionState, formData: FormData): P
 // ---------------------------------------------------------------------------
 export async function assignSupervisor(formData: FormData): Promise<void> {
   const session = await requireSession();
-  if (!session.isOwner) return;
+  if (!session.can("team:manage")) return;
   const siteId = String(formData.get("site_id") ?? "");
   const profileId = String(formData.get("profile_id") ?? "");
   const attach = formData.get("attach") === "true";

@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireSession } from "@/lib/auth/session";
+import type { PermissionKey } from "@/lib/auth/permissions";
 import { normalizePhone, isValidIndianMobile, kycObjectPath, clampShareDays, shareExpiresAt } from "@/lib/domain/guards";
 import { maskAadhaar, maskPan } from "@/lib/domain/kyc";
 import { DOCUMENT_TYPES } from "@/lib/domain/status";
@@ -18,9 +19,9 @@ const AADHAAR_RE = /^\d{12}$/;
 const PAN_RE = /^[A-Za-z]{5}\d{4}[A-Za-z]$/;
 const DOC_TYPES = DOCUMENT_TYPES.map((d) => d.type);
 
-async function requireManager() {
+async function requireManager(key: PermissionKey) {
   const session = await requireSession();
-  if (!session.isManager) throw new Error("Only owners and supervisors can do this.");
+  if (!session.can(key)) throw new Error(`You don't have permission to do that (${key.replace(":", " · ")}).`);
   return session;
 }
 
@@ -32,7 +33,7 @@ function revalidateGuard(guardId: string) {
 // --- invites ---------------------------------------------------------------
 
 export async function markInviteSent(inviteId: string, guardId: string): Promise<ActionResult> {
-  const session = await requireManager();
+  const session = await requireManager("guards:write");
   const supabase = await createClient();
   const { error } = await supabase.from("guard_invites").update({ sent_at: new Date().toISOString() }).eq("id", inviteId);
   if (error) return { error: error.message };
@@ -42,7 +43,7 @@ export async function markInviteSent(inviteId: string, guardId: string): Promise
 
 /** New invite token (also used as "resend" for phone re-verification via a fresh app login). */
 export async function resendInvite(guardId: string): Promise<ActionResult> {
-  const session = await requireManager();
+  const session = await requireManager("guards:write");
   const supabase = await createClient();
   const { error } = await supabase.from("guard_invites").insert({
     agency_id: session.agency.id,
@@ -72,7 +73,7 @@ const profileSchema = z.object({
 export type UpdateProfileState = { error?: string; fieldErrors?: Record<string, string> } | undefined;
 
 export async function updateGuardProfile(_prev: UpdateProfileState, formData: FormData): Promise<UpdateProfileState> {
-  await requireManager();
+  await requireManager("guards:write");
   const parsed = profileSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
     const fieldErrors: Record<string, string> = {};
@@ -108,7 +109,7 @@ export async function updateGuardProfile(_prev: UpdateProfileState, formData: Fo
 export type UploadDocState = { error?: string } | undefined;
 
 export async function uploadGuardDocument(_prev: UploadDocState, formData: FormData): Promise<UploadDocState> {
-  const session = await requireManager();
+  const session = await requireManager("guards:kyc");
   const guardId = String(formData.get("guard_id") ?? "");
   const typeRaw = String(formData.get("type") ?? "");
   const number = String(formData.get("number") ?? "").trim();
@@ -178,7 +179,7 @@ export async function uploadGuardDocument(_prev: UploadDocState, formData: FormD
 }
 
 export async function viewGuardDocument(documentId: string, guardId: string): Promise<{ url?: string; error?: string }> {
-  const session = await requireManager();
+  const session = await requireManager("guards:kyc");
   const supabase = await createClient();
   const { data: doc } = await supabase.from("guard_documents").select("id,file_path,agency_id").eq("id", documentId).maybeSingle();
   if (!doc?.file_path) return { error: "No file uploaded for this document yet." };
@@ -198,7 +199,7 @@ export async function viewGuardDocument(documentId: string, guardId: string): Pr
 }
 
 export async function verifyGuardDocument(documentId: string, guardId: string): Promise<ActionResult> {
-  const session = await requireManager();
+  const session = await requireManager("guards:kyc");
   const supabase = await createClient();
   const { error } = await supabase
     .from("guard_documents")
@@ -209,7 +210,7 @@ export async function verifyGuardDocument(documentId: string, guardId: string): 
 }
 
 export async function rejectGuardDocument(documentId: string, guardId: string, reason: string): Promise<ActionResult> {
-  const session = await requireManager();
+  const session = await requireManager("guards:kyc");
   if (!reason.trim()) return { error: "A rejection reason is required." };
   const supabase = await createClient();
   const { error } = await supabase
@@ -221,7 +222,7 @@ export async function rejectGuardDocument(documentId: string, guardId: string, r
 }
 
 export async function deleteGuardDocument(documentId: string, guardId: string): Promise<ActionResult> {
-  await requireManager();
+  await requireManager("guards:kyc");
   const supabase = await createClient();
   const { data: doc } = await supabase.from("guard_documents").select("file_path").eq("id", documentId).maybeSingle();
   if (doc?.file_path) await supabase.storage.from("kyc-docs").remove([doc.file_path]);
@@ -242,7 +243,7 @@ const shareSchema = z.object({
 export type ShareState = { error?: string } | undefined;
 
 export async function createGuardShare(_prev: ShareState, formData: FormData): Promise<ShareState> {
-  const session = await requireManager();
+  const session = await requireManager("guards:share");
   const parsed = shareSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Check the form for errors." };
   const v = parsed.data;
@@ -262,7 +263,7 @@ export async function createGuardShare(_prev: ShareState, formData: FormData): P
 }
 
 export async function revokeGuardShare(shareId: string, guardId: string): Promise<ActionResult> {
-  await requireManager();
+  await requireManager("guards:share");
   const supabase = await createClient();
   const { error } = await supabase.from("profile_shares").update({ revoked_at: new Date().toISOString() }).eq("id", shareId);
   if (error) return { error: error.message };
@@ -272,7 +273,7 @@ export async function revokeGuardShare(shareId: string, guardId: string): Promis
 // --- lifecycle --------------------------------------------------------
 
 async function setGuardStatus(guardId: string, status: "active" | "inactive", action: string) {
-  const session = await requireManager();
+  const session = await requireManager("guards:share");
   const supabase = await createClient();
   const { data: before } = await supabase.from("guards").select("status").eq("id", guardId).maybeSingle();
   const { error } = await supabase.from("guards").update({ status }).eq("id", guardId);

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ScrollText } from "lucide-react";
-import { requireSession } from "@/lib/auth/session";
+import { requirePermission, requireSession } from "@/lib/auth/session";
 import { loadAuditLogFacets, loadAuditLogs } from "@/lib/data/settings";
 import { Section } from "@/components/gf/section";
 import { EmptyState } from "@/components/gf/empty-state";
@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AuditPage({ searchParams }: PageProps<"/settings/audit">) {
   const session = await requireSession();
-  if (!session.isManager) notFound();
+  requirePermission(session, "audit:read");
   const sp = await searchParams;
   const str = (v: unknown) => (typeof v === "string" && v.length > 0 ? v : null);
 

@@ -6,6 +6,9 @@ export const SEED = {
   owner: { email: "owner@sentinel.test", password: "guardforce", name: "Rajesh Menon" },
   supervisor: { email: "priya@sentinel.test", password: "guardforce", name: "Priya Nair" },
   supervisor2: { email: "arun@sentinel.test", password: "guardforce", name: "Arun Kumar" },
+  platform: { email: "platform@guardforce.test", password: "guardforce", name: "GuardForce Ops" },
+  falconOwner: { email: "owner@falcon.test", password: "guardforce", name: "Neha Kulkarni" },
+  falconAgencyId: "a0000000-0000-4000-8000-000000000002",
   sites: {
     prestige: "c0000000-0000-4000-8000-000000000001",
     brigade: "c0000000-0000-4000-8000-000000000002",

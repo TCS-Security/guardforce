@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Section } from "@/components/gf/section";
@@ -13,29 +14,57 @@ import { StatusPill } from "@/components/gf/status-pill";
 import { GuardAvatar } from "@/components/gf/guard-avatar";
 import { FormAlert } from "@/components/gf/form-alert";
 import { Mono } from "@/components/gf/mono";
+import { ButtonLink } from "@/components/gf/button-link";
 import { inviteTeamMember, setTeamMemberActive, updateTeamMember, type ActionState, type InviteState } from "../actions";
+import { describePermissions } from "@/lib/auth/permissions";
 
-type Member = {
+export type Member = {
   id: string;
   full_name: string;
   email: string | null;
   phone: string | null;
   role: string;
+  role_id: string | null;
+  all_sites: boolean;
   is_active: boolean;
+  role_name: string | null;
   sites: { site_id: string; name: string }[];
 };
-type Site = { id: string; name: string };
+export type Site = { id: string; name: string };
+export type RoleOption = { id: string; name: string; description: string | null; system_key: string | null; permissions: string[] };
 
-export function TeamPanel({ team, sites, canEdit, currentUserId }: { team: Member[]; sites: Site[]; canEdit: boolean; currentUserId: string }) {
+/**
+ * Team access. Each person has a role (what they may do) and a site scope (which sites
+ * they see). Owners hold every permission and every site, and cannot be demoted here.
+ */
+export function TeamPanel({
+  team,
+  sites,
+  roles,
+  canEdit,
+  currentUserId,
+}: {
+  team: Member[];
+  sites: Site[];
+  roles: RoleOption[];
+  canEdit: boolean;
+  currentUserId: string;
+}) {
   const [inviting, setInviting] = useState(false);
   const [editing, setEditing] = useState<Member | null>(null);
+  const assignable = roles.filter((r) => r.system_key !== "owner");
 
   return (
     <div className="flex flex-col gap-4">
       <Section
         title="Team access"
-        description="Owners see everything. Supervisors only see the sites they are scoped to."
-        actions={canEdit ? <Button size="sm" onClick={() => setInviting(true)}><UserPlus data-icon="inline-start" /> Invite</Button> : null}
+        description="Role decides what someone can do; site scope decides where."
+        actions={
+          <div className="flex items-center gap-1.5">
+            <ButtonLink href="/settings/roles" variant="ghost" size="sm">Roles</ButtonLink>
+            {canEdit && <Button size="sm" onClick={() => setInviting(true)}><UserPlus data-icon="inline-start" /> Invite</Button>}
+          </div>
+        }
         bodyClassName="p-0"
         style={{ ["--i" as string]: 1 }}
       >
@@ -49,75 +78,126 @@ export function TeamPanel({ team, sites, canEdit, currentUserId }: { team: Membe
             </tr>
           </thead>
           <tbody className="divide-y">
-            {team.map((m) => (
-              <tr key={m.id} className="hover:bg-muted/40">
-                <td className="px-4 py-2.5">
-                  <div className="flex items-center gap-2.5">
-                    <GuardAvatar name={m.full_name} size="sm" />
-                    <div className="min-w-0">
-                      <div className="truncate font-medium">{m.full_name}{m.id === currentUserId && <span className="ml-1.5 text-xs text-muted-foreground">(you)</span>}</div>
-                      <Mono className="text-muted-foreground">{m.email}</Mono>
+            {team.map((m) => {
+              const isOwner = m.role === "owner";
+              return (
+                <tr key={m.id} className="hover:bg-muted/40">
+                  <td className="px-4 py-2.5">
+                    <div className="flex items-center gap-2.5">
+                      <GuardAvatar name={m.full_name} size="sm" />
+                      <div className="min-w-0">
+                        <div className="truncate font-medium">
+                          {m.full_name}
+                          {m.id === currentUserId && <span className="ml-1.5 text-xs text-muted-foreground">(you)</span>}
+                        </div>
+                        <Mono className="text-muted-foreground">{m.email}</Mono>
+                      </div>
                     </div>
-                  </div>
-                </td>
-                <td className="px-4 py-2.5 capitalize">{m.role}</td>
-                <td className="px-4 py-2.5 text-muted-foreground">
-                  {m.role === "owner" || m.role === "admin" ? "All sites" : m.sites.length === 0 ? <span className="text-signal">No sites scoped</span> : m.sites.map((s) => s.name).join(", ")}
-                </td>
-                <td className="px-4 py-2.5">
-                  <div className="flex items-center justify-end gap-1.5">
-                    {m.is_active ? <StatusPill tone="present" size="xs" dot={false}>Active</StatusPill> : <StatusPill tone="neutral" size="xs" dot={false}>Disabled</StatusPill>}
-                    {canEdit && m.role !== "owner" && (
-                      <>
-                        <Button variant="ghost" size="sm" onClick={() => setEditing(m)}>Edit</Button>
-                        {m.id !== currentUserId && (
-                          <form action={setTeamMemberActive}>
-                            <input type="hidden" name="profile_id" value={m.id} />
-                            <input type="hidden" name="active" value={m.is_active ? "false" : "true"} />
-                            <Button type="submit" variant="ghost" size="icon-sm" aria-label={`${m.is_active ? "Disable" : "Enable"} ${m.full_name}`}>
-                              <Power />
-                            </Button>
-                          </form>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <span className="font-medium">{m.role_name ?? (isOwner ? "Owner" : "No role")}</span>
+                    {!m.role_name && !isOwner && <StatusPill tone="signal" size="xs" dot={false} className="ml-1.5">no access</StatusPill>}
+                  </td>
+                  <td className="px-4 py-2.5 text-muted-foreground">
+                    {isOwner || m.all_sites ? "All sites" : m.sites.length === 0 ? <span className="text-signal">No sites scoped</span> : m.sites.map((s) => s.name).join(", ")}
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <div className="flex items-center justify-end gap-1.5">
+                      {m.is_active ? <StatusPill tone="present" size="xs" dot={false}>Active</StatusPill> : <StatusPill tone="neutral" size="xs" dot={false}>Disabled</StatusPill>}
+                      {canEdit && !isOwner && (
+                        <>
+                          <Button variant="ghost" size="sm" onClick={() => setEditing(m)}>Edit</Button>
+                          {m.id !== currentUserId && (
+                            <form action={setTeamMemberActive}>
+                              <input type="hidden" name="profile_id" value={m.id} />
+                              <input type="hidden" name="active" value={m.is_active ? "false" : "true"} />
+                              <Button type="submit" variant="ghost" size="icon-sm" aria-label={`${m.is_active ? "Disable" : "Enable"} ${m.full_name}`}>
+                                <Power />
+                              </Button>
+                            </form>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </Section>
 
-      <InviteDialog open={inviting} onClose={() => setInviting(false)} sites={sites} />
-      <EditDialog member={editing} sites={sites} onClose={() => setEditing(null)} />
+      <InviteDialog open={inviting} onClose={() => setInviting(false)} sites={sites} roles={assignable} />
+      <EditDialog key={editing?.id ?? "none"} member={editing} sites={sites} roles={assignable} onClose={() => setEditing(null)} />
     </div>
   );
 }
 
-function SitePicker({ sites, selected, onChange, disabled }: { sites: Site[]; selected: string[]; onChange: (v: string[]) => void; disabled?: boolean }) {
+function RolePicker({ roles, value, onChange }: { roles: RoleOption[]; value: string; onChange: (v: string) => void }) {
+  const selected = roles.find((r) => r.id === value);
   return (
     <div className="flex flex-col gap-1.5">
-      <Label>Sites</Label>
-      <div className="flex flex-col gap-1.5 rounded-md border p-2.5">
-        {sites.map((s) => (
-          <label key={s.id} className="flex items-center gap-2 text-sm">
-            <Checkbox
-              checked={selected.includes(s.id)}
-              disabled={disabled}
-              onCheckedChange={(v) => onChange(v ? [...selected, s.id] : selected.filter((id) => id !== s.id))}
-            />
-            {s.name}
-          </label>
-        ))}
-      </div>
-      {disabled && <p className="text-xs text-muted-foreground">Admins already see every site.</p>}
+      <Label htmlFor="role-picker">Role</Label>
+      <Select value={value} onValueChange={(v) => onChange(v as string)}>
+        <SelectTrigger id="role-picker" className="w-full">
+          <SelectValue>{(v: string) => roles.find((r) => r.id === v)?.name ?? "Pick a role"}</SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          {roles.map((r) => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}
+        </SelectContent>
+      </Select>
+      {selected && (
+        <p className="text-xs text-muted-foreground">
+          {selected.description ?? ""} <Mono className="text-[11px]">{describePermissions(selected.permissions)}</Mono>
+        </p>
+      )}
     </div>
   );
 }
 
-function InviteDialog({ open, onClose, sites }: { open: boolean; onClose: () => void; sites: Site[] }) {
-  const [role, setRole] = useState<"supervisor" | "admin">("supervisor");
+function ScopePicker({
+  sites,
+  allSites,
+  selected,
+  onAllSites,
+  onChange,
+}: {
+  sites: Site[];
+  allSites: boolean;
+  selected: string[];
+  onAllSites: (v: boolean) => void;
+  onChange: (v: string[]) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center justify-between">
+        <Label>Site scope</Label>
+        <label className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Switch checked={allSites} onCheckedChange={(v) => onAllSites(!!v)} aria-label="Every site" />
+          Every site, including ones added later
+        </label>
+      </div>
+      {!allSites && (
+        <div className="flex flex-col gap-1.5 rounded-md border p-2.5">
+          {sites.map((s) => (
+            <label key={s.id} className="flex items-center gap-2 text-sm">
+              <Checkbox
+                checked={selected.includes(s.id)}
+                onCheckedChange={(v) => onChange(v ? [...selected, s.id] : selected.filter((id) => id !== s.id))}
+              />
+              {s.name}
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function InviteDialog({ open, onClose, sites, roles }: { open: boolean; onClose: () => void; sites: Site[]; roles: RoleOption[] }) {
+  const defaultRole = roles.find((r) => r.system_key === "supervisor")?.id ?? roles[0]?.id ?? "";
+  const [roleId, setRoleId] = useState(defaultRole);
+  const [allSites, setAllSites] = useState(false);
   const [siteIds, setSiteIds] = useState<string[]>([]);
   const [state, action, pending] = useActionState<InviteState, FormData>(inviteTeamMember, undefined);
 
@@ -126,7 +206,7 @@ function InviteDialog({ open, onClose, sites }: { open: boolean; onClose: () => 
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Invite to the dashboard</DialogTitle>
-          <DialogDescription>Creates a login straight away. Share the one-time password yourself — no email is sent.</DialogDescription>
+          <DialogDescription>Creates a login straight away. Share the one-time password yourself; no email is sent.</DialogDescription>
         </DialogHeader>
 
         {state?.password ? (
@@ -140,7 +220,7 @@ function InviteDialog({ open, onClose, sites }: { open: boolean; onClose: () => 
                   <Copy />
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground">This is shown once. Ask them to change it under My profile.</p>
+              <p className="text-xs text-muted-foreground">Shown once. Ask them to change it under My profile.</p>
             </div>
             <DialogFooter>
               <Button type="button" onClick={onClose}>Done</Button>
@@ -148,7 +228,8 @@ function InviteDialog({ open, onClose, sites }: { open: boolean; onClose: () => 
           </div>
         ) : (
           <form action={action} className="flex flex-col gap-4">
-            <input type="hidden" name="role" value={role} />
+            <input type="hidden" name="role_id" value={roleId} />
+            <input type="hidden" name="all_sites" value={allSites ? "true" : "false"} />
             <input type="hidden" name="site_ids" value={siteIds.join(",")} />
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="flex flex-col gap-1.5">
@@ -163,22 +244,13 @@ function InviteDialog({ open, onClose, sites }: { open: boolean; onClose: () => 
                 <Label htmlFor="inv-phone">Phone</Label>
                 <Input id="inv-phone" name="phone" placeholder="9845012345" />
               </div>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="inv-role">Role</Label>
-                <Select value={role} onValueChange={(v) => setRole(v as "supervisor" | "admin")}>
-                  <SelectTrigger id="inv-role" className="w-full"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="supervisor">Supervisor — scoped to sites</SelectItem>
-                    <SelectItem value="admin">Admin — all sites</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
-            <SitePicker sites={sites} selected={siteIds} onChange={setSiteIds} disabled={role === "admin"} />
+            <RolePicker roles={roles} value={roleId} onChange={setRoleId} />
+            <ScopePicker sites={sites} allSites={allSites} selected={siteIds} onAllSites={setAllSites} onChange={setSiteIds} />
             {state?.error && <FormAlert>{state.error}</FormAlert>}
             <DialogFooter>
               <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-              <Button type="submit" disabled={pending}>{pending && <Loader2 className="animate-spin" />}Create login</Button>
+              <Button type="submit" disabled={pending || !roleId}>{pending && <Loader2 className="animate-spin" />}Create login</Button>
             </DialogFooter>
           </form>
         )}
@@ -187,8 +259,9 @@ function InviteDialog({ open, onClose, sites }: { open: boolean; onClose: () => 
   );
 }
 
-function EditDialog({ member, sites, onClose }: { member: Member | null; sites: Site[]; onClose: () => void }) {
-  const [role, setRole] = useState<string>(member?.role ?? "supervisor");
+function EditDialog({ member, sites, roles, onClose }: { member: Member | null; sites: Site[]; roles: RoleOption[]; onClose: () => void }) {
+  const [roleId, setRoleId] = useState(member?.role_id ?? "");
+  const [allSites, setAllSites] = useState(member?.all_sites ?? false);
   const [siteIds, setSiteIds] = useState<string[]>(member?.sites.map((s) => s.site_id) ?? []);
   const [state, action, pending] = useActionState<ActionState, FormData>(async (prev, fd) => {
     const r = await updateTeamMember(prev, fd);
@@ -197,37 +270,23 @@ function EditDialog({ member, sites, onClose }: { member: Member | null; sites: 
   }, undefined);
 
   return (
-    <Dialog
-      open={!!member}
-      onOpenChange={(v) => {
-        if (!v) onClose();
-        else if (member) { setRole(member.role); setSiteIds(member.sites.map((s) => s.site_id)); }
-      }}
-    >
+    <Dialog open={!!member} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{member?.full_name}</DialogTitle>
-          <DialogDescription>Change the role or the sites this person can see.</DialogDescription>
+          <DialogDescription>Change what this person can do and which sites they see.</DialogDescription>
         </DialogHeader>
         <form action={action} className="flex flex-col gap-4">
           <input type="hidden" name="profile_id" value={member?.id ?? ""} />
-          <input type="hidden" name="role" value={role} />
+          <input type="hidden" name="role_id" value={roleId} />
+          <input type="hidden" name="all_sites" value={allSites ? "true" : "false"} />
           <input type="hidden" name="site_ids" value={siteIds.join(",")} />
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="edit-role">Role</Label>
-            <Select value={role} onValueChange={(v) => setRole(v as string)}>
-              <SelectTrigger id="edit-role" className="w-full"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="supervisor">Supervisor</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <SitePicker sites={sites} selected={siteIds} onChange={setSiteIds} disabled={role === "admin"} />
+          <RolePicker roles={roles} value={roleId} onChange={setRoleId} />
+          <ScopePicker sites={sites} allSites={allSites} selected={siteIds} onAllSites={setAllSites} onChange={setSiteIds} />
           {state?.error && <FormAlert>{state.error}</FormAlert>}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-            <Button type="submit" disabled={pending}>{pending && <Loader2 className="animate-spin" />}Save</Button>
+            <Button type="submit" disabled={pending || !roleId}>{pending && <Loader2 className="animate-spin" />}Save</Button>
           </DialogFooter>
         </form>
       </DialogContent>

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ListChecks } from "lucide-react";
-import { requireSession } from "@/lib/auth/session";
+import { requirePermission, requireSession } from "@/lib/auth/session";
 import { loadTasks } from "@/lib/data/tasks";
 import { PageHeader } from "@/components/gf/page-header";
 import { Section } from "@/components/gf/section";
@@ -23,6 +23,7 @@ const DUE_LABEL = { overdue: "overdue", due_soon: "due soon", upcoming: "", no_d
 
 export default async function TasksPage({ searchParams }: PageProps<"/tasks">) {
   const session = await requireSession();
+  requirePermission(session, "tasks:read");
   const sp = await searchParams;
   const str = (v: unknown) => (typeof v === "string" && v.length > 0 && v !== "all" ? v : null);
 
@@ -37,7 +38,7 @@ export default async function TasksPage({ searchParams }: PageProps<"/tasks">) {
         title="Tasks"
         description="Standing checks and one-off jobs, each closed with a photo from the post."
         actions={
-          session.isManager ? (
+          session.can("tasks:write") ? (
             <div className="flex gap-2">
               <ButtonLink href="/tasks/report" variant="outline">Report</ButtonLink>
               <NewTaskDialog sites={sites} guards={guards} templates={templates} />

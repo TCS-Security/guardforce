@@ -26,7 +26,7 @@ export default async function ProfileSettingsPage() {
           items={[
             { k: "Role", v: <span className="capitalize">{session.profile.role}</span> },
             { k: "Agency", v: session.agency.name },
-            { k: "Sites", v: session.isOwner ? "All sites" : `${session.siteIds.length} scoped` },
+            { k: "Sites", v: session.isOwner || session.profile.all_sites ? "All sites" : `${session.siteIds.length} scoped` },
             { k: "Member since", v: fmtDate(session.profile.created_at, session.agency.timezone) },
           ]}
         />

@@ -121,7 +121,7 @@ export default async function PatrolPage({ params }: PageProps<"/patrols/[id]">)
           </Section>
 
           <Section title="Supervisor note" style={{ ["--i" as string]: 7 }}>
-            <PatrolNote patrolId={patrol.id} note={patrol.notes} canEdit={session.isManager} />
+            <PatrolNote patrolId={patrol.id} note={patrol.notes} canEdit={session.can("patrols:write")} />
           </Section>
         </div>
       </div>

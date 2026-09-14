@@ -1,5 +1,5 @@
 import { CalendarDays, ArrowLeft, ArrowRight } from "lucide-react";
-import { requireSession } from "@/lib/auth/session";
+import { requirePermission, requireSession } from "@/lib/auth/session";
 import {
   currentYear, loadBalances, loadGuardOptions, loadHistory, loadPendingInbox, loadSiteOptions,
   loadUpcoming, todayISO, type HistoryFilters,
@@ -63,6 +63,7 @@ function historyHref(f: HistoryFilters, page: number): string {
 
 export default async function LeavePage({ searchParams }: PageProps<"/leave">) {
   const session = await requireSession();
+  requirePermission(session, "leave:read");
   const sp = await searchParams;
   const tabParam = one(sp.tab);
   const tab = ["upcoming", "history", "balances"].includes(tabParam ?? "") ? tabParam! : "upcoming";
@@ -73,7 +74,7 @@ export default async function LeavePage({ searchParams }: PageProps<"/leave">) {
     loadPendingInbox(session),
     loadUpcoming(session),
     loadSiteOptions(session),
-    session.isManager ? loadGuardOptions(session) : Promise.resolve([]),
+    session.can("leave:decide") ? loadGuardOptions(session) : Promise.resolve([]),
   ]);
 
   const [history, balances] = await Promise.all([
@@ -99,7 +100,7 @@ export default async function LeavePage({ searchParams }: PageProps<"/leave">) {
             <ButtonLink variant="outline" href="/leave/calendar">
               <CalendarDays data-icon="inline-start" /> Calendar
             </ButtonLink>
-            {session.isManager && <LogLeaveDialog guards={guardOptions} />}
+            {session.can("leave:decide") && <LogLeaveDialog guards={guardOptions} />}
           </>
         }
       />
@@ -267,7 +268,7 @@ export default async function LeavePage({ searchParams }: PageProps<"/leave">) {
         {tab === "balances" && balances && (
           <Section
             title={`Leave balances — ${year}`}
-            description={session.isOwner ? "Totals are editable inline; guards without a row get the defaults (12 casual / 15 earned) and a row is created on save" : "Per guard for the current year"}
+            description={session.can("leave:decide") ? "Totals are editable inline; guards without a row get the defaults (12 casual / 15 earned) and a row is created on save" : "Per guard for the current year"}
             bodyClassName="p-0"
           >
             <table className="w-full text-sm" aria-label="Leave balances">
@@ -277,12 +278,12 @@ export default async function LeavePage({ searchParams }: PageProps<"/leave">) {
                   <th>Casual</th>
                   <th>Earned</th>
                   <th>Unpaid</th>
-                  {session.isOwner && <th className="w-32"></th>}
+                  {session.can("leave:decide") && <th className="w-32"></th>}
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {balances.map((g) => (
-                  <BalanceRow key={g.guard_id} guard={g} year={year} editable={session.isOwner} />
+                  <BalanceRow key={g.guard_id} guard={g} year={year} editable={session.can("leave:decide")} />
                 ))}
               </tbody>
             </table>

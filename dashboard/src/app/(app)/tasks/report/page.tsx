@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { ImageOff } from "lucide-react";
-import { requireSession } from "@/lib/auth/session";
+import { requirePermission, requireSession } from "@/lib/auth/session";
 import { loadTaskReport } from "@/lib/data/tasks";
 import { taskPhotoUrls } from "../actions";
 import { PageHeader } from "@/components/gf/page-header";
@@ -20,6 +20,7 @@ type Assignment = { status: string; completed_at: string | null; note: string | 
 
 export default async function TaskReportPage({ searchParams }: PageProps<"/tasks/report">) {
   const session = await requireSession();
+  requirePermission(session, "tasks:read");
   const sp = await searchParams;
   const date = typeof sp.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(sp.date) ? sp.date : toLocalDate(new Date(), session.agency.timezone);
   const siteId = typeof sp.site === "string" ? sp.site : null;
