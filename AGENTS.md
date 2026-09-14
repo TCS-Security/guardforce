@@ -30,3 +30,10 @@ Logins: owner@sentinel.test / priya@sentinel.test / arun@sentinel.test — passw
 - Time: agency timezone (`agency.timezone`, IST). Use helpers in `src/lib/domain/format.ts`.
 - Tests: unit (vitest, `*.test.ts(x)` beside code or in `__tests__`), e2e (Playwright in `dashboard/e2e`, seeded data ids in `e2e/helpers.ts`, `admin()` client to simulate the guard app via RPCs). Every feature ships with both. E2E tests must reset any state they mutate (or use fresh rows) so the suite is re-runnable without `db reset`.
 - Screenshots for visual review: `node scripts/shot.mjs /route ...` writes `/tmp/shot-<route>.png`.
+
+## Git, CI & deployments
+- Remote: `github.com/TCS-Security/guardforce` (private). `main` is integration — **never push straight to `main`; open a PR** per feature/fix (`<area>/<slug>` branch names). Multiple agents work here concurrently: never `git commit`/`git add -A` more than your own change; use `git commit --only <paths>` so in-flight staged work from other worktrees is not swept in.
+- CI (`.github/workflows/ci.yml`): `lint`, `typecheck`, `vitest` on PRs that touch `dashboard/**` and on pushes to `main`. Run the same locally before opening a PR.
+- Migrations (`.github/workflows/supabase-deploy.yml`): PRs touching `supabase/migrations/**` deploy to the **staging** Supabase project; merges to `main` deploy to **production** (`production` GitHub environment).
+- Vercel import: repo `TCS-Security/guardforce`, root directory `dashboard`. Every PR gets a preview (staging Supabase); `main` deploys production.
+- Environments: local Supabase (per worktree) → staging cloud project (PR previews) → production cloud project (main). Keys live in Vercel env (Preview/Production scopes) and GitHub secrets/vars — never in the repo.
