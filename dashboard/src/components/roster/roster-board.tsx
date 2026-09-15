@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, X } from "lucide-react";
 import { GuardAvatar } from "@/components/gf/guard-avatar";
@@ -32,6 +32,7 @@ export function RosterBoard({
   siteName,
   days,
   today,
+  focusDay = null,
   shiftTypes,
   shifts,
   guards,
@@ -42,6 +43,8 @@ export function RosterBoard({
   siteName: string;
   days: string[];
   today: string;
+  /** Day arrived at from the month grid: highlighted and scrolled into view. */
+  focusDay?: string | null;
   shiftTypes: ShiftType[];
   shifts: RosterShift[];
   guards: AssignableGuard[];
@@ -49,6 +52,11 @@ export function RosterBoard({
   timezone: string;
 }) {
   const [assigning, setAssigning] = useState<{ shiftType: ShiftType; day: string } | null>(null);
+  const focusRef = useRef<HTMLTableCellElement>(null);
+
+  useEffect(() => {
+    if (focusDay) focusRef.current?.scrollIntoView({ block: "nearest", inline: "center" });
+  }, [focusDay]);
 
   const byCell = useMemo(() => {
     const map = new Map<string, RosterShift[]>();
@@ -62,7 +70,7 @@ export function RosterBoard({
   return (
     <>
       <div className="reveal overflow-x-auto rounded-lg border bg-card">
-        <table className="w-full min-w-[840px] border-separate border-spacing-0" aria-label={`Roster for ${siteName}`}>
+        <table className="w-full min-w-[840px] border-separate border-spacing-0" aria-label={`Roster week for ${siteName}`}>
           <thead>
             <tr>
               <th scope="col" className="sticky left-0 z-10 w-[132px] border-b bg-card px-3 py-2 text-left">
@@ -70,8 +78,18 @@ export function RosterBoard({
               </th>
               {days.map((d) => {
                 const isToday = d === today;
+                const isFocused = d === focusDay;
                 return (
-                  <th key={d} scope="col" className={cn("border-b border-l px-3 py-2 text-left", isToday && "bg-primary/5")}>
+                  <th
+                    key={d}
+                    scope="col"
+                    ref={isFocused ? focusRef : undefined}
+                    className={cn(
+                      "border-b border-l px-3 py-2 text-left",
+                      isToday && "bg-primary/5",
+                      isFocused && "bg-primary/10 ring-1 ring-inset ring-primary/30",
+                    )}
+                  >
                     <div className="eyebrow">{WEEKDAY_LABELS[weekdayOf(d)]}</div>
                     <div className={cn("font-mono tabular text-xs", isToday ? "font-semibold text-primary" : "text-muted-foreground")}>
                       {d.slice(8)}/{d.slice(5, 7)}
@@ -94,8 +112,17 @@ export function RosterBoard({
                   const cover = cellCoverage(cell, st.guards_required);
                   const isToday = d === today;
                   const isPast = d < today;
+                  const isFocused = d === focusDay;
                   return (
-                    <td key={d} className={cn("min-w-[118px] border-b border-l px-1.5 py-2", isToday && "bg-primary/5", isPast && "bg-muted/20")}>
+                    <td
+                      key={d}
+                      className={cn(
+                        "min-w-[118px] border-b border-l px-1.5 py-2",
+                        isToday && "bg-primary/5",
+                        isPast && "bg-muted/20",
+                        isFocused && "bg-primary/10 ring-1 ring-inset ring-primary/30",
+                      )}
+                    >
                       <div className="flex flex-col gap-1">
                         {cell.map((s) => (
                           <GuardChip key={s.id} shift={s} canEdit={canEdit} />

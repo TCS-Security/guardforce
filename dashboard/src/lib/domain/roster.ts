@@ -1,6 +1,25 @@
-import { addDays, startOfWeek } from "date-fns";
+import { addDays, differenceInCalendarDays, format, startOfWeek } from "date-fns";
 
 export const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
+/** Column order of both roster grids: the week board reads Mon–Sun, so the month grid does too. */
+export const MONDAY_FIRST_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
+
+export const ROSTER_VIEWS = ["week", "month"] as const;
+export type RosterView = (typeof ROSTER_VIEWS)[number];
+
+/** The `view` query param, defaulting to the week board. */
+export function parseRosterView(value: unknown): RosterView {
+  return value === "month" ? "month" : "week";
+}
+
+/**
+ * Noon on a yyyy-MM-dd, read as a local date. Midnight would let a UTC offset or a
+ * DST jump roll the anchor onto the day before; noon never does. Every anchor in
+ * this module is built this way so `isoDate(anchor(s)) === s` always holds.
+ */
+export function dayAnchor(dateStr: string) {
+  return new Date(`${dateStr}T12:00:00`);
+}
 
 /** Monday-first week containing `date`, as yyyy-MM-dd strings. */
 export function weekDays(date: Date): string[] {
@@ -14,6 +33,78 @@ export function isoDate(d: Date) {
 
 export function shiftWeek(date: Date, weeks: number) {
   return addDays(date, weeks * 7);
+}
+
+/** Noon on the 1st of the month containing `date`. */
+export function monthStart(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1, 12);
+}
+
+/** Every day of the calendar month containing `date`. */
+export function monthDays(date: Date): string[] {
+  const first = monthStart(date);
+  const length = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  return Array.from({ length }, (_, i) => isoDate(addDays(first, i)));
+}
+
+/**
+ * The month containing `date` as a Monday-first calendar grid: whole weeks, padded
+ * with the tail of the previous month and the head of the next one so the grid is
+ * always a multiple of 7 (35 or 42 cells).
+ */
+export function monthGridDays(date: Date): string[] {
+  const first = monthStart(date);
+  const lead = (first.getDay() + 6) % 7; // Monday = 0
+  const start = addDays(first, -lead);
+  const length = Math.ceil((lead + monthDays(date).length) / 7) * 7;
+  return Array.from({ length }, (_, i) => isoDate(addDays(start, i)));
+}
+
+/**
+ * The same calendar day `months` later/earlier, without date-fns' end-of-month
+ * clamping: stepping from 31 Jan lands on 1 Feb, not 28 Feb, so paging forward and
+ * back returns you to where you started.
+ */
+export function shiftMonth(date: Date, months: number) {
+  return new Date(date.getFullYear(), date.getMonth() + months, 1, 12);
+}
+
+/** "2026-09" for the month containing `date`. */
+export function monthKey(date: Date) {
+  return isoDate(monthStart(date)).slice(0, 7);
+}
+
+export function isInMonth(dateStr: string, date: Date) {
+  return dateStr.slice(0, 7) === monthKey(date);
+}
+
+export function monthLabel(date: Date) {
+  return format(monthStart(date), "MMMM yyyy");
+}
+
+/** The days a view shows for an anchor date — the grid, and the range we query. */
+export function rosterDays(date: Date, view: RosterView): string[] {
+  return view === "month" ? monthGridDays(date) : weekDays(date);
+}
+
+/** One step of the active unit: the arrows page by week or by month. */
+export function stepAnchor(date: Date, view: RosterView, delta: number) {
+  return view === "month" ? shiftMonth(date, delta) : shiftWeek(date, delta);
+}
+
+/** Inclusive day count of a yyyy-MM-dd range. */
+export function rangeSpanDays(from: string, to: string) {
+  return differenceInCalendarDays(dayAnchor(to), dayAnchor(from)) + 1;
+}
+
+/** "14–20 Sep 2026" / "29 Sep – 5 Oct 2026" / "28 Dec 2026 – 3 Jan 2027". */
+export function rangeLabel(from: string, to: string) {
+  const a = dayAnchor(from);
+  const b = dayAnchor(to);
+  if (from === to) return format(a, "d MMM yyyy");
+  if (from.slice(0, 7) === to.slice(0, 7)) return `${format(a, "d")}–${format(b, "d MMM yyyy")}`;
+  if (from.slice(0, 4) === to.slice(0, 4)) return `${format(a, "d MMM")} – ${format(b, "d MMM yyyy")}`;
+  return `${format(a, "d MMM yyyy")} – ${format(b, "d MMM yyyy")}`;
 }
 
 /** Weekday index (0=Sun) of a yyyy-MM-dd string, read as a local date. */
