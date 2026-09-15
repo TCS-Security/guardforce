@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
-import { Label } from "@/components/ui/label";
+import { FilterBar, FilterField } from "@/components/gf/filter-bar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const STATUS = [
@@ -49,20 +49,19 @@ export function TaskFiltersBar({
   ];
 
   return (
-    <div className="reveal flex flex-wrap items-end gap-3 rounded-lg border bg-card p-3">
+    <FilterBar aria-label="Filter tasks">
       {options.map((o) => (
-        <div key={o.key} className="flex flex-col gap-1.5">
-          <Label className="eyebrow">{o.label}</Label>
+        <FilterField key={o.key} label={o.label}>
           <Select value={o.value} onValueChange={(v) => set(o.key, v as string)}>
-            <SelectTrigger size="sm" className={o.width} aria-label={o.label}>
+            <SelectTrigger className={o.width} aria-label={o.label}>
               <SelectValue>{(v: string) => o.items.find((i) => i.value === (v || "all"))?.label ?? o.items[0]!.label}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               {o.items.map((i) => <SelectItem key={i.value} value={i.value}>{i.label}</SelectItem>)}
             </SelectContent>
           </Select>
-        </div>
+        </FilterField>
       ))}
-    </div>
+    </FilterBar>
   );
 }

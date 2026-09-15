@@ -80,9 +80,14 @@ test.describe("sites", () => {
     const map = page.locator('[data-testid="map"] .maplibregl-canvas');
     await expect(map).toBeVisible();
     const box = (await map.boundingBox())!;
-    // three clicks make a valid ring
-    for (const [dx, dy] of [[-70, -50], [70, -50], [0, 60]]) {
-      await page.mouse.click(box.x + box.width / 2 + dx, box.y + box.height / 2 + dy);
+    // Three clicks make a valid ring. MapLibre occasionally swallows a click that lands while
+    // the canvas is still settling, so wait for each point to register before adding the next.
+    const points = [[-70, -50], [70, -50], [0, 60]];
+    for (const [i, [dx, dy]] of points.entries()) {
+      await expect(async () => {
+        await page.mouse.click(box.x + box.width / 2 + dx, box.y + box.height / 2 + dy);
+        await expect(page.getByText(`${i + 1} points`, { exact: true })).toBeVisible({ timeout: 1_000 });
+      }).toPass({ timeout: 15_000 });
     }
     await expect(page.getByText("3 points", { exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Create site" }).click();

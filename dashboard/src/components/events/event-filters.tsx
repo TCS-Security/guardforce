@@ -4,8 +4,8 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
 import { Download } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { FilterBar, FilterField } from "@/components/gf/filter-bar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EVENT_META } from "@/lib/domain/status";
 import type { EventType } from "@/lib/supabase/types";
@@ -57,15 +57,13 @@ export function EventFiltersBar({
     : (Object.keys(EVENT_META) as EventType[]);
 
   return (
-    <div className="reveal flex flex-wrap items-end gap-3 rounded-lg border bg-card p-3">
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="ev-from" className="eyebrow">From</Label>
-        <Input id="ev-from" type="date" value={filters.from ?? ""} onChange={(e) => set({ from: e.target.value })} className="h-7 w-[140px]" />
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="ev-to" className="eyebrow">To</Label>
-        <Input id="ev-to" type="date" value={filters.to ?? ""} onChange={(e) => set({ to: e.target.value })} className="h-7 w-[140px]" />
-      </div>
+    <FilterBar aria-label="Filter activity">
+      <FilterField label="From" htmlFor="ev-from">
+        <Input id="ev-from" type="date" value={filters.from ?? ""} onChange={(e) => set({ from: e.target.value })} className="w-[140px] font-mono text-xs md:text-xs" />
+      </FilterField>
+      <FilterField label="To" htmlFor="ev-to">
+        <Input id="ev-to" type="date" value={filters.to ?? ""} onChange={(e) => set({ to: e.target.value })} className="w-[140px] font-mono text-xs md:text-xs" />
+      </FilterField>
 
       <Picker
         label="Site"
@@ -111,7 +109,7 @@ export function EventFiltersBar({
       >
         <Download data-icon="inline-start" /> CSV
       </Button>
-    </div>
+    </FilterBar>
   );
 }
 
@@ -129,16 +127,15 @@ function Picker({
   width: string;
 }) {
   return (
-    <div className="flex flex-col gap-1.5">
-      <Label className="eyebrow">{label}</Label>
+    <FilterField label={label}>
       <Select value={value} onValueChange={(v) => onChange(v as string)}>
-        <SelectTrigger size="sm" className={width} aria-label={label}>
+        <SelectTrigger className={width} aria-label={label}>
           <SelectValue>{(v: string) => options.find((o) => o.value === (v || "all"))?.label ?? options[0]!.label}</SelectValue>
         </SelectTrigger>
         <SelectContent>
           {options.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
         </SelectContent>
       </Select>
-    </div>
+    </FilterField>
   );
 }
