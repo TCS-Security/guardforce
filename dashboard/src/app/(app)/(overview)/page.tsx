@@ -12,6 +12,7 @@ import { ButtonLink } from "@/components/gf/button-link";
 import { fmtDate } from "@/lib/domain/format";
 import { kycGaps } from "@/lib/domain/kyc";
 import { presenceState } from "@/lib/domain/status";
+import type { PermissionKey } from "@/lib/auth/permissions";
 import { cn } from "cn";
 
 export const dynamic = "force-dynamic";
@@ -30,6 +31,12 @@ export default async function OverviewPage() {
   const patrolsDue = patrolsDone + (data.patrolCounts.missed ?? 0);
   const compliance = patrolsDue > 0 ? Math.round((100 * (data.patrolCounts.completed ?? 0)) / patrolsDue) : null;
   const openAlerts = data.alerts.filter((a) => !a.acknowledged_at).length;
+  const staffedSites = sites.filter((s) => s.on_duty_now > 0).length;
+  const openPosts = Math.max(0, totals.required - totals.on_duty);
+  const needsAction = data.pendingLeave + kycIncomplete;
+  // Only link a tile at somewhere this person is allowed to go.
+  const to = (key: PermissionKey, href: string) => (session.can(key) ? href : undefined);
+  const day = `date=${data.today}`;
 
   return (
     <div className="mx-auto flex max-w-[1400px] flex-col gap-6">
@@ -39,25 +46,75 @@ export default async function OverviewPage() {
         description={
           totals.on_duty === 0
             ? "No guards are on duty right now."
-            : <>{totals.on_duty} guard{totals.on_duty === 1 ? "" : "s"} on duty across {sites.filter((s) => s.on_duty_now > 0).length} site{sites.filter((s) => s.on_duty_now > 0).length === 1 ? "" : "s"}. {openAlerts > 0 ? `${openAlerts} alert${openAlerts === 1 ? "" : "s"} need attention.` : "No open alerts."}</>
+            : <>{totals.on_duty} guard{totals.on_duty === 1 ? "" : "s"} on duty across {staffedSites} site{staffedSites === 1 ? "" : "s"}.</>
         }
         actions={
-          <ButtonLink variant="outline" href="/live">
-            <MapPinned data-icon="inline-start" /> Live map
-          </ButtonLink>
+          session.can("live:read") && (
+            <ButtonLink href="/live" size="lg" className="h-10 gap-2 px-4 text-[15px] font-semibold [&_svg:not([class*='size-'])]:size-[18px]">
+              <MapPinned data-icon="inline-start" /> Open live map
+            </ButtonLink>
+          )
         }
       />
 
       {/* Numbers row */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-        <StatTile label="On duty now" value={totals.on_duty} tone="present" hint={`${totals.required} posts required`} style={{ ["--i" as string]: 1 }}>
+        <StatTile
+          label="On duty now"
+          value={totals.on_duty}
+          tone="present"
+          hint={openPosts > 0 ? `${openPosts} post${openPosts === 1 ? "" : "s"} still unmanned` : "Every post is covered"}
+          href={to("attendance:read", `/attendance?${day}&status=on_duty`)}
+          linkLabel="See the guards who are on duty now"
+          style={{ ["--i" as string]: 1 }}
+        >
           <StaffingRing filled={totals.on_duty} total={Math.max(totals.required, totals.on_duty, 1)} />
         </StatTile>
-        <StatTile label="Present today" value={totals.present + totals.half_day} hint={`${totals.half_day} half day · ${totals.pending} pending`} style={{ ["--i" as string]: 2 }} />
-        <StatTile label="Absent" value={totals.absent} tone={totals.absent > 0 ? "absent" : "neutral"} hint={`${totals.on_leave} on approved leave`} style={{ ["--i" as string]: 3 }} />
-        <StatTile label="Flagged check-ins" value={totals.flagged} tone={totals.flagged > 0 ? "half-day" : "neutral"} hint={`${outside} outside fence · ${locOff} location off`} style={{ ["--i" as string]: 4 }} />
-        <StatTile label="Patrol compliance" value={compliance == null ? "—" : `${compliance}%`} tone={compliance != null && compliance < 85 ? "half-day" : "neutral"} hint={`${data.patrolCounts.missed ?? 0} missed · ${data.patrolCounts.late ?? 0} late today`} style={{ ["--i" as string]: 5 }} />
-        <StatTile label="Needs action" value={data.pendingLeave + kycIncomplete} tone={data.pendingLeave + kycIncomplete > 0 ? "signal" : "neutral"} hint={`${data.pendingLeave} leave · ${kycIncomplete} KYC incomplete`} style={{ ["--i" as string]: 6 }} />
+        <StatTile
+          label="Present today"
+          value={totals.present + totals.half_day}
+          hint={`${totals.present} full day, ${totals.half_day} half day · ${totals.pending} not started yet`}
+          href={to("attendance:read", `/attendance?${day}&status=worked`)}
+          linkLabel="See the guards marked present today"
+          style={{ ["--i" as string]: 2 }}
+        />
+        <StatTile
+          label="Absent"
+          value={totals.absent}
+          tone={totals.absent > 0 ? "absent" : "neutral"}
+          hint={`${totals.on_leave} more on approved leave`}
+          href={to("attendance:read", `/attendance?${day}&status=absent`)}
+          linkLabel="See the guards who did not turn up"
+          style={{ ["--i" as string]: 3 }}
+        />
+        <StatTile
+          label="Flagged check-ins"
+          value={totals.flagged}
+          tone={totals.flagged > 0 ? "half-day" : "neutral"}
+          hint={`${outside} outside the fence · ${locOff} with location off`}
+          href={to("attendance:read", `/attendance?${day}&trust=any_flag`)}
+          linkLabel="See the check-ins we could not verify"
+          style={{ ["--i" as string]: 4 }}
+        />
+        <StatTile
+          label="Patrol compliance"
+          value={compliance == null ? "—" : `${compliance}%`}
+          tone={compliance != null && compliance < 85 ? "half-day" : "neutral"}
+          hint={`${data.patrolCounts.missed ?? 0} missed · ${data.patrolCounts.late ?? 0} late today`}
+          href={to("patrols:read", `/patrols?${day}`)}
+          linkLabel="See today's patrol rounds"
+          style={{ ["--i" as string]: 5 }}
+        />
+        <StatTile
+          label="Needs action"
+          value={needsAction}
+          tone={needsAction > 0 ? "signal" : "neutral"}
+          hint={`${data.pendingLeave} leave to decide · ${kycIncomplete} missing KYC papers`}
+          /* Leave decisions are the time-critical half, so send the owner there while any are waiting. */
+          href={data.pendingLeave > 0 ? to("leave:read", "/leave") : to("guards:read", "/guards?kyc=incomplete")}
+          linkLabel={data.pendingLeave > 0 ? "Open the leave inbox" : "See the guards with incomplete KYC"}
+          style={{ ["--i" as string]: 6 }}
+        />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
@@ -119,6 +176,7 @@ export default async function OverviewPage() {
                 </tbody>
               </table>
             </div>
+            <TallyLegend />
           </Section>
 
           <Section title="Attendance, last 14 days" description="Per shift, all sites in your scope" style={{ ["--i" as string]: 8 }}>
@@ -146,15 +204,43 @@ export default async function OverviewPage() {
   );
 }
 
-/** Today's P/H/A/L split for one site, in tabular mono. */
-function DayTally({ site }: { site: { present: number; half_day: number; absent: number; on_leave: number } }) {
+/** The four letters of the day tally, in the order they are printed. */
+const TALLY_KEYS = [
+  { key: "present", letter: "P", label: "present", className: "text-present" },
+  { key: "half_day", letter: "H", label: "half day", className: "text-half-day-foreground dark:text-half-day" },
+  { key: "absent", letter: "A", label: "absent", className: "text-absent" },
+  { key: "on_leave", letter: "L", label: "on leave", className: "text-on-leave" },
+] as const;
+
+type SiteTally = { present: number; half_day: number; absent: number; on_leave: number };
+
+/** Today's P/H/A/L split for one site, in tabular mono. Every number says what it is on hover. */
+function DayTally({ site }: { site: SiteTally }) {
   return (
     <span className="font-mono tabular text-xs whitespace-nowrap">
-      <span className="text-present">{site.present}P</span>{" "}
-      <span className="text-half-day-foreground dark:text-half-day">{site.half_day}H</span>{" "}
-      <span className="text-absent">{site.absent}A</span>{" "}
-      <span className="text-on-leave">{site.on_leave}L</span>
+      {TALLY_KEYS.map(({ key, letter, label, className }, i) => (
+        <span key={key}>
+          {i > 0 ? " " : ""}
+          <span className={className} title={`${site[key]} ${label}`} aria-label={`${site[key]} ${label}`}>
+            {site[key]}{letter}
+          </span>
+        </span>
+      ))}
     </span>
+  );
+}
+
+/** Hairline key for the P/H/A/L tally — the letters mean nothing without it. */
+function TallyLegend() {
+  return (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t px-4 py-2 text-xs text-muted-foreground">
+      <span className="eyebrow">Today reads</span>
+      {TALLY_KEYS.map(({ key, letter, label, className }) => (
+        <span key={key} className="whitespace-nowrap">
+          <span className={cn("font-mono", className)}>{letter}</span> = {label}
+        </span>
+      ))}
+    </div>
   );
 }
 
