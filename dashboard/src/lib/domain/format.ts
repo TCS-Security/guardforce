@@ -108,3 +108,88 @@ export function fromLocalInput(value: string, tz = DEFAULT_TZ) {
 export function toLocalInput(value: string | Date, tz = DEFAULT_TZ) {
   return formatInTimeZone(new Date(value), tz, "yyyy-MM-dd'T'HH:mm");
 }
+
+// ---------------------------------------------------------------------------
+// Report formatters
+//
+// The founder's rule for every report surface and every export: dates read
+// DD-MM-YY, times read HH:MM on a 24-hour clock, and seconds are never shown.
+// The helpers above keep their own (friendlier, prose-y) formats for the rest
+// of the dashboard — these are the ones reports and exports use.
+// ---------------------------------------------------------------------------
+
+/** A bare calendar date (`2026-09-01`) as opposed to an instant. */
+const PLAIN_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Splits a value into its agency-local calendar parts. A plain `yyyy-MM-dd` is
+ * taken at face value — shifting it into a timezone would move a shift_date to
+ * the wrong day.
+ */
+function localParts(value: string | Date | null | undefined, tz = DEFAULT_TZ) {
+  if (!value) return null;
+  if (typeof value === "string" && PLAIN_DATE.test(value)) {
+    const [y, m, d] = value.split("-").map(Number);
+    return { y: y!, m: m!, d: d!, hh: 0, mm: 0, dateOnly: true };
+  }
+  const at = new Date(value);
+  if (Number.isNaN(at.getTime())) return null;
+  const [y, m, d, hh, mm] = formatInTimeZone(at, tz, "yyyy-MM-dd-HH-mm").split("-").map(Number);
+  return { y: y!, m: m!, d: d!, hh: hh!, mm: mm!, dateOnly: false };
+}
+
+const pad2 = (n: number) => String(n).padStart(2, "0");
+
+/** `2026-09-01` / an ISO instant -> `01-09-26`, in agency time. */
+export function fmtReportDate(value: string | Date | null | undefined, tz = DEFAULT_TZ) {
+  const p = localParts(value, tz);
+  if (!p) return "";
+  return `${pad2(p.d)}-${pad2(p.m)}-${pad2(p.y % 100)}`;
+}
+
+/** An ISO instant -> `06:05`, 24-hour, agency time, never seconds. */
+export function fmtReportTime(value: string | Date | null | undefined, tz = DEFAULT_TZ) {
+  const p = localParts(value, tz);
+  if (!p) return "";
+  return `${pad2(p.hh)}:${pad2(p.mm)}`;
+}
+
+/** An ISO instant -> `01-09-26 06:05`. */
+export function fmtReportDateTime(value: string | Date | null | undefined, tz = DEFAULT_TZ) {
+  const p = localParts(value, tz);
+  if (!p) return "";
+  return p.dateOnly ? fmtReportDate(value, tz) : `${fmtReportDate(value, tz)} ${fmtReportTime(value, tz)}`;
+}
+
+/**
+ * Excel date serial (days since 1899-12-30) for the agency-local wall clock, so
+ * a downloaded sheet shows the same HH:MM the dashboard does. Fractional part
+ * is the time of day; `null` when there is no value.
+ */
+export function excelSerial(value: string | Date | null | undefined, tz = DEFAULT_TZ): number | null {
+  const p = localParts(value, tz);
+  if (!p) return null;
+  const days = Math.floor(Date.UTC(p.y, p.m - 1, p.d) / 86_400_000) + 25_569;
+  return days + (p.hh * 60 + p.mm) / 1440;
+}
+
+/** 510 -> 8.5. Reports quote worked time in decimal hours so a column sums. */
+export function hoursFromMinutes(mins: number | null | undefined): number | null {
+  if (mins == null || Number.isNaN(mins)) return null;
+  return Math.round((mins / 60) * 10) / 10;
+}
+
+/** 510 -> "8.5 h". The screen-side twin of `hoursFromMinutes`. */
+export function fmtHours(mins: number | null | undefined) {
+  const h = hoursFromMinutes(mins);
+  return h == null ? "—" : `${h} h`;
+}
+
+/**
+ * A Google Maps pin for a fix. `?q=<lat>,<lng>` is the documented "search this
+ * point" form and drops a pin on both the web map and the mobile apps.
+ */
+export function mapsUrl(lat: number | null | undefined, lng: number | null | undefined) {
+  if (lat == null || lng == null || Number.isNaN(lat) || Number.isNaN(lng)) return null;
+  return `https://www.google.com/maps?q=${lat.toFixed(6)},${lng.toFixed(6)}`;
+}

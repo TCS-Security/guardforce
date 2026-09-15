@@ -3,10 +3,10 @@
  * daily-digest text. Everything here is deterministic and unit-tested; the
  * loaders in `src/lib/data/reports.ts` only fetch rows and hand them over.
  */
-import { formatInTimeZone } from "date-fns-tz";
 import type { CsvColumn } from "./csv";
+import type { XlsxCell } from "./xlsx";
 import type { AttendanceStatus, EventType, PatrolStatus, ShiftStatus, TrustLevel } from "@/lib/supabase/types";
-import { DEFAULT_TZ } from "./format";
+import { DEFAULT_TZ, excelSerial, fmtReportDate, fmtReportDateTime, fmtReportTime, hoursFromMinutes, mapsUrl } from "./format";
 import { punctuality } from "./attendance";
 
 // ---------------------------------------------------------------------------
@@ -78,10 +78,40 @@ export type LeaveReportRow = {
 // Small helpers
 // ---------------------------------------------------------------------------
 
-const time = (v: string | null | undefined, tz: string) => (v ? formatInTimeZone(new Date(v), tz, "HH:mm") : "");
-const stamp = (v: string | null | undefined, tz: string) => (v ? formatInTimeZone(new Date(v), tz, "yyyy-MM-dd HH:mm:ss") : "");
-const num = (v: number | null | undefined, digits = 0) => (v == null ? "" : Number(v).toFixed(digits));
+/** Every report reads times as HH:MM and dates as DD-MM-YY — never seconds. */
+const time = (v: string | null | undefined, tz: string) => fmtReportTime(v, tz);
+const stamp = (v: string | null | undefined, tz: string) => fmtReportDateTime(v, tz);
+const round = (v: number | null | undefined, digits = 0) => {
+  if (v == null || Number.isNaN(v)) return null;
+  const f = 10 ** digits;
+  return Math.round(v * f) / f;
+};
 const bool = (v: boolean | null | undefined) => (v == null ? "" : v ? "yes" : "no");
+
+// Typed spreadsheet cells. The CSV column already renders the human string; these
+// give Excel/Sheets a real date or number so the column sorts, filters and sums.
+const dateCell = (v: string | null | undefined, tz: string): XlsxCell => {
+  const s = excelSerial(v, tz);
+  return s == null ? { t: "blank" } : { t: "serial", v: Math.floor(s), fmt: "date" };
+};
+const timeCell = (v: string | null | undefined, tz: string): XlsxCell => {
+  const s = excelSerial(v, tz);
+  return s == null ? { t: "blank" } : { t: "serial", v: Math.round((s - Math.floor(s)) * 1440) / 1440, fmt: "time" };
+};
+const stampCell = (v: string | null | undefined, tz: string): XlsxCell => {
+  const s = excelSerial(v, tz);
+  return s == null ? { t: "blank" } : { t: "serial", v: Math.round(s * 1440) / 1440, fmt: "datetime" };
+};
+
+/** Column widths shared by the pinned identity columns across every report table. */
+const W = { date: 86, guard: 156, code: 96, site: 180, route: 150 } as const;
+
+/** A Google Maps pin for a punch, labelled for a human rather than as coordinates. */
+export function punchLocationLink(lat: number | null, lng: number | null, direction: "in" | "out") {
+  const href = mapsUrl(lat, lng);
+  if (!href) return null;
+  return { href, label: direction === "in" ? "Check-in location" : "Check-out location" };
+}
 
 /** "06:00–14:00" for the scheduled window, in agency time. */
 export function scheduledWindow(row: Pick<ShiftReportRow, "scheduled_start" | "scheduled_end">, tz = DEFAULT_TZ) {
@@ -95,17 +125,19 @@ export function scheduledWindow(row: Pick<ShiftReportRow, "scheduled_start" | "s
 
 export function dailyAttendanceColumns(tz = DEFAULT_TZ): CsvColumn<ShiftReportRow>[] {
   return [
-    { header: "Date", value: (r) => r.shift_date },
-    { header: "Guard", value: (r) => r.guard_name },
-    { header: "Code", value: (r) => r.employee_code },
-    { header: "Site", value: (r) => r.site_name },
+    { header: "Date", value: (r) => fmtReportDate(r.shift_date, tz), cell: (r) => dateCell(r.shift_date, tz), pin: true, width: W.date },
+    { header: "Guard", value: (r) => r.guard_name, pin: true, width: W.guard },
+    { header: "Code", value: (r) => r.employee_code, pin: true, width: W.code },
+    { header: "Site", value: (r) => r.site_name, width: W.site },
     { header: "Shift type", value: (r) => r.shift_type },
     { header: "Scheduled", value: (r) => scheduledWindow(r, tz) },
-    { header: "In", value: (r) => time(r.started_at, tz) },
-    { header: "Out", value: (r) => time(r.ended_at, tz) },
-    { header: "Late (min)", value: (r) => r.late_by_min },
-    { header: "Worked (min)", value: (r) => r.worked_minutes },
-    { header: "Away (min)", value: (r) => num(r.away_seconds / 60, 1) },
+    { header: "In", value: (r) => time(r.started_at, tz), cell: (r) => timeCell(r.started_at, tz), align: "right" },
+    { header: "Out", value: (r) => time(r.ended_at, tz), cell: (r) => timeCell(r.ended_at, tz), align: "right" },
+    { header: "Late (min)", value: (r) => r.late_by_min, align: "right" },
+    // The founder reads worked time in hours, not minutes — decimal hours so the column sums.
+    { header: "Worked (h)", value: (r) => hoursFromMinutes(r.worked_minutes), align: "right" },
+    // Away time genuinely lives in minutes (a guard is away for 6 min, not 0.1 h) — labelled, not a bare number.
+    { header: "Away (min)", value: (r) => round(r.away_seconds / 60, 1), align: "right" },
     { header: "Attendance", value: (r) => ATTENDANCE_CSV[r.attendance] },
     { header: "Trust", value: (r) => r.trust ?? "" },
     { header: "Flags", value: (r) => r.flags.join(" ") },
@@ -223,15 +255,15 @@ export function buildMusterMatrix(rows: ShiftReportRow[], days: string[]): Muste
 
 export function musterColumns(days: string[]): CsvColumn<MusterRow>[] {
   return [
-    { header: "Guard", value: (r) => r.guard_name },
-    { header: "Code", value: (r) => r.employee_code },
-    { header: "Site", value: (r) => r.site_name },
-    ...days.map((d) => ({ header: d.slice(8), value: (r: MusterRow) => r.cells[d] ?? MUSTER_BLANK })),
-    { header: "Present days", value: (r) => r.present_days },
-    { header: "Half days", value: (r) => r.half_days },
-    { header: "Absent", value: (r) => r.absent_days },
-    { header: "Leave", value: (r) => r.leave_days },
-    { header: "Worked hours", value: (r) => r.worked_hours.toFixed(1) },
+    { header: "Guard", value: (r) => r.guard_name, pin: true, width: W.guard },
+    { header: "Code", value: (r) => r.employee_code, pin: true, width: W.code },
+    { header: "Site", value: (r) => r.site_name, width: W.site },
+    ...days.map((d) => ({ header: d.slice(8), value: (r: MusterRow) => r.cells[d] ?? MUSTER_BLANK, align: "right" as const, width: 40 })),
+    { header: "Present days", value: (r) => r.present_days, align: "right" as const },
+    { header: "Half days", value: (r) => r.half_days, align: "right" as const },
+    { header: "Absent", value: (r) => r.absent_days, align: "right" as const },
+    { header: "Leave", value: (r) => r.leave_days, align: "right" as const },
+    { header: "Worked (h)", value: (r) => r.worked_hours, align: "right" as const },
   ];
 }
 
@@ -287,17 +319,16 @@ export function toPunchRows(rows: ShiftReportRow[]): PunchRow[] {
 
 export function punchColumns(tz = DEFAULT_TZ): CsvColumn<PunchRow>[] {
   return [
-    { header: "Date", value: (r) => r.shift_date },
-    { header: "Guard", value: (r) => r.guard_name },
-    { header: "Code", value: (r) => r.employee_code },
-    { header: "Site", value: (r) => r.site_name },
+    { header: "Date", value: (r) => fmtReportDate(r.shift_date, tz), cell: (r) => dateCell(r.shift_date, tz), pin: true, width: W.date },
+    { header: "Guard", value: (r) => r.guard_name, pin: true, width: W.guard },
+    { header: "Code", value: (r) => r.employee_code, pin: true, width: W.code },
+    { header: "Site", value: (r) => r.site_name, width: W.site },
     { header: "Shift type", value: (r) => r.shift_type },
     { header: "Punch", value: (r) => (r.direction === "in" ? "Check-in" : "Check-out") },
-    { header: "Time", value: (r) => stamp(r.at, tz) },
-    { header: "Latitude", value: (r) => num(r.lat, 6) },
-    { header: "Longitude", value: (r) => num(r.lng, 6) },
+    { header: "Time", value: (r) => time(r.at, tz), cell: (r) => timeCell(r.at, tz), align: "right" },
+    // Raw coordinates told an owner nothing; a map pin does. Accuracy is gone entirely.
+    { header: "Location", value: () => "", link: (r) => punchLocationLink(r.lat, r.lng, r.direction), width: 170 },
     { header: "In fence", value: (r) => bool(r.in_fence) },
-    { header: "Accuracy (m)", value: (r) => num(r.accuracy_m, 1) },
     { header: "Device", value: (r) => r.device },
   ];
 }
@@ -342,18 +373,24 @@ export function toPatrolExportRows(rows: PatrolReportRow[]): PatrolExportRow[] {
 export function patrolColumns(tz = DEFAULT_TZ): CsvColumn<PatrolExportRow>[] {
   const p = (r: PatrolExportRow) => (r.kind === "patrol" ? r : null);
   return [
+    { header: "Site", value: (r) => r.site_name, pin: true, width: W.site },
+    { header: "Route", value: (r) => r.route_name ?? "", pin: true, width: W.route },
     { header: "Row", value: (r) => (r.kind === "patrol" ? "patrol" : "route summary") },
-    { header: "Site", value: (r) => r.site_name },
-    { header: "Route", value: (r) => r.route_name ?? "" },
-    { header: "Guard", value: (r) => p(r)?.guard_name ?? "" },
-    { header: "Expected", value: (r) => (r.kind === "patrol" ? stamp(r.expected_at, tz) : String(r.expected)) },
-    { header: "Started", value: (r) => (r.kind === "patrol" ? stamp(r.started_at, tz) : String(r.completed)) },
-    { header: "Ended", value: (r) => (r.kind === "patrol" ? stamp(r.ended_at, tz) : String(r.late)) },
-    { header: "Status", value: (r) => (r.kind === "patrol" ? r.status : `${r.missed} missed`) },
-    { header: "Photos", value: (r) => (r.kind === "patrol" ? r.photos : "") },
-    { header: "Distance (m)", value: (r) => (r.kind === "patrol" ? num(r.distance_m, 0) : "") },
-    { header: "Duration (min)", value: (r) => (r.kind === "patrol" ? num(r.duration_s == null ? null : r.duration_s / 60, 1) : "") },
-    { header: "Compliance %", value: (r) => (r.kind === "summary" ? num(r.compliance_pct, 1) : "") },
+    { header: "Guard", value: (r) => p(r)?.guard_name ?? "", width: W.guard },
+    // A patrol row carries the three timestamps; a route-summary row carries the counts.
+    // They used to share the same three columns, which made the spreadsheet unreadable.
+    { header: "Expected", value: (r) => (r.kind === "patrol" ? stamp(r.expected_at, tz) : ""), cell: (r) => (r.kind === "patrol" ? stampCell(r.expected_at, tz) : { t: "blank" }) },
+    { header: "Started", value: (r) => (r.kind === "patrol" ? stamp(r.started_at, tz) : ""), cell: (r) => (r.kind === "patrol" ? stampCell(r.started_at, tz) : { t: "blank" }) },
+    { header: "Ended", value: (r) => (r.kind === "patrol" ? stamp(r.ended_at, tz) : ""), cell: (r) => (r.kind === "patrol" ? stampCell(r.ended_at, tz) : { t: "blank" }) },
+    { header: "Status", value: (r) => (r.kind === "patrol" ? r.status : "") },
+    { header: "Photos", value: (r) => (r.kind === "patrol" ? r.photos : null), align: "right" },
+    { header: "Distance (m)", value: (r) => (r.kind === "patrol" ? round(r.distance_m, 0) : null), align: "right" },
+    { header: "Duration (min)", value: (r) => (r.kind === "patrol" ? round(r.duration_s == null ? null : r.duration_s / 60, 1) : null), align: "right" },
+    { header: "Due", value: (r) => (r.kind === "summary" ? r.expected : null), align: "right" },
+    { header: "Completed", value: (r) => (r.kind === "summary" ? r.completed : null), align: "right" },
+    { header: "Late", value: (r) => (r.kind === "summary" ? r.late : null), align: "right" },
+    { header: "Missed", value: (r) => (r.kind === "summary" ? r.missed : null), align: "right" },
+    { header: "Compliance %", value: (r) => (r.kind === "summary" ? round(r.compliance_pct, 1) : null), align: "right" },
   ];
 }
 
@@ -363,18 +400,18 @@ export function patrolColumns(tz = DEFAULT_TZ): CsvColumn<PatrolExportRow>[] {
 
 export function leaveColumns(tz = DEFAULT_TZ): CsvColumn<LeaveReportRow>[] {
   return [
-    { header: "Guard", value: (r) => r.guard_name },
-    { header: "Code", value: (r) => r.employee_code },
-    { header: "Site", value: (r) => r.site_name },
+    { header: "Guard", value: (r) => r.guard_name, pin: true, width: W.guard },
+    { header: "Code", value: (r) => r.employee_code, pin: true, width: W.code },
+    { header: "Site", value: (r) => r.site_name, width: W.site },
     { header: "Type", value: (r) => r.type },
-    { header: "From", value: (r) => r.start_date },
-    { header: "To", value: (r) => r.end_date },
-    { header: "Days", value: (r) => r.days },
+    { header: "From", value: (r) => fmtReportDate(r.start_date, tz), cell: (r) => dateCell(r.start_date, tz), width: W.date },
+    { header: "To", value: (r) => fmtReportDate(r.end_date, tz), cell: (r) => dateCell(r.end_date, tz), width: W.date },
+    { header: "Days", value: (r) => r.days, align: "right" },
     { header: "Status", value: (r) => r.status },
-    { header: "Reason", value: (r) => r.reason },
+    { header: "Reason", value: (r) => r.reason, width: 220 },
     { header: "Decided by", value: (r) => r.decided_by },
-    { header: "Decided at", value: (r) => stamp(r.decided_at, tz) },
-    { header: "Requested at", value: (r) => stamp(r.created_at, tz) },
+    { header: "Decided at", value: (r) => stamp(r.decided_at, tz), cell: (r) => stampCell(r.decided_at, tz) },
+    { header: "Requested at", value: (r) => stamp(r.created_at, tz), cell: (r) => stampCell(r.created_at, tz) },
   ];
 }
 
@@ -546,7 +583,21 @@ export type DigestSite = {
   pending: number;
 };
 
-export type DigestAnomaly = { kind: "late_start" | "void_shift" | "missed_patrol" | "outside_fence"; text: string };
+export type AnomalyKind = "void_shift" | "outside_fence" | "missed_patrol" | "late_start";
+
+/**
+ * One line per kind of problem, not one line per event. An owner scanning the
+ * 9 AM digest wants "3 guards started late — Prestige Tech Park (2), Brigade (1)",
+ * not three raw event titles.
+ */
+export type DigestAnomaly = {
+  kind: AnomalyKind;
+  count: number;
+  /** Sites involved, busiest first. */
+  sites: { site_name: string; count: number }[];
+  /** The whole line, ready to print. */
+  text: string;
+};
 
 export type Digest = {
   date: string;
@@ -556,14 +607,30 @@ export type Digest = {
   anomalies: DigestAnomaly[];
 };
 
-export const ANOMALY_LABELS: Record<DigestAnomaly["kind"], string> = {
-  late_start: "Late starts",
-  void_shift: "Void shifts",
-  missed_patrol: "Missed patrols",
-  outside_fence: "Outside-fence check-ins",
+/** Short headings, plain English — no jargon an agency owner has to decode. */
+export const ANOMALY_LABELS: Record<AnomalyKind, string> = {
+  void_shift: "Shifts voided",
+  outside_fence: "Check-ins outside the fence",
+  missed_patrol: "Patrols missed",
+  late_start: "Late arrivals",
 };
 
-const ANOMALY_EVENT_KIND: Partial<Record<EventType, DigestAnomaly["kind"]>> = {
+/** Worst first: a voided shift matters more than somebody being ten minutes late. */
+const ANOMALY_SEVERITY: Record<AnomalyKind, number> = {
+  void_shift: 4,
+  outside_fence: 3,
+  missed_patrol: 2,
+  late_start: 1,
+};
+
+const ANOMALY_PHRASE: Record<AnomalyKind, (n: number) => string> = {
+  void_shift: (n) => `${n} shift${n === 1 ? "" : "s"} voided because location was switched off`,
+  outside_fence: (n) => `${n} check-in${n === 1 ? "" : "s"} happened outside the site fence`,
+  missed_patrol: (n) => (n === 1 ? "1 patrol was missed" : `${n} patrols were missed`),
+  late_start: (n) => `${n} guard${n === 1 ? "" : "s"} started late`,
+};
+
+const ANOMALY_EVENT_KIND: Partial<Record<EventType, AnomalyKind>> = {
   LATE_START: "late_start",
   SHIFT_VOID: "void_shift",
   PATROL_MISSED: "missed_patrol",
@@ -572,15 +639,40 @@ const ANOMALY_EVENT_KIND: Partial<Record<EventType, DigestAnomaly["kind"]>> = {
 
 export type DigestEventRow = { type: EventType; title: string; site_name: string | null };
 
-/** Maps the day's events feed onto the four digest anomaly buckets the PRD asks for. */
+/** "Prestige Tech Park (2), Brigade Gateway"; a single site that accounts for everything drops its count. */
+function siteBreakdown(sites: { site_name: string; count: number }[], total: number) {
+  if (sites.length === 0) return "";
+  if (sites.length === 1 && sites[0]!.count === total) return sites[0]!.site_name;
+  return sites.map((s) => `${s.site_name} (${s.count})`).join(", ");
+}
+
+/**
+ * Rolls the day's events feed into one plain-English line per anomaly kind,
+ * worst kind first and, within a kind, the busiest site first.
+ */
 export function buildDigestAnomalies(events: DigestEventRow[]): DigestAnomaly[] {
-  return events
-    .map((e) => {
-      const kind = ANOMALY_EVENT_KIND[e.type];
-      if (!kind) return null;
-      return { kind, text: e.site_name ? `${e.site_name}: ${e.title}` : e.title };
+  const byKind = new Map<AnomalyKind, Map<string, number>>();
+  const totals = new Map<AnomalyKind, number>();
+
+  for (const e of events) {
+    const kind = ANOMALY_EVENT_KIND[e.type];
+    if (!kind) continue;
+    totals.set(kind, (totals.get(kind) ?? 0) + 1);
+    if (!e.site_name) continue;
+    const sites = byKind.get(kind) ?? new Map<string, number>();
+    sites.set(e.site_name, (sites.get(e.site_name) ?? 0) + 1);
+    byKind.set(kind, sites);
+  }
+
+  return [...totals.entries()]
+    .map(([kind, count]) => {
+      const sites = [...(byKind.get(kind) ?? new Map<string, number>()).entries()]
+        .map(([site_name, n]) => ({ site_name, count: n }))
+        .sort((a, b) => b.count - a.count || a.site_name.localeCompare(b.site_name));
+      const where = siteBreakdown(sites, count);
+      return { kind, count, sites, text: where ? `${ANOMALY_PHRASE[kind](count)} — ${where}` : ANOMALY_PHRASE[kind](count) };
     })
-    .filter((a): a is DigestAnomaly => a !== null);
+    .sort((a, b) => ANOMALY_SEVERITY[b.kind] - ANOMALY_SEVERITY[a.kind] || b.count - a.count);
 }
 
 export function digestTotals(sites: DigestSite[]): DigestSite {
@@ -626,17 +718,12 @@ export function buildDigestText(d: Digest, dateLabel = d.date): string {
     if (s.pending) bits.push(`${s.pending} not started`);
     lines.push(`${s.site_name}: ${bits.join(", ")}`);
   }
+  lines.push("");
   if (d.anomalies.length === 0) {
-    lines.push("");
     lines.push("No anomalies.");
   } else {
-    for (const kind of Object.keys(ANOMALY_LABELS) as DigestAnomaly["kind"][]) {
-      const group = d.anomalies.filter((a) => a.kind === kind);
-      if (group.length === 0) continue;
-      lines.push("");
-      lines.push(`${ANOMALY_LABELS[kind]} (${group.length})`);
-      for (const a of group) lines.push(`- ${a.text}`);
-    }
+    lines.push("Needs attention");
+    for (const a of d.anomalies) lines.push(`- ${a.text}`);
   }
   return lines.join("\n");
 }

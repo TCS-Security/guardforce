@@ -11,7 +11,6 @@ import {
   loadDigest,
 } from "@/lib/data/reports";
 import {
-  ANOMALY_LABELS,
   attendanceRate,
   buildDigestText,
   buildMusterMatrix,
@@ -31,6 +30,7 @@ import { PageHeader } from "@/components/gf/page-header";
 import { StatTile } from "@/components/gf/stat-tile";
 import { Section } from "@/components/gf/section";
 import { EmptyState } from "@/components/gf/empty-state";
+import { DataTable } from "@/components/gf/data-table";
 import { AttendanceTrendChart } from "@/components/charts/attendance-trend-chart";
 import { fmtDate, fmtMinutes, fmtPct, toLocalDate } from "@/lib/domain/format";
 import { createClient } from "@/lib/supabase/server";
@@ -88,7 +88,7 @@ export default async function ReportsPage({ searchParams }: PageProps<"/reports"
       <PageHeader
         eyebrow="Analytics & exports"
         title="Reports"
-        description="Attendance analytics, guard scorecards and CSV exports for any site, guard or date range."
+        description="Attendance analytics, guard scorecards and spreadsheet exports for any site, guard or date range."
       />
 
       <ReportFilterBar
@@ -116,41 +116,22 @@ export default async function ReportsPage({ searchParams }: PageProps<"/reports"
           </div>
         </div>
 
-        <div className="mt-4 overflow-x-auto rounded-lg border">
-          <table className="w-full text-sm" aria-label="Per-site attendance">
-            <thead>
-              <tr className="eyebrow border-b text-left [&>th]:px-3 [&>th]:py-2 [&>th]:font-normal">
-                <th>Site</th>
-                <th className="text-right">Scheduled</th>
-                <th className="text-right">Present</th>
-                <th className="text-right">Half day</th>
-                <th className="text-right">Absent</th>
-                <th className="text-right">On leave</th>
-                <th className="text-right">Flagged</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {siteTable.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="p-0">
-                    <EmptyState title="No shifts in range" className="border-0 py-10" />
-                  </td>
-                </tr>
-              ) : (
-                siteTable.map((s) => (
-                  <tr key={s.site_id} className="hover:bg-muted/50">
-                    <td className="px-3 py-2 font-medium">{s.site_name}</td>
-                    <td className="px-3 py-2 text-right font-mono tabular">{s.scheduled}</td>
-                    <td className="px-3 py-2 text-right font-mono tabular text-present">{s.present}</td>
-                    <td className="px-3 py-2 text-right font-mono tabular text-half-day-foreground dark:text-half-day">{s.half_day}</td>
-                    <td className="px-3 py-2 text-right font-mono tabular text-absent">{s.absent}</td>
-                    <td className="px-3 py-2 text-right font-mono tabular text-on-leave">{s.on_leave}</td>
-                    <td className="px-3 py-2 text-right font-mono tabular">{s.flagged}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+        <div className="mt-4 overflow-hidden rounded-lg border">
+          <DataTable
+            ariaLabel="Per-site attendance"
+            rows={siteTable}
+            rowKey={(s) => s.site_id}
+            empty={<EmptyState title="No shifts in range" className="border-0 py-10" />}
+            columns={[
+              { key: "site", header: "Site", pin: true, width: 240, className: "font-medium", cell: (s) => s.site_name },
+              { key: "scheduled", header: "Scheduled", align: "right", className: "font-mono tabular", cell: (s) => s.scheduled },
+              { key: "present", header: "Present", align: "right", className: "font-mono tabular text-present", cell: (s) => s.present },
+              { key: "half", header: "Half day", align: "right", className: "font-mono tabular text-half-day-foreground dark:text-half-day", cell: (s) => s.half_day },
+              { key: "absent", header: "Absent", align: "right", className: "font-mono tabular text-absent", cell: (s) => s.absent },
+              { key: "leave", header: "On leave", align: "right", className: "font-mono tabular text-on-leave", cell: (s) => s.on_leave },
+              { key: "flagged", header: "Flagged", align: "right", className: "font-mono tabular", cell: (s) => s.flagged },
+            ]}
+          />
         </div>
       </Section>
 
@@ -162,13 +143,16 @@ export default async function ReportsPage({ searchParams }: PageProps<"/reports"
       {/* Section 3: reports & CSV exports --------------------------------------------------- */}
       <div className="reveal flex flex-col gap-4" style={{ ["--i" as string]: 4 }}>
         <div>
-          <h2 className="font-display text-lg font-semibold tracking-tight">Reports & CSV exports</h2>
-          <p className="text-sm text-muted-foreground">Every export streams as CSV via a signed-in GET request — safe for spreadsheets and re-runs.</p>
+          <h2 className="font-display text-lg font-semibold tracking-tight">Reports & spreadsheet exports</h2>
+          <p className="text-sm text-muted-foreground">
+            Every report downloads as CSV (opens in Excel and Google Sheets) or as a real Excel workbook with typed dates, a frozen header and the
+            identity columns pinned. Scroll a preview sideways — the first columns stay put.
+          </p>
         </div>
 
         <ExportCard
           title="Daily attendance"
-          description="One row per shift: in/out times, late minutes, worked/away time, attendance and flags."
+          description="One row per shift: in/out times, late minutes, hours worked, attendance and flags."
           href={`/reports/export/daily-attendance?${qs({ site: siteId, guard: guardId, from, to })}`}
           rows={shiftRows}
           columns={dailyAttendanceColumns(tz)}
@@ -193,7 +177,7 @@ export default async function ReportsPage({ searchParams }: PageProps<"/reports"
 
         <ExportCard
           title="Punch in / out"
-          description="Every check-in and check-out with timestamp, coordinates, in-fence flag, accuracy and device."
+          description="Every check-in and check-out with the time, a Google Maps link to where it happened, the in-fence flag and the device."
           href={`/reports/export/punch?${qs({ site: siteId, guard: guardId, from, to })}`}
           rows={toPunchRows(shiftRows)}
           columns={punchColumns(tz)}
@@ -252,21 +236,18 @@ export default async function ReportsPage({ searchParams }: PageProps<"/reports"
             {digest.anomalies.length === 0 ? (
               <p className="mt-3 text-sm text-muted-foreground">No anomalies for this day.</p>
             ) : (
-              <div className="mt-3 flex flex-col gap-2 border-t pt-3">
-                {(Object.keys(ANOMALY_LABELS) as (keyof typeof ANOMALY_LABELS)[]).map((kind) => {
-                  const group = digest.anomalies.filter((a) => a.kind === kind);
-                  if (group.length === 0) return null;
-                  return (
-                    <div key={kind}>
-                      <div className="text-xs font-semibold text-signal">{ANOMALY_LABELS[kind]} ({group.length})</div>
-                      <ul className="mt-1 list-inside list-disc text-sm text-muted-foreground">
-                        {group.map((a, i) => (
-                          <li key={i}>{a.text}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  );
-                })}
+              <div className="mt-3 border-t pt-3">
+                <div className="eyebrow text-signal">Needs attention</div>
+                <ul className="mt-1.5 flex flex-col gap-1" data-testid="digest-anomalies">
+                  {digest.anomalies.map((a) => (
+                    <li key={a.kind} className="flex items-baseline gap-2 text-sm">
+                      <span className="mt-0.5 inline-flex min-w-6 shrink-0 justify-center rounded bg-signal/10 px-1.5 font-mono text-xs tabular font-semibold text-signal">
+                        {a.count}
+                      </span>
+                      <span>{a.text}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
           </div>
