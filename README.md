@@ -1,10 +1,10 @@
 # GuardForce
 
-Guard management platform for Indian security agencies — a Next.js control-room dashboard and a Kotlin guard app, both on one Supabase schema.
+Guard management platform for Indian security agencies — a Next.js control-room dashboard and an Expo (React Native) guard app, both on one Supabase schema.
 
 - Spec: [`prd-v2-guard-platform.md`](prd-v2-guard-platform.md)
 - Conventions for contributors and agents: [`CLAUDE.md`](CLAUDE.md)
-- Dashboard: [`dashboard/`](dashboard) · Guard app: [`android/`](android) · Database: [`supabase/`](supabase)
+- Dashboard: [`dashboard/`](dashboard) · Guard app: [`guard-app/`](guard-app) · Database: [`supabase/`](supabase)
 
 ## Quick start
 

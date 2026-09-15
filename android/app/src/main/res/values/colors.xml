@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- Mirrors dashboard/src/app/globals.css tokens (oklch converted to sRGB). -->
-    <color name="paper">#F9F7F3</color>
-    <color name="ink">#1D1711</color>
-    <color name="olive">#375028</color>
-    <color name="signal">#E84C23</color>
-    <color name="ic_launcher_background">#375028</color>
-</resources>

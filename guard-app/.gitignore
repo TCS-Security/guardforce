@@ -1,0 +1,16 @@
+node_modules/
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+# Continuous native generation: android/ and ios/ are produced by `expo prebuild`
+android/
+ios/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+.env*.local
+android-debug.apk
