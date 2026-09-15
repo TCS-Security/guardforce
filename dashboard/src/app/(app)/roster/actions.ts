@@ -8,12 +8,8 @@ import { canUnassign } from "@/lib/domain/roster";
 
 export type ActionState = { error?: string; ok?: boolean } | undefined;
 
-/** Postgres raises P0001 from the KYC trigger; surface it as guidance, not a stack trace. */
+/** Turns the database's own wording into something an operator can act on. */
 function friendly(message: string) {
-  if (message.includes("KYC_INCOMPLETE")) {
-    const missing = message.split("missing:")[1]?.replace(/\)$/, "").trim();
-    return `This guard's KYC is incomplete${missing ? ` — missing ${missing.replace(/_/g, " ")}` : ""}. Complete it on the guard's profile before rostering.`;
-  }
   if (message.includes("duplicate key")) return "That guard is already on this shift for the day.";
   return message;
 }
