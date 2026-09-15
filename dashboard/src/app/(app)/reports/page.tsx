@@ -112,7 +112,7 @@ export default async function ReportsPage({ searchParams }: PageProps<"/reports"
             <h3 className="font-display text-[15px] font-semibold tracking-tight">Daily trend</h3>
           </div>
           <div className="p-4">
-            {trend && trend.length > 0 ? <AttendanceTrendChart data={trend} /> : <EmptyState title="No shifts in range" className="border-0 py-8" />}
+            {trend && trend.length > 0 ? <AttendanceTrendChart data={trend} siteId={siteId} /> : <EmptyState title="No shifts in range" className="border-0 py-8" />}
           </div>
         </div>
 

@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { login } from "./helpers";
+import { admin, agencyDate, login, SEED } from "./helpers";
 
 test.describe("overview", () => {
   test("shows staffing, trend and alerts", async ({ page }) => {
@@ -42,5 +42,45 @@ test.describe("overview", () => {
     const legend = card.getByText("On leave");
     const [cardBox, legendBox] = [await card.boundingBox(), await legend.boundingBox()];
     expect(legendBox!.y + legendBox!.height).toBeLessThanOrEqual(cardBox!.y + cardBox!.height);
+  });
+
+
+  // "In the Attendance, last 14 days bar graph, the bar should be clickable to show who
+  // all missed attendance and who all were present."
+  test("a bar in the attendance trend opens that day's guards", async ({ page }) => {
+    const db = admin();
+    const day = agencyDate(-1);
+
+    // Yesterday has seeded shifts; find one and read its status straight from the database,
+    // so the assertion is about the same row the chart counted.
+    const { data: shifts } = await db
+      .from("shifts")
+      .select("id,attendance,guards(full_name)")
+      .eq("shift_date", day)
+      .eq("agency_id", SEED.agencyId)
+      .in("attendance", ["present", "absent"])
+      .limit(1);
+    expect(shifts!.length, `a seeded shift on ${day}`).toBeGreaterThan(0);
+    const shift = shifts![0]!;
+
+    await login(page);
+
+    // The link behind the segment points where it should...
+    const segment = page.getByTestId(`trend-${shift.attendance}-${day}`);
+    await expect(segment).toHaveAttribute("href", `/attendance?date=${day}&status=${shift.attendance}`);
+
+    // ...and clicking the drawn bar itself does the same thing. Find the column by its
+    // position in the chart's day list, then click that series' rectangle.
+    const days = await page.locator('[data-testid^="trend-day-"]').evaluateAll((nodes) =>
+      nodes.map((n) => n.getAttribute("data-testid")!.replace("trend-day-", "")),
+    );
+    const column = days.indexOf(day);
+    expect(column, `${day} is in the chart`).toBeGreaterThanOrEqual(0);
+    const series = ["present", "half_day", "absent", "on_leave"].indexOf(shift.attendance!);
+    await page.locator(".recharts-bar").nth(series).locator(".recharts-rectangle").nth(column).click();
+
+    await expect(page).toHaveURL(new RegExp(`/attendance\\?date=${day}&status=${shift.attendance}`));
+    const table = page.getByRole("table", { name: "Attendance" });
+    await expect(table.locator(`a[href="/attendance/${shift.id}"]`)).toBeVisible();
   });
 });
