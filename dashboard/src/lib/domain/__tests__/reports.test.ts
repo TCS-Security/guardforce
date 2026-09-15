@@ -150,11 +150,17 @@ describe("digestTotals / buildDigestText", () => {
     const totals = digestTotals(sites);
     expect(totals.scheduled).toBe(6);
     expect(totals.present).toBe(5);
-    const digest: Digest = { date: "2026-09-01", agencyName: "Sentinel Security", sites, totals, anomalies: [{ kind: "late_start", text: "Prestige: Ramesh late" }] };
+    const digest: Digest = {
+      date: "2026-09-01",
+      agencyName: "Sentinel Security",
+      sites,
+      totals,
+      anomalies: [{ kind: "late_start", count: 1, sites: [{ site_name: "Prestige", count: 1 }], text: "1 guard started late — Prestige" }],
+    };
     const text = buildDigestText(digest, "1 Sept 2026");
     expect(text).toContain("Sentinel Security");
-    expect(text).toContain("Prestige: Ramesh late");
-    expect(text).toContain("Late starts (1)");
+    expect(text).toContain("Needs attention");
+    expect(text).toContain("1 guard started late — Prestige");
     expect(text).not.toMatch(/[#*_`]/); // no markdown noise
   });
   it("says there are no anomalies when the list is empty", () => {
@@ -171,10 +177,31 @@ describe("buildDigestAnomalies", () => {
       { type: "PATROL_MISSED", title: "Missed perimeter round", site_name: "Prestige" },
       { type: "CHECK_IN", title: "Ramesh checked in", site_name: "Prestige" },
     ]);
+    // One line per kind, not one per event, and CHECK_IN is not an anomaly.
     expect(anomalies).toEqual([
-      { kind: "late_start", text: "Prestige: Ramesh started late" },
-      { kind: "missed_patrol", text: "Prestige: Missed perimeter round" },
+      { kind: "missed_patrol", count: 1, sites: [{ site_name: "Prestige", count: 1 }], text: "1 patrol was missed — Prestige" },
+      { kind: "late_start", count: 1, sites: [{ site_name: "Prestige", count: 1 }], text: "1 guard started late — Prestige" },
     ]);
+  });
+
+  it("collapses repeats into a count and names the busiest site first", () => {
+    const [missed] = buildDigestAnomalies([
+      { type: "PATROL_MISSED", title: "a", site_name: "Brigade" },
+      { type: "PATROL_MISSED", title: "b", site_name: "Prestige" },
+      { type: "PATROL_MISSED", title: "c", site_name: "Prestige" },
+    ]);
+    expect(missed!.count).toBe(3);
+    expect(missed!.text).toBe("3 patrols were missed — Prestige (2), Brigade (1)");
+  });
+
+  it("orders kinds worst first", () => {
+    const kinds = buildDigestAnomalies([
+      { type: "LATE_START", title: "a", site_name: "Prestige" },
+      { type: "SHIFT_VOID", title: "b", site_name: "Prestige" },
+      { type: "OUTSIDE_FENCE", title: "c", site_name: "Prestige" },
+      { type: "PATROL_MISSED", title: "d", site_name: "Prestige" },
+    ]).map((a) => a.kind);
+    expect(kinds).toEqual(["void_shift", "outside_fence", "missed_patrol", "late_start"]);
   });
 });
 
