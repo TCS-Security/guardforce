@@ -12,6 +12,7 @@ export const PERMISSION_KEYS = [
   "attendance:read", "attendance:correct",
   "live:read",
   "events:read", "events:acknowledge",
+  "incidents:read", "incidents:write",
   "patrols:read", "patrols:write",
   "tasks:read", "tasks:write",
   "leave:read", "leave:decide",
@@ -49,6 +50,7 @@ export const PERMISSION_RESOURCES: {
   { resource: "attendance", label: "Attendance", read: "attendance:read", actions: [{ key: "attendance:correct", label: "Correct", hint: "Override attendance and log location exceptions (audited)" }] },
   { resource: "live", label: "Live map", read: "live:read", actions: [] },
   { resource: "events", label: "Events", read: "events:read", actions: [{ key: "events:acknowledge", label: "Acknowledge", hint: "Mark alerts as seen" }] },
+  { resource: "incidents", label: "Incidents", read: "incidents:read", actions: [{ key: "incidents:write", label: "Log & resolve", hint: "Report incidents and move them through investigation to resolved" }] },
   { resource: "patrols", label: "Patrols", read: "patrols:read", actions: [{ key: "patrols:write", label: "Manage", hint: "Define routes and annotate rounds" }] },
   { resource: "tasks", label: "Tasks", read: "tasks:read", actions: [{ key: "tasks:write", label: "Manage", hint: "Create, assign, close and delete tasks" }] },
   { resource: "leave", label: "Leave", read: "leave:read", actions: [{ key: "leave:decide", label: "Decide", hint: "Approve, decline and log leave; edit balances" }] },
@@ -62,6 +64,7 @@ export const PERMISSION_RESOURCES: {
 export const ROUTE_PERMISSION: Record<string, PermissionKey> = {
   "/live": "live:read",
   "/events": "events:read",
+  "/incidents": "incidents:read",
   "/sites": "sites:read",
   "/guards": "guards:read",
   "/roster": "roster:read",
