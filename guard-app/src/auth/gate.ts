@@ -5,6 +5,7 @@ export function landingRoute(stage: string, permissionsDone: boolean, hasSelfie:
     case "needs_claim": return "/claim";
     case "needs_pin": return "/set-pin";
     case "locked": return "/lock";
+    case "staff": return "/supervisor";
     case "ready": return mustUpdate ? "/update" : blocked ? "/blocked" : !permissionsDone ? "/permissions" : !hasSelfie ? "/reg-selfie" : null;
     default: return null;
   }

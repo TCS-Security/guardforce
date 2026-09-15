@@ -11,6 +11,7 @@ export const prefs = {
   agencyId: () => get("agency_id"), setAgencyId: (v: string | null) => set("agency_id", v),
   guardName: () => get("guard_name"), setGuardName: (v: string | null) => set("guard_name", v),
   phone: () => get("phone"), setPhone: (v: string | null) => set("phone", v),
+  mode: async () => ((await get("mode")) === "staff" ? "staff" : "guard") as "staff" | "guard", setMode: (v: "staff" | "guard" | null) => set("mode", v),
   permissionsDone: async () => (await get("permissions_done")) === "1", setPermissionsDone: (v: boolean) => set("permissions_done", v ? "1" : null),
   hasLocalPin: async () => !!(await get("pin_hash")),
   saveLocalPin: async (pin: string) => {
@@ -23,5 +24,5 @@ export const prefs = {
     if (!salt || !hash) return false;
     return (await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, `${salt}:${pin}`)) === hash;
   },
-  clear: async () => { for (const k of ["guard_id", "agency_id", "guard_name", "phone", "permissions_done", "pin_salt", "pin_hash"]) await set(k, null); },
+  clear: async () => { for (const k of ["mode", "guard_id", "agency_id", "guard_name", "phone", "permissions_done", "pin_salt", "pin_hash"]) await set(k, null); },
 };

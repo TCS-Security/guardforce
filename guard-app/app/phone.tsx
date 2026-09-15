@@ -4,7 +4,7 @@ import { TextInput, View } from "react-native";
 import { requestOtp } from "@/data/store";
 import { toE164 } from "@/domain/phone";
 import { useT } from "@/i18n";
-import { Banner, BigButton, Body, Screen } from "@/ui/components";
+import { Banner, BigButton, Body, Screen, TextButton } from "@/ui/components";
 import { errorText } from "@/ui/labels";
 import { fonts, radius } from "@/ui/theme";
 import { usePalette } from "@/ui/usePalette";
@@ -29,6 +29,7 @@ export default function PhoneScreen() {
         </View>
       </View>
       {error ? <Banner text={error} tone="signal" /> : null}
+      <View style={{ alignItems: "center", marginTop: 8 }}><TextButton text={t("staff_login_link")} onPress={() => router.push("/staff-login" as never)} /></View>
     </Screen>
   );
 }

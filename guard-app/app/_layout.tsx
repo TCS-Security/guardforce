@@ -11,6 +11,7 @@ import { needsUpdate } from "@/domain/semver";
 import { prefs } from "@/auth/prefs";
 import { onSyncIssue } from "@/data/sync";
 import { bootstrap, refreshAll, registerDevice, syncNow, useStore } from "@/data/store";
+import { refreshStaffAll } from "@/data/staffStore";
 import { errorText } from "@/ui/labels";
 import { ApiError } from "@/api/errors";
 import { landingRoute } from "@/auth/gate";
@@ -19,7 +20,7 @@ import { dark, light } from "@/ui/theme";
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 Notifications.setNotificationHandler({ handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true, shouldSetBadge: false }) });
 
-const GATES = new Set(["phone", "otp", "claim", "set-pin", "lock", "permissions", "reg-selfie", "update", "blocked"]);
+const GATES = new Set(["phone", "otp", "staff-login", "claim", "set-pin", "lock", "permissions", "reg-selfie", "update", "blocked"]);
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -43,10 +44,19 @@ export default function RootLayout() {
       const blocked = me && (me.agency.status === "suspended" || me.agency.status === "churned") ? "suspended" : me?.guard.status === "inactive" ? "inactive" : null;
       const target = landingRoute(stage, await prefs.permissionsDone(), !me || !!me.guard.registration_selfie_path, needsUpdate(env.appVersion, me?.config?.min_app_version), blocked);
       const current = segments[0] ?? "";
-      if (target) { if (`/${current}` !== target && !(target === "/phone" && current === "otp")) router.replace(target as never); }
+      if (target === "/supervisor") { if (current !== "supervisor") router.replace("/supervisor" as never); return; }
+      if (target) { if (`/${current}` !== target && !(target === "/phone" && (current === "otp" || current === "staff-login"))) router.replace(target as never); }
       else if (current === "" || GATES.has(current)) router.replace("/home");
     })();
   }, [stage, me?.guard.registration_selfie_path, me?.config?.min_app_version, me?.agency.status, me?.guard.status]);
+
+  // Staff mode: refresh the supervisor bundle on open and on every foreground.
+  useEffect(() => {
+    if (stage !== "staff") return;
+    void refreshStaffAll();
+    const sub = AppState.addEventListener("change", (s) => { if (s === "active") void refreshStaffAll(); });
+    return () => sub.remove();
+  }, [stage]);
 
   // Ready: refresh, sync, register the install; keep syncing while the app lives.
   useEffect(() => {

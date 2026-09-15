@@ -16,10 +16,12 @@ import { cache, localShifts, outbox, overrides, pings, wipeAll, type OverrideRow
 import { Kinds, type CheckInPayload, type CheckOutPayload, type LocalPhoto } from "./payloads";
 import { sync } from "./sync";
 
-export type AuthStage = "loading" | "signed_out" | "needs_claim" | "needs_pin" | "locked" | "ready";
+export type AuthStage = "loading" | "signed_out" | "needs_claim" | "needs_pin" | "locked" | "ready" | "staff";
+export type Mode = "guard" | "staff";
 
 type State = {
   stage: AuthStage;
+  mode: Mode;
   pendingPhone: string | null;
   me: Me | null;
   home: Home | null;
@@ -36,7 +38,7 @@ const toLocal = (r: ReturnType<typeof localShifts.current>): LocalShift | null =
   r ? { key: r.key, serverId: r.server_id, siteId: r.site_id, startedAtMs: r.started_at, status: r.status as LocalShift["status"] } : null;
 
 export const useStore = create<State>(() => ({
-  stage: "loading", pendingPhone: null, me: cache.get<Me>("me"), home: cache.get<Home>("home"), duty: null, online: true,
+  stage: "loading", mode: "guard", pendingPhone: null, me: cache.get<Me>("me"), home: cache.get<Home>("home"), duty: null, online: true,
   pending: 0, tracking: {}, patrolOverrides: [], taskOverrides: [], issues: [],
 }));
 
@@ -68,8 +70,9 @@ const safePendingNative = () => { try { return GuardTracking.getPendingCount(); 
 export async function bootstrap() {
   const { data } = await supabase.auth.getSession();
   if (!data.session) { set({ stage: "signed_out" }); return; }
+  if ((await prefs.mode()) === "staff") { set({ stage: "staff", mode: "staff" }); return; }
   const guardId = await prefs.guardId();
-  set({ stage: guardId ? "locked" : "needs_claim" });
+  set({ stage: guardId ? "locked" : "needs_claim", mode: "guard" });
   try { GuardTracking.onStatus((s) => set({ tracking: { ...get().tracking, ...s } })); set({ tracking: GuardTracking.getStatus() }); } catch { /* module absent in tests */ }
   recompute();
 }
@@ -86,6 +89,18 @@ export async function verifyOtp(code: string) {
   await prefs.setPhone(phone);
   set({ stage: "needs_claim" });
 }
+/** Staff (owner, supervisor) sign in with the dashboard's email + password; no PIN for now. */
+export async function staffSignIn(email: string, password: string) {
+  const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
+  if (error) throw toApiError(error);
+  const { staffApi } = await import("../api/staffApi");
+  const me = await staffApi.me(); // raises NOT_STAFF for a guard-kind profile
+  await prefs.setMode("staff");
+  const { useStaff } = await import("./staffStore");
+  useStaff.setState({ me });
+  set({ stage: "staff", mode: "staff" });
+}
+
 export async function claim() {
   const me = await guardApi.claimAccount();
   await prefs.setGuardId(me.guard.id); await prefs.setAgencyId(me.guard.agency_id); await prefs.setGuardName(me.guard.full_name);
@@ -105,7 +120,8 @@ export async function signOut() {
   await GuardTracking.clearAll().catch(() => undefined);
   await supabase.auth.signOut().catch(() => undefined);
   await prefs.clear(); wipeAll();
-  set({ stage: "signed_out", me: null, home: null, duty: null, pendingPhone: null, pending: 0 });
+  const { clearStaff } = await import("./staffStore"); clearStaff();
+  set({ stage: "signed_out", mode: "guard", me: null, home: null, duty: null, pendingPhone: null, pending: 0 });
 }
 
 // --- reads ------------------------------------------------------------------------------------
