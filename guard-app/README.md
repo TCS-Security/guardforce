@@ -24,6 +24,19 @@ points an emulator at the local stack (`10.0.2.2`). Debug builds allow cleartext
 Demo login: any seeded guard phone (`99000 00001` … `99000 00016`) with OTP `123456` locally
 (`supabase/config.toml` `[auth.sms.test_otp]`), then choose a PIN.
 
+## Supervisor mode
+
+Owners and supervisors sign in with their dashboard email and password ("Supervisor or owner?"
+on the phone screen). `staff_me()` decides the mode; a guard-kind profile is refused with
+NOT_STAFF. Screens under `app/supervisor/`: site board with required vs on-site and open alerts,
+site day view, shift detail with exception and attendance correction, alerts with acknowledge
+and call, leave inbox, guard list, add guard, guard record with camera capture of the reference
+photo and KYC documents (access-logged on view), roster day with ad-hoc assignment, task
+assignment, account. Every action is gated by the same permission keys as the dashboard
+(`useCan("roster:write")` etc.), so a custom role sees exactly what the owner allowed. The
+backend contract is `src/api/staffApi.ts` ↔ `supabase/migrations/0012_supervisor_app.sql`,
+tested end to end in `dashboard/e2e/supervisor-app.spec.ts`.
+
 ## Checks
 
 ```

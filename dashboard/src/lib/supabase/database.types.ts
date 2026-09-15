@@ -2267,6 +2267,16 @@ export type Database = {
     }
     Functions: {
       accessible_site_ids: { Args: never; Returns: string[] }
+      acknowledge_event: { Args: { p_event_id: string }; Returns: undefined }
+      add_guard: {
+        Args: {
+          p_designation?: string
+          p_full_name: string
+          p_phone: string
+          p_site_id?: string
+        }
+        Returns: string
+      }
       apply_leave: {
         Args: {
           p_end: string
@@ -2295,6 +2305,15 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      assign_shift: {
+        Args: {
+          p_date: string
+          p_guard_id: string
+          p_shift_type_id: string
+          p_site_id: string
+        }
+        Returns: string
       }
       attendance_trend: {
         Args: {
@@ -2542,6 +2561,17 @@ export type Database = {
         }
         Returns: Database["public"]["Enums"]["trust_level"]
       }
+      create_task: {
+        Args: {
+          p_description?: string
+          p_due_at?: string
+          p_guard_ids?: string[]
+          p_photo_required?: boolean
+          p_site_id: string
+          p_title: string
+        }
+        Returns: string
+      }
       current_agency_id: { Args: never; Returns: string }
       current_guard_id: { Args: never; Returns: string }
       current_permissions: { Args: never; Returns: string[] }
@@ -2594,6 +2624,7 @@ export type Database = {
       guard_kyc_complete: { Args: { p_guard_id: string }; Returns: boolean }
       guard_kyc_missing: { Args: { p_guard_id: string }; Returns: string[] }
       guard_me: { Args: never; Returns: Json }
+      guard_record: { Args: { p_guard_id: string }; Returns: Json }
       guard_scorecard: {
         Args: { p_from: string; p_guard_id: string; p_to: string }
         Returns: Json
@@ -2610,6 +2641,11 @@ export type Database = {
       is_manager: { Args: never; Returns: boolean }
       is_owner: { Args: never; Returns: boolean }
       is_platform_admin: { Args: never; Returns: boolean }
+      leave_inbox: { Args: never; Returns: Json }
+      log_document_access: {
+        Args: { p_document_id: string; p_purpose?: string }
+        Returns: undefined
+      }
       log_shift_exception: {
         Args: { p_category?: string; p_reason: string; p_shift_id: string }
         Returns: {
@@ -2732,6 +2768,16 @@ export type Database = {
         }
       }
       recompute_away_time: { Args: { p_shift_id: string }; Returns: number }
+      record_document: {
+        Args: {
+          p_file_path: string
+          p_guard_id: string
+          p_mime_type?: string
+          p_number_masked?: string
+          p_type: Database["public"]["Enums"]["document_type"]
+        }
+        Returns: string
+      }
       register_device: {
         Args: {
           p_app_version?: string
@@ -2758,10 +2804,18 @@ export type Database = {
         Returns: string
       }
       resolve_profile_share: { Args: { p_token: string }; Returns: Json }
+      roster_day: {
+        Args: { p_date: string; p_site_id?: string }
+        Returns: Json
+      }
       run_monitors: { Args: { p_agency_id: string }; Returns: Json }
       seed_system_roles: { Args: { p_agency_id: string }; Returns: undefined }
       sees_all_sites: { Args: never; Returns: boolean }
       set_guard_pin: { Args: { p_pin: string }; Returns: undefined }
+      set_guard_registration_selfie: {
+        Args: { p_guard_id: string; p_path: string }
+        Returns: undefined
+      }
       set_registration_selfie: { Args: { p_path: string }; Returns: undefined }
       shift_window: {
         Args: { p_date: string; p_end: string; p_start: string; p_tz: string }
@@ -2790,6 +2844,13 @@ export type Database = {
         Args: { p_lat: number; p_lng: number; p_site_id: string }
         Returns: number
       }
+      site_shifts: {
+        Args: { p_date: string; p_site_id: string }
+        Returns: Json
+      }
+      staff_can_access_guard: { Args: { p_guard_id: string }; Returns: boolean }
+      staff_guards: { Args: { p_site_id?: string }; Returns: Json }
+      staff_me: { Args: never; Returns: Json }
       start_patrol: {
         Args: { p_at?: string; p_patrol_id: string }
         Returns: {
@@ -2838,6 +2899,7 @@ export type Database = {
         }
       }
       storage_agency_prefix: { Args: { p_name: string }; Returns: string }
+      supervisor_home: { Args: { p_date?: string }; Returns: Json }
       task_site_id: { Args: { p_task_id: string }; Returns: string }
       verify_guard_pin: { Args: { p_pin: string }; Returns: boolean }
     }

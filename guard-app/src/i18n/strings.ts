@@ -371,7 +371,18 @@ export const en = {
   "sup_nav_guards": "Guards",
   "sup_nav_roster": "Roster",
   "sup_nav_task": "New task",
-  "sup_nav_account": "Account"
+  "sup_nav_account": "Account",
+  "sup_status_invited": "Invited",
+  "sup_task_submit": "Assign task",
+  "sup_doc_save": "Save document",
+  "sup_alerts_eyebrow": "ALERTS",
+  "sup_alerts_open": "{0} alerts need a look",
+  "sup_cancelled": "Cancelled",
+  "sup_trust_clean": "Clean",
+  "sup_trust_flagged": "Flagged",
+  "sup_trust_suspicious": "Suspicious",
+  "sup_attendance": "Attendance",
+  "sup_profile_name": "Name"
 } as const;
 
 export const hi: Record<keyof typeof en, string> = {
@@ -746,5 +757,16 @@ export const hi: Record<keyof typeof en, string> = {
   "sup_nav_guards": "गार्ड",
   "sup_nav_roster": "रोस्टर",
   "sup_nav_task": "नया टास्क",
-  "sup_nav_account": "खाता"
+  "sup_nav_account": "खाता",
+  "sup_status_invited": "आमंत्रित",
+  "sup_task_submit": "टास्क सौंपें",
+  "sup_doc_save": "दस्तावेज़ सेव करें",
+  "sup_alerts_eyebrow": "अलर्ट",
+  "sup_alerts_open": "{0} अलर्ट देखने हैं",
+  "sup_cancelled": "रद्द किया",
+  "sup_trust_clean": "भरोसेमंद",
+  "sup_trust_flagged": "चिह्नित",
+  "sup_trust_suspicious": "संदिग्ध",
+  "sup_attendance": "हाज़िरी",
+  "sup_profile_name": "नाम"
 };

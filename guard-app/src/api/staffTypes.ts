@@ -10,7 +10,7 @@ export type StaffSite = { id: string; name: string; client_name?: string | null;
 
 export type SiteSummary = { id: string; name: string; guards_required: number; scheduled: number; present: number; half_day: number; absent: number; on_leave: number; on_duty_now: number; late: number; flagged: number; pending: number };
 export type OnDutyGuard = { guard_id: string; guard_name: string; guard_phone?: string | null; site_id: string; shift_id: string | null; lat?: number | null; lng?: number | null; in_fence?: boolean | null; battery_pct?: number | null; location_enabled: boolean; last_seen_at?: string | null; started_at?: string | null; flags: string[] };
-export type AlertItem = { id: string; type: string; severity: string; title: string; site_id?: string | null; site_name?: string | null; guard_id?: string | null; guard_name?: string | null; guard_phone?: string | null; shift_id?: string | null; payload: Record<string, unknown>; created_at: string };
+export type AlertItem = { id: string; type: string; severity: string; title: string; site_id?: string | null; site_name?: string | null; guard_id?: string | null; guard_name?: string | null; guard_phone?: string | null; shift_id?: string | null; shift_date?: string | null; payload: Record<string, unknown>; created_at: string };
 export type SupervisorHome = { date: string; server_time?: string; sites: SiteSummary[]; on_duty: OnDutyGuard[]; alerts: AlertItem[]; pending_leave: number; missed_patrols_today: number };
 
 export type SiteShift = {
