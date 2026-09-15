@@ -72,17 +72,62 @@ test.describe("roster", () => {
     expect(gone).toBeNull();
   });
 
-  test("refuses to roster a guard whose KYC is incomplete (KYC-1)", async ({ page }) => {
+  // The KYC block was withdrawn: agencies roster a guard on day one and chase the
+  // paperwork afterwards. The gap is still shown, it just no longer stops the assignment.
+  test("rosters a guard whose KYC is incomplete, while still flagging the gap", async ({ page }) => {
+    const db = admin();
     const day = futureDate(5);
-    await login(page);
-    await page.goto(`/roster?site=${SEED.sites.sobha}&week=${day}`);
+    await db.from("shifts").delete().eq("guard_id", SEED.guards.santoshIncompleteKyc).eq("shift_date", day);
+    await db.from("shift_assignments").delete().eq("guard_id", SEED.guards.santoshIncompleteKyc).eq("shift_date", day);
 
-    await page.getByRole("button", { name: `Fill Day on ${day}` }).click();
-    await page.getByLabel("Search guards").fill("Santosh");
+    try {
+      await login(page);
+      await page.goto(`/roster?site=${SEED.sites.sobha}&week=${day}`);
+      await page.getByRole("button", { name: `Fill Day on ${day}` }).click();
+      await page.getByLabel("Search guards").fill("Santosh");
 
-    const option = page.getByRole("radio", { name: /Santosh Kumar/ });
-    await expect(option).toBeDisabled();
-    await expect(option.getByText("KYC")).toBeVisible();
+      const option = page.getByRole("radio", { name: /Santosh Kumar/ });
+      await expect(option).toBeEnabled();
+      // The KYC gap is still surfaced, as information.
+      await expect(option.getByText("KYC")).toBeVisible();
+
+      await option.click();
+      await page.getByRole("button", { name: "Assign" }).click();
+
+      // The server accepted it: the assignment row exists.
+      await expect(async () => {
+        const { data } = await db
+          .from("shift_assignments")
+          .select("id")
+          .eq("guard_id", SEED.guards.santoshIncompleteKyc)
+          .eq("shift_date", day);
+        expect(data!.length, "assignment row").toBeGreaterThan(0);
+      }).toPass({ timeout: 15_000 });
+    } finally {
+      await db.from("shifts").delete().eq("guard_id", SEED.guards.santoshIncompleteKyc).eq("shift_date", day);
+      await db.from("shift_assignments").delete().eq("guard_id", SEED.guards.santoshIncompleteKyc).eq("shift_date", day);
+    }
+  });
+
+  test("the database no longer refuses an incomplete-KYC assignment", async () => {
+    const db = admin();
+    const day = futureDate(7);
+    const { data: shiftType } = await db.from("shift_types").select("id").eq("site_id", SEED.sites.sobha).limit(1).single();
+    await db.from("shift_assignments").delete().eq("guard_id", SEED.guards.rajniIncompleteKyc).eq("shift_date", day);
+
+    const { error } = await db.from("shift_assignments").insert({
+      agency_id: SEED.agencyId,
+      site_id: SEED.sites.sobha,
+      guard_id: SEED.guards.rajniIncompleteKyc,
+      shift_type_id: shiftType!.id,
+      shift_date: day,
+      scheduled_start: `${day}T02:30:00Z`,
+      scheduled_end: `${day}T10:30:00Z`,
+    });
+    expect(error, "the KYC trigger should be gone").toBeNull();
+
+    await db.from("shifts").delete().eq("guard_id", SEED.guards.rajniIncompleteKyc).eq("shift_date", day);
+    await db.from("shift_assignments").delete().eq("guard_id", SEED.guards.rajniIncompleteKyc).eq("shift_date", day);
   });
 
   test("creates a weekly pattern and ends it", async ({ page }) => {
