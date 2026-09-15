@@ -2,11 +2,14 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import type { Session } from "@/lib/auth/session";
 import { toLocalDate } from "@/lib/domain/format";
+import { attendanceColumnFilters } from "@/lib/domain/attendance";
 
 export type AttendanceFilters = {
   date: string;
   siteId: string | null;
-  attendance: string | null;
+  /** raw `?status=` param — see ATTENDANCE_STATUS_FILTERS */
+  status: string | null;
+  /** raw `?trust=` param — see TRUST_FILTERS */
   trust: string | null;
   q: string | null;
 };
@@ -47,9 +50,11 @@ export async function loadAttendanceDay(session: Session, filters: AttendanceFil
     .eq("shift_date", filters.date)
     .order("scheduled_start");
 
+  const cols = attendanceColumnFilters(filters.status, filters.trust);
   if (filters.siteId) query = query.eq("site_id", filters.siteId);
-  if (filters.attendance) query = query.eq("attendance", filters.attendance as never);
-  if (filters.trust) query = query.eq("trust", filters.trust as never);
+  if (cols.attendance) query = query.in("attendance", cols.attendance as never[]);
+  if (cols.shiftStatus) query = query.in("status", cols.shiftStatus as never[]);
+  if (cols.trust) query = query.in("trust", cols.trust as never[]);
 
   const [{ data }, { data: sites }] = await Promise.all([
     query,

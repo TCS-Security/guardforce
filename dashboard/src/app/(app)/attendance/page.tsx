@@ -27,7 +27,7 @@ export default async function AttendancePage({ searchParams }: PageProps<"/atten
   const filters = {
     date: str(sp.date) ?? defaultAttendanceDate(session),
     siteId: str(sp.site),
-    attendance: str(sp.status),
+    status: str(sp.status),
     trust: str(sp.trust),
     q: str(sp.q),
   };
