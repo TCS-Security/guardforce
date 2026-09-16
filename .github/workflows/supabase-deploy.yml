@@ -19,6 +19,13 @@ jobs:
   deploy:
     name: deploy to cloud project
     runs-on: ubuntu-latest
+    # Both commands need the access token: `db push --linked` re-reads the linked
+    # project through the API before it touches the database. Setting it per-step is
+    # how the push ended up failing with "Access token not provided" while the link
+    # right above it succeeded.
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
       - uses: supabase/setup-cli@v1
@@ -30,12 +37,30 @@ jobs:
           # emits ("failed to parse config: N error(s) decoding") and every migration
           # silently stays unapplied. Bump this in the same commit as any CLI upgrade.
           version: 2.117.0
+
+      # Missing credentials otherwise surface as a CLI error that names neither the
+      # secret nor the repository it belongs in, several steps later.
+      - name: check credentials are configured
+        run: |
+          missing=""
+          [ -n "$SUPABASE_ACCESS_TOKEN" ] || missing="$missing SUPABASE_ACCESS_TOKEN"
+          [ -n "$SUPABASE_DB_PASSWORD" ] || missing="$missing SUPABASE_DB_PASSWORD"
+          [ -n "${{ vars.SUPABASE_PROJECT_REF }}" ] || missing="$missing SUPABASE_PROJECT_REF(variable)"
+          if [ -n "$missing" ]; then
+            echo "::error::Not configured:$missing — add it under Settings → Secrets and variables → Actions."
+            echo "### Migrations did NOT run" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "Missing repository secret(s): **$missing**" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "\`SUPABASE_DB_PASSWORD\` is the database password for the linked project" >> "$GITHUB_STEP_SUMMARY"
+            echo "(Supabase dashboard → Project Settings → Database). Add it under" >> "$GITHUB_STEP_SUMMARY"
+            echo "Settings → Secrets and variables → Actions, then re-run this workflow." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
       - run: supabase link --project-ref ${{ vars.SUPABASE_PROJECT_REF }} --workdir .
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       - run: supabase db push --linked --workdir .
-        env:
-          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+
       # A failure here leaves the cloud database behind the code that expects it, and
       # nothing else surfaces that. Say so loudly in the run summary.
       - if: failure()
