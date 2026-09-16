@@ -2,8 +2,7 @@
 
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { FilterBar, FilterField, FilterSearch } from "@/components/gf/filter-bar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type Site = { id: string; name: string };
@@ -49,42 +48,47 @@ export function GuardFilters({ sites }: { sites: Site[] }) {
   }, [q]);
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <div className="relative">
-        <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
-        <Input
+    <FilterBar aria-label="Filter guards">
+      <FilterField label="Search" htmlFor="guard-search" className="w-56">
+        <FilterSearch
+          id="guard-search"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search name, phone, code…"
           aria-label="Search guards"
-          className="h-8 w-56 pl-8"
         />
-      </div>
-      <Select value={searchParams.get("site") ?? "all"} onValueChange={(v) => setParam("site", v ?? "all")}>
-        <SelectTrigger aria-label="Filter by site" size="sm">
-          <SelectValue>{(v: string) => (v === "all" || !v ? "All sites" : (sites.find((s) => s.id === v)?.name ?? "All sites"))}</SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All sites</SelectItem>
-          {sites.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-        </SelectContent>
-      </Select>
-      <Select value={searchParams.get("status") ?? "all"} onValueChange={(v) => setParam("status", v ?? "all")}>
-        <SelectTrigger aria-label="Filter by status" size="sm">
-          <SelectValue>{(v: string) => STATUS_OPTIONS.find((o) => o.value === v)?.label ?? "All statuses"}</SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          {STATUS_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-        </SelectContent>
-      </Select>
-      <Select value={searchParams.get("kyc") ?? "all"} onValueChange={(v) => setParam("kyc", v ?? "all")}>
-        <SelectTrigger aria-label="Filter by KYC completeness" size="sm">
-          <SelectValue>{(v: string) => KYC_OPTIONS.find((o) => o.value === v)?.label ?? "KYC: any"}</SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          {KYC_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-        </SelectContent>
-      </Select>
-    </div>
+      </FilterField>
+      <FilterField label="Site">
+        <Select value={searchParams.get("site") ?? "all"} onValueChange={(v) => setParam("site", v ?? "all")}>
+          <SelectTrigger aria-label="Filter by site" className="w-[200px]">
+            <SelectValue>{(v: string) => (v === "all" || !v ? "All sites" : (sites.find((s) => s.id === v)?.name ?? "All sites"))}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All sites</SelectItem>
+            {sites.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </FilterField>
+      <FilterField label="Status">
+        <Select value={searchParams.get("status") ?? "all"} onValueChange={(v) => setParam("status", v ?? "all")}>
+          <SelectTrigger aria-label="Filter by status" className="w-[150px]">
+            <SelectValue>{(v: string) => STATUS_OPTIONS.find((o) => o.value === v)?.label ?? "All statuses"}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {STATUS_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </FilterField>
+      <FilterField label="KYC">
+        <Select value={searchParams.get("kyc") ?? "all"} onValueChange={(v) => setParam("kyc", v ?? "all")}>
+          <SelectTrigger aria-label="Filter by KYC completeness" className="w-[170px]">
+            <SelectValue>{(v: string) => KYC_OPTIONS.find((o) => o.value === v)?.label ?? "KYC: any"}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {KYC_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </FilterField>
+    </FilterBar>
   );
 }

@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
     paths: ['supabase/migrations/**']
+  # Manual re-run, for when a deploy failed and main has since moved on.
+  workflow_dispatch:
 
 concurrency:
   group: supabase-deploy
@@ -20,9 +22,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: supabase/setup-cli@v1
+        with:
+          # Must track the CLI that writes `supabase/config.toml` locally (see the
+          # `supabase` version pinned in the README / used by whoever ran `supabase init`).
+          # setup-cli's default is years behind, and `supabase link` parses the whole
+          # config before it does anything: an older binary rejects keys a newer one
+          # emits ("failed to parse config: N error(s) decoding") and every migration
+          # silently stays unapplied. Bump this in the same commit as any CLI upgrade.
+          version: 2.117.0
       - run: supabase link --project-ref ${{ vars.SUPABASE_PROJECT_REF }} --workdir .
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       - run: supabase db push --linked --workdir .
         env:
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      # A failure here leaves the cloud database behind the code that expects it, and
+      # nothing else surfaces that. Say so loudly in the run summary.
+      - if: failure()
+        run: |
+          echo "### Migrations did NOT reach the cloud project" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "\`main\` now contains schema the database does not have. Anything merged since" >> "$GITHUB_STEP_SUMMARY"
+          echo "the last green run of this workflow is live in the app but missing its tables," >> "$GITHUB_STEP_SUMMARY"
+          echo "policies or permission rows. Fix and re-run via *Run workflow*." >> "$GITHUB_STEP_SUMMARY"

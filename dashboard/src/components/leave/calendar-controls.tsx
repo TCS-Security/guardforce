@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { ButtonLink } from "@/components/gf/button-link";
+import { FilterBar, FilterField } from "@/components/gf/filter-bar";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -20,23 +21,25 @@ export function CalendarControls({
 }) {
   const router = useRouter();
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3">
-      <Select
-        value={siteId}
-        onValueChange={(v) => {
-          if (typeof v === "string" && v) router.push(`/leave/calendar?site=${v}&m=${month}`);
-        }}
-      >
-        <SelectTrigger aria-label="Site" className="min-w-56">
-          <SelectValue>{(v: string) => sites.find((s) => s.id === v)?.name ?? "Pick a site"}</SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          {sites.map((s) => (
-            <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <div className="flex items-center gap-1" role="group" aria-label={`Calendar month: ${monthLabel}`}>
+    <FilterBar className="justify-between" aria-label="Calendar filters">
+      <FilterField label="Site">
+        <Select
+          value={siteId}
+          onValueChange={(v) => {
+            if (typeof v === "string" && v) router.push(`/leave/calendar?site=${v}&m=${month}`);
+          }}
+        >
+          <SelectTrigger aria-label="Site" className="min-w-56">
+            <SelectValue>{(v: string) => sites.find((s) => s.id === v)?.name ?? "Pick a site"}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {sites.map((s) => (
+              <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </FilterField>
+      <div className="flex h-8 items-center gap-1" role="group" aria-label={`Calendar month: ${monthLabel}`}>
         <ButtonLink href={`/leave/calendar?site=${siteId}&m=${prevMonth}`} variant="outline" size="icon-sm" aria-label="Previous month">
           <ChevronLeft />
         </ButtonLink>
@@ -45,6 +48,6 @@ export function CalendarControls({
           <ChevronRight />
         </ButtonLink>
       </div>
-    </div>
+    </FilterBar>
   );
 }
