@@ -63,13 +63,13 @@ export default async function IncidentsPage({ searchParams }: PageProps<"/incide
             className="border-0"
           />
         ) : (
-          <table className="w-full text-sm" aria-label="Incidents">
+          <table className="w-full table-fixed text-sm" aria-label="Incidents">
             <thead>
               <tr className="eyebrow border-b text-left [&>th]:px-4 [&>th]:py-2 [&>th]:font-normal">
-                <th>Incident</th>
-                <th>Site</th>
-                <th>Guard</th>
-                <th>When</th>
+                <th className="w-[38%]">Incident</th>
+                <th className="w-[15%]">Site</th>
+                <th className="w-[16%]">Guard</th>
+                <th className="w-[12%]">When</th>
                 <th className="text-right">Severity</th>
                 <th className="text-right">Status</th>
               </tr>
@@ -77,11 +77,11 @@ export default async function IncidentsPage({ searchParams }: PageProps<"/incide
             <tbody className="divide-y">
               {rows.map((i) => (
                 <tr key={i.id} className="hover:bg-muted/40">
-                  <td className="px-4 py-2.5">
+                  <td className="max-w-0 px-4 py-2.5">
                     <Link href={`/incidents/${i.id}`} className="font-medium hover:underline">{i.title}</Link>
                     <div className="mt-1 flex items-center gap-1.5">
                       <IncidentTypeBadge type={i.type} size="xs" />
-                      <span className="truncate text-xs text-muted-foreground">{i.description}</span>
+                      <span className="line-clamp-1 min-w-0 text-xs text-muted-foreground">{i.description}</span>
                     </div>
                   </td>
                   <td className="px-4 py-2.5 text-muted-foreground">{i.sites?.name}</td>
@@ -89,7 +89,7 @@ export default async function IncidentsPage({ searchParams }: PageProps<"/incide
                     {i.guards ? (
                       <span className="flex items-center gap-2">
                         <GuardAvatar name={i.guards.full_name} size="xs" />
-                        <span className="truncate">{i.guards.full_name}</span>
+                        <span className="line-clamp-1 min-w-0">{i.guards.full_name}</span>
                       </span>
                     ) : (
                       <span className="text-muted-foreground">—</span>

@@ -135,6 +135,24 @@ test.describe("incidents", () => {
     await expect(page.getByRole("heading", { name: /Fight between two loaders/ })).toHaveCount(0);
   });
 
+  // A one-line description is thousands of pixels wide as one unbreakable string, and
+  // `truncate` (white-space: nowrap) hands that width straight to the column, so an
+  // auto-layout table grows to fit it and the whole page scrolls sideways. Caught only
+  // by measuring, because every locator still resolves on an 3000px-wide page.
+  for (const width of [1280, 1440]) {
+    test(`the list has no horizontal scroll at ${width}px`, async ({ page }) => {
+      await login(page);
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/incidents");
+      await expect(page.getByRole("table", { name: "Incidents" })).toBeVisible();
+      const { scrollWidth, clientWidth } = await page.evaluate(() => ({
+        scrollWidth: document.documentElement.scrollWidth,
+        clientWidth: document.documentElement.clientWidth,
+      }));
+      expect(scrollWidth, `document is ${scrollWidth}px wide in a ${clientWidth}px viewport`).toBeLessThanOrEqual(clientWidth + 1);
+    });
+  }
+
   test("a second tenant sees none of this tenant's incidents", async ({ page }) => {
     await login(page, SEED.falconOwner);
     await page.goto("/incidents");
