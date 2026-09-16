@@ -4,29 +4,19 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
 import { DayStepper, FilterBar, FilterField, FilterSearch } from "@/components/gf/filter-bar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-const STATUSES = [
-  { value: "all", label: "Any status" },
-  { value: "present", label: "Present" },
-  { value: "half_day", label: "Half day" },
-  { value: "absent", label: "Absent" },
-  { value: "on_leave", label: "On leave" },
-  { value: "pending", label: "Pending" },
-];
-
-const TRUST = [
-  { value: "all", label: "Any trust" },
-  { value: "clean", label: "Clean" },
-  { value: "flagged", label: "Flagged" },
-  { value: "suspicious", label: "Suspicious" },
-];
+import {
+  ATTENDANCE_STATUS_FILTERS as STATUSES,
+  TRUST_FILTERS as TRUST,
+  normalizeStatusFilter,
+  normalizeTrustFilter,
+} from "@/lib/domain/attendance";
 
 export function AttendanceFilters({
   sites,
   current,
 }: {
   sites: { id: string; name: string }[];
-  current: { date: string; siteId: string | null; attendance: string | null; trust: string | null; q: string | null };
+  current: { date: string; siteId: string | null; status: string | null; trust: string | null; q: string | null };
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -59,8 +49,8 @@ export function AttendanceFilters({
       </FilterField>
 
       <FilterField label="Attendance">
-        <Select value={current.attendance ?? "all"} onValueChange={(v) => set("status", v as string)}>
-          <SelectTrigger className="w-[150px]" aria-label="Attendance status">
+        <Select value={normalizeStatusFilter(current.status)} onValueChange={(v) => set("status", v as string)}>
+          <SelectTrigger className="w-[170px]" aria-label="Attendance status">
             <SelectValue>{(v: string) => STATUSES.find((s) => s.value === (v || "all"))?.label ?? "Any status"}</SelectValue>
           </SelectTrigger>
           <SelectContent>
@@ -70,8 +60,8 @@ export function AttendanceFilters({
       </FilterField>
 
       <FilterField label="Trust">
-        <Select value={current.trust ?? "all"} onValueChange={(v) => set("trust", v as string)}>
-          <SelectTrigger className="w-[150px]" aria-label="Trust level">
+        <Select value={normalizeTrustFilter(current.trust)} onValueChange={(v) => set("trust", v as string)}>
+          <SelectTrigger className="w-[170px]" aria-label="Trust level">
             <SelectValue>{(v: string) => TRUST.find((s) => s.value === (v || "all"))?.label ?? "Any trust"}</SelectValue>
           </SelectTrigger>
           <SelectContent>

@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { deriveAttendance, deriveTrust, lateMinutes, punctuality } from "../attendance";
+import {
+  ATTENDANCE_STATUS_FILTERS,
+  attendanceColumnFilters,
+  deriveAttendance,
+  deriveTrust,
+  lateMinutes,
+  normalizeStatusFilter,
+  normalizeTrustFilter,
+  punctuality,
+  TRUST_FILTERS,
+} from "../attendance";
 
 const base = {
   status: "completed" as const,
@@ -73,5 +83,63 @@ describe("punctuality", () => {
       { started_at: "x", flags: ["OUTSIDE_FENCE"] },
       { started_at: null, flags: [] },
     ])).toBeCloseTo(66.67, 1);
+  });
+});
+
+describe("attendanceColumnFilters", () => {
+  it("ignores missing or unknown params", () => {
+    expect(attendanceColumnFilters(null, null)).toEqual({ attendance: null, shiftStatus: null, trust: null });
+    expect(attendanceColumnFilters("nonsense", "nonsense")).toEqual({ attendance: null, shiftStatus: null, trust: null });
+  });
+
+  it("maps 'on duty now' onto the shift status column, not attendance", () => {
+    expect(attendanceColumnFilters("on_duty", null)).toEqual({ attendance: null, shiftStatus: ["in_progress"], trust: null });
+  });
+
+  it("treats 'worked' as present or half day, the way the overview tile counts it", () => {
+    expect(attendanceColumnFilters("worked", null).attendance).toEqual(["present", "half_day"]);
+  });
+
+  it("maps the plain attendance states one to one", () => {
+    for (const v of ["present", "half_day", "absent", "on_leave", "pending"]) {
+      expect(attendanceColumnFilters(v, null)).toEqual({ attendance: [v], shiftStatus: null, trust: null });
+    }
+  });
+
+  it("matches site_day_summary's definition of flagged", () => {
+    expect(attendanceColumnFilters(null, "any_flag").trust).toEqual(["flagged", "suspicious"]);
+    expect(attendanceColumnFilters(null, "flagged").trust).toEqual(["flagged"]);
+    expect(attendanceColumnFilters(null, "clean").trust).toEqual(["clean"]);
+  });
+
+  it("combines a status and a trust filter", () => {
+    expect(attendanceColumnFilters("on_duty", "any_flag")).toEqual({
+      attendance: null,
+      shiftStatus: ["in_progress"],
+      trust: ["flagged", "suspicious"],
+    });
+  });
+});
+
+describe("filter option lists", () => {
+  it("offers a select option for every value the query understands", () => {
+    for (const { value } of ATTENDANCE_STATUS_FILTERS) {
+      if (value === "all") continue;
+      const cols = attendanceColumnFilters(value, null);
+      expect(cols.attendance ?? cols.shiftStatus, `${value} filters nothing`).not.toBeNull();
+    }
+    for (const { value } of TRUST_FILTERS) {
+      if (value === "all") continue;
+      expect(attendanceColumnFilters(null, value).trust, `${value} filters nothing`).not.toBeNull();
+    }
+  });
+
+  it("normalises unknown params back to 'all'", () => {
+    expect(normalizeStatusFilter("worked")).toBe("worked");
+    expect(normalizeStatusFilter("all")).toBe("all");
+    expect(normalizeStatusFilter("bogus")).toBe("all");
+    expect(normalizeStatusFilter(null)).toBe("all");
+    expect(normalizeTrustFilter("any_flag")).toBe("any_flag");
+    expect(normalizeTrustFilter("bogus")).toBe("all");
   });
 });

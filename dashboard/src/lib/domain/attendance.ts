@@ -43,3 +43,77 @@ export function punctuality(shifts: Pick<Shift, "started_at" | "flags">[]) {
   const onTime = started.filter((s) => !s.flags.includes("LATE_START")).length;
   return (100 * onTime) / started.length;
 }
+
+// ---------------------------------------------------------------------------
+// Day-view filters (?status= / ?trust= on /attendance)
+// ---------------------------------------------------------------------------
+
+/**
+ * `status` mixes two columns on purpose: the owner thinks of "on duty now" and
+ * "absent" as one list of states, but `on_duty` lives on `shifts.status` while the
+ * rest live on `shifts.attendance`. `worked` and `any_flag` exist so the overview
+ * tiles can link to exactly the set of guards they counted.
+ */
+export const ATTENDANCE_STATUS_FILTERS = [
+  { value: "all", label: "Any status" },
+  { value: "on_duty", label: "On duty now" },
+  { value: "worked", label: "Present or half day" },
+  { value: "present", label: "Present (full day)" },
+  { value: "half_day", label: "Half day" },
+  { value: "absent", label: "Absent" },
+  { value: "on_leave", label: "On leave" },
+  { value: "pending", label: "Not started yet" },
+] as const;
+
+export const TRUST_FILTERS = [
+  { value: "all", label: "Any trust" },
+  { value: "any_flag", label: "Flagged or suspicious" },
+  { value: "clean", label: "Clean" },
+  { value: "flagged", label: "Flagged" },
+  { value: "suspicious", label: "Suspicious" },
+] as const;
+
+export type AttendanceStatusFilter = (typeof ATTENDANCE_STATUS_FILTERS)[number]["value"];
+export type TrustFilter = (typeof TRUST_FILTERS)[number]["value"];
+
+export type AttendanceColumnFilters = {
+  /** values for `shifts.attendance`, or null for "don't filter" */
+  attendance: string[] | null;
+  /** values for `shifts.status` */
+  shiftStatus: string[] | null;
+  /** values for `shifts.trust` */
+  trust: string[] | null;
+};
+
+const STATUS_TO_COLUMNS: Record<string, Pick<AttendanceColumnFilters, "attendance" | "shiftStatus">> = {
+  on_duty: { attendance: null, shiftStatus: ["in_progress"] },
+  worked: { attendance: ["present", "half_day"], shiftStatus: null },
+  present: { attendance: ["present"], shiftStatus: null },
+  half_day: { attendance: ["half_day"], shiftStatus: null },
+  absent: { attendance: ["absent"], shiftStatus: null },
+  on_leave: { attendance: ["on_leave"], shiftStatus: null },
+  pending: { attendance: ["pending"], shiftStatus: null },
+};
+
+const TRUST_TO_COLUMN: Record<string, string[]> = {
+  // site_day_summary counts "flagged" as trust in (flagged, suspicious) — match it.
+  any_flag: ["flagged", "suspicious"],
+  clean: ["clean"],
+  flagged: ["flagged"],
+  suspicious: ["suspicious"],
+};
+
+/** Resolve the `?status=`/`?trust=` params into the columns the query filters on. Unknown values are ignored. */
+export function attendanceColumnFilters(status: string | null, trust: string | null): AttendanceColumnFilters {
+  const s = (status && STATUS_TO_COLUMNS[status]) || { attendance: null, shiftStatus: null };
+  return { attendance: s.attendance, shiftStatus: s.shiftStatus, trust: (trust && TRUST_TO_COLUMN[trust]) || null };
+}
+
+/** The value a <Select> should show — unknown/absent params fall back to "all". */
+export function normalizeStatusFilter(value: string | null): AttendanceStatusFilter {
+  return value && value in STATUS_TO_COLUMNS ? (value as AttendanceStatusFilter) : "all";
+}
+
+export function normalizeTrustFilter(value: string | null): TrustFilter {
+  return value && value in TRUST_TO_COLUMN ? (value as TrustFilter) : "all";
+}
