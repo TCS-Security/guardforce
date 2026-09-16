@@ -58,3 +58,21 @@ export function canUnassign(shift: { status: string; started_at: string | null }
   if (!shift) return true;
   return !shift.started_at && ["scheduled", "cancelled"].includes(shift.status);
 }
+
+/**
+ * Turns the database's own wording for a failed assignment into something an
+ * operator can act on.
+ *
+ * `KYC_INCOMPLETE` comes from the trigger 0014 drops, so on an up-to-date database
+ * that branch never fires. It is kept because migrations only run on `main`: any
+ * environment whose schema is behind its code — a Vercel preview, most obviously —
+ * still has the old rule, and "the Assign button does nothing useful" is a far worse
+ * way to discover that than being told.
+ */
+export function rosterErrorMessage(message: string) {
+  if (message.includes("KYC_INCOMPLETE")) {
+    return "This database still enforces the old rule that a guard with incomplete KYC cannot be rostered. The migration that withdraws it has not been applied here yet.";
+  }
+  if (message.includes("duplicate key")) return "That guard is already on this shift for the day.";
+  return message;
+}

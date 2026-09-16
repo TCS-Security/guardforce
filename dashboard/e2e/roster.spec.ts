@@ -92,9 +92,13 @@ test.describe("roster", () => {
       await expect(option.getByText("KYC")).toBeVisible();
 
       await option.click();
-      await page.getByRole("button", { name: "Assign" }).click();
+      // The warning informs; it does not disable the thing you came here to press.
+      await expect(page.getByText(/can be rostered, but their KYC/)).toBeVisible();
+      const submit = page.getByRole("button", { name: "Assign" });
+      await expect(submit).toBeEnabled();
+      await submit.click();
 
-      // The server accepted it: the assignment row exists.
+      // The server accepted it: the assignment row exists, and a shift was materialised.
       await expect(async () => {
         const { data } = await db
           .from("shift_assignments")
@@ -103,6 +107,15 @@ test.describe("roster", () => {
           .eq("shift_date", day);
         expect(data!.length, "assignment row").toBeGreaterThan(0);
       }).toPass({ timeout: 15_000 });
+
+      // And the operator sees it land: the dialog closes with no error, and the guard
+      // is on the grid. Asserting the row alone would still pass if the UI swallowed
+      // a P0001 from a database that has not had 0014 applied.
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+      await expect(page.getByText(/KYC_INCOMPLETE|cannot be rostered/)).toHaveCount(0);
+      await expect(
+        page.getByRole("table", { name: /Roster for Sobha/ }).getByText("Santosh"),
+      ).toBeVisible();
     } finally {
       await db.from("shifts").delete().eq("guard_id", SEED.guards.santoshIncompleteKyc).eq("shift_date", day);
       await db.from("shift_assignments").delete().eq("guard_id", SEED.guards.santoshIncompleteKyc).eq("shift_date", day);

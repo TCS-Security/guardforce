@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canUnassign, cellCoverage, describeWeekdays, weekDays, weekdayOf } from "../roster";
+import { canUnassign, cellCoverage, describeWeekdays, rosterErrorMessage, weekDays, weekdayOf } from "../roster";
 
 describe("weekDays", () => {
   it("returns Monday to Sunday for any day in the week", () => {
@@ -48,5 +48,27 @@ describe("canUnassign", () => {
     expect(canUnassign({ status: "in_progress", started_at: "t" })).toBe(false);
     expect(canUnassign({ status: "completed", started_at: "t" })).toBe(false);
     expect(canUnassign({ status: "void_location_off", started_at: "t" })).toBe(false);
+  });
+});
+
+describe("rosterErrorMessage", () => {
+  it("explains a KYC rejection as a schema that is behind the code", () => {
+    // 0014 drops the trigger, so this only ever reaches an operator on an environment
+    // whose database has not caught up — where the raw P0001 explains nothing.
+    const raw = 'new row violates: KYC_INCOMPLETE (missing: address_proof, police_verification)';
+    expect(rosterErrorMessage(raw)).toMatch(/still enforces the old rule/);
+    expect(rosterErrorMessage(raw)).not.toContain("KYC_INCOMPLETE");
+  });
+
+  it("names the real problem behind a unique-violation", () => {
+    expect(rosterErrorMessage('duplicate key value violates unique constraint "x"')).toBe(
+      "That guard is already on this shift for the day.",
+    );
+  });
+
+  it("passes anything it does not recognise through untouched", () => {
+    expect(rosterErrorMessage("permission denied for table shift_assignments")).toBe(
+      "permission denied for table shift_assignments",
+    );
   });
 });
