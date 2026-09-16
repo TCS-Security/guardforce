@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, MapPinned, Building2, Users, CalendarDays, ClipboardCheck, Footprints, ListChecks, Plane, BarChart3, Radio, Settings,
+  LayoutDashboard, MapPinned, Building2, Users, CalendarDays, ClipboardCheck, Footprints, ListChecks, Plane, BarChart3, Radio, Settings, Siren,
   type LucideIcon,
 } from "lucide-react";
 
@@ -12,6 +12,7 @@ export const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { href: "/", label: "Overview", icon: LayoutDashboard },
       { href: "/live", label: "Live map", icon: MapPinned },
       { href: "/events", label: "Events", icon: Radio },
+      { href: "/incidents", label: "Incidents", icon: Siren },
     ],
   },
   {

@@ -1,5 +1,5 @@
 import { format, formatDistanceToNowStrict, differenceInMinutes, isToday, isYesterday } from "date-fns";
-import { toZonedTime, formatInTimeZone } from "date-fns-tz";
+import { toZonedTime, fromZonedTime, formatInTimeZone } from "date-fns-tz";
 
 export const DEFAULT_TZ = "Asia/Kolkata";
 
@@ -93,4 +93,18 @@ export function fmtPhone(phone: string | null | undefined) {
   const p = phone.replace(/\D/g, "");
   if (p.length === 10) return `${p.slice(0, 5)} ${p.slice(5)}`;
   return phone;
+}
+
+/**
+ * `<input type="datetime-local">` carries wall-clock time with no zone. The agency works
+ * in IST, so parsing it with `new Date()` would silently land on the server's zone —
+ * hours out for anyone deploying outside India.
+ */
+export function fromLocalInput(value: string, tz = DEFAULT_TZ) {
+  return fromZonedTime(value, tz);
+}
+
+/** The inverse: an instant rendered for a datetime-local input in the agency's zone. */
+export function toLocalInput(value: string | Date, tz = DEFAULT_TZ) {
+  return formatInTimeZone(new Date(value), tz, "yyyy-MM-dd'T'HH:mm");
 }
