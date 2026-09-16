@@ -3,6 +3,7 @@ import { subDays } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
 import type { Session } from "@/lib/auth/session";
 import { toLocalDate } from "@/lib/domain/format";
+import { ALERT_FEED_LIMIT, ALERT_FETCH_LIMIT, groupAlerts, type AlertEvent } from "@/lib/domain/alerts";
 
 export async function loadOverview(session: Session) {
   const supabase = await createClient();
@@ -21,7 +22,7 @@ export async function loadOverview(session: Session) {
       .select("id,type,severity,title,payload,created_at,site_id,guard_id,shift_id,acknowledged_at,sites(name),guards(full_name)")
       .in("severity", ["warn", "critical"])
       .order("created_at", { ascending: false })
-      .limit(14),
+      .limit(ALERT_FETCH_LIMIT),
     supabase
       .from("patrols")
       .select("status")
@@ -53,12 +54,16 @@ export async function loadOverview(session: Session) {
     {} as Record<string, number>,
   );
 
+  const alertEvents = groupAlerts((alerts.data ?? []) as unknown as AlertEvent[], ALERT_FEED_LIMIT).flatMap((g) => g.events);
+
   return {
     today,
     sites,
     totals,
     trend: trend.data ?? [],
-    alerts: alerts.data ?? [],
+    // Repeats of the same problem collapse into one panel row, so fetch more raw events than
+    // the panel shows and hand back only the ones actually behind the rows on screen.
+    alerts: alertEvents,
     patrolCounts,
     pendingLeave: leave.count ?? 0,
     presence: presence.data ?? [],
