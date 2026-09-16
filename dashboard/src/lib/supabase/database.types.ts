@@ -748,6 +748,115 @@ export type Database = {
           },
         ]
       }
+      incidents: {
+        Row: {
+          agency_id: string
+          created_at: string
+          description: string
+          guard_id: string | null
+          id: string
+          lat: number | null
+          lng: number | null
+          occurred_at: string
+          reported_by: string | null
+          reported_by_guard_id: string | null
+          resolution: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: Database["public"]["Enums"]["incident_severity"]
+          site_id: string
+          status: Database["public"]["Enums"]["incident_status"]
+          title: string
+          type: Database["public"]["Enums"]["incident_type"]
+          updated_at: string
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string
+          description: string
+          guard_id?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          occurred_at?: string
+          reported_by?: string | null
+          reported_by_guard_id?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: Database["public"]["Enums"]["incident_severity"]
+          site_id: string
+          status?: Database["public"]["Enums"]["incident_status"]
+          title: string
+          type?: Database["public"]["Enums"]["incident_type"]
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string
+          description?: string
+          guard_id?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          occurred_at?: string
+          reported_by?: string | null
+          reported_by_guard_id?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: Database["public"]["Enums"]["incident_severity"]
+          site_id?: string
+          status?: Database["public"]["Enums"]["incident_status"]
+          title?: string
+          type?: Database["public"]["Enums"]["incident_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incidents_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incidents_guard_id_fkey"
+            columns: ["guard_id"]
+            isOneToOne: false
+            referencedRelation: "guards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incidents_reported_by_fkey"
+            columns: ["reported_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incidents_reported_by_guard_id_fkey"
+            columns: ["reported_by_guard_id"]
+            isOneToOne: false
+            referencedRelation: "guards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incidents_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incidents_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leave_balances: {
         Row: {
           agency_id: string
@@ -2512,6 +2621,30 @@ export type Database = {
         Returns: Json
       }
       has_permission: { Args: { p_key: string }; Returns: boolean }
+      incident_guard_positions: {
+        Args: { p_incident_id: string }
+        Returns: {
+          accuracy_m: number
+          distance_m: number
+          employee_code: string
+          gap_seconds: number
+          guard_id: string
+          guard_name: string
+          in_fence: boolean
+          lat: number
+          lng: number
+          location_enabled: boolean
+          recorded_at: string
+          same_site: boolean
+          shift_id: string
+          shift_name: string
+          shift_status: Database["public"]["Enums"]["shift_status"]
+          site_id: string
+          site_name: string
+          source: string
+          stale: boolean
+        }[]
+      }
       ingest_pings: {
         Args: { p_pings: Json; p_shift_id: string }
         Returns: number
@@ -2761,6 +2894,19 @@ export type Database = {
         | "SYNCED_LATE"
       fence_type: "radius" | "polygon"
       guard_status: "invited" | "active" | "inactive"
+      incident_severity: "low" | "moderate" | "high" | "critical"
+      incident_status: "open" | "investigating" | "resolved"
+      incident_type:
+        | "fight"
+        | "theft"
+        | "fire"
+        | "medical"
+        | "trespass"
+        | "vandalism"
+        | "property_damage"
+        | "unauthorised_vehicle"
+        | "altercation_with_client"
+        | "other"
       leave_status: "pending" | "approved" | "declined" | "cancelled"
       leave_type: "casual" | "earned" | "unpaid"
       notification_channel: "push" | "whatsapp" | "sms" | "email" | "in_app"
@@ -2958,6 +3104,20 @@ export const Constants = {
       ],
       fence_type: ["radius", "polygon"],
       guard_status: ["invited", "active", "inactive"],
+      incident_severity: ["low", "moderate", "high", "critical"],
+      incident_status: ["open", "investigating", "resolved"],
+      incident_type: [
+        "fight",
+        "theft",
+        "fire",
+        "medical",
+        "trespass",
+        "vandalism",
+        "property_damage",
+        "unauthorised_vehicle",
+        "altercation_with_client",
+        "other",
+      ],
       leave_status: ["pending", "approved", "declined", "cancelled"],
       leave_type: ["casual", "earned", "unpaid"],
       notification_channel: ["push", "whatsapp", "sms", "email", "in_app"],
