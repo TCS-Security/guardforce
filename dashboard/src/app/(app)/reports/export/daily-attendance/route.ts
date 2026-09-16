@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import { requireSession } from "@/lib/auth/session";
 import { loadShiftReportRows } from "@/lib/data/reports";
 import { dailyAttendanceColumns } from "@/lib/domain/reports";
-import { toCsv, csvResponse } from "@/lib/domain/csv";
+import { exportFormat, reportDownload } from "@/lib/domain/export";
 import { toLocalDate } from "@/lib/domain/format";
 
 export async function GET(request: NextRequest) {
@@ -11,6 +11,11 @@ export async function GET(request: NextRequest) {
   const to = sp.get("to") ?? toLocalDate(new Date(), session.agency.timezone);
   const from = sp.get("from") ?? to;
   const rows = await loadShiftReportRows({ from, to, siteId: sp.get("site"), guardId: sp.get("guard") });
-  const csv = toCsv(rows, dailyAttendanceColumns(session.agency.timezone));
-  return csvResponse(csv, `daily-attendance_${from}_${to}.csv`);
+  return reportDownload({
+    format: exportFormat(sp.get("format")),
+    rows,
+    columns: dailyAttendanceColumns(session.agency.timezone),
+    basename: `daily-attendance_${from}_${to}`,
+    name: "Daily attendance",
+  });
 }
