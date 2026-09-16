@@ -16,6 +16,7 @@ bun run typecheck && bun run test && bun run test:e2e
 ```
 `supabase gen types typescript --local --workdir .. > src/lib/supabase/database.types.ts` after any schema change (`bun run db:types`).
 Logins (password `guardforce`): `platform@guardforce.test` (our platform console), `owner@sentinel.test` (tenant owner), `priya@` / `arun@sentinel.test` (site-scoped supervisors), `owner@falcon.test` (second, empty tenant). Guard PIN `1234`. Never use `npx` (private registry); use `bun`/`bunx` and the brew `supabase` binary.
+Upgrading that binary rewrites `supabase/config.toml` with keys older CLIs reject, and `supabase link` parses the config before it does anything — so bump `version:` in `.github/workflows/supabase-deploy.yml` in the same commit, or migrations stop reaching the cloud project while every check stays green.
 
 ## Dashboard code conventions
 - Server Components fetch data with `createClient()` from `@/lib/supabase/server` (RLS applies). Put loaders in `src/lib/data/<module>.ts`. Mutations are Server Actions in `actions.ts` next to the route, validated with zod, returning `{ error?: string }`; call `revalidatePath` after writes.
