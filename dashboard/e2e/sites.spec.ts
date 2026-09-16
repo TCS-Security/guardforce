@@ -82,11 +82,22 @@ test.describe("sites", () => {
     const box = (await map.boundingBox())!;
     // Three clicks make a valid ring. MapLibre occasionally swallows a click that lands while
     // the canvas is still settling, so wait for each point to register before adding the next.
+    // The retry has to check first: re-clicking a point that *did* land adds a fourth vertex,
+    // after which the count it is waiting for can never appear again.
     const points = [[-70, -50], [70, -50], [0, 60]];
+    // Click through the canvas element rather than at raw page coordinates: Playwright then
+    // checks the canvas actually receives the event, instead of firing into whatever happens
+    // to be on top. The count is read back each time, so a swallowed click is retried and a
+    // click that did land is not repeated — re-clicking adds a fourth vertex, after which the
+    // count being waited for can never appear.
+    const vertices = async () =>
+      Number((await page.locator("text=/^\\d+ points?$/").first().textContent().catch(() => "0"))?.match(/\d+/)?.[0] ?? 0);
     for (const [i, [dx, dy]] of points.entries()) {
       await expect(async () => {
-        await page.mouse.click(box.x + box.width / 2 + dx, box.y + box.height / 2 + dy);
-        await expect(page.getByText(`${i + 1} points`, { exact: true })).toBeVisible({ timeout: 1_000 });
+        if ((await vertices()) < i + 1) {
+          await map.click({ position: { x: box.width / 2 + dx, y: box.height / 2 + dy } });
+        }
+        expect(await vertices()).toBe(i + 1);
       }).toPass({ timeout: 15_000 });
     }
     await expect(page.getByText("3 points", { exact: true })).toBeVisible();
