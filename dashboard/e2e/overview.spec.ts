@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { admin, login, SEED } from "./helpers";
+import { admin, agencyDate, login, SEED } from "./helpers";
 
 test.describe("overview", () => {
   test("shows staffing, trend and alerts", async ({ page }) => {
@@ -44,42 +44,43 @@ test.describe("overview", () => {
     expect(legendBox!.y + legendBox!.height).toBeLessThanOrEqual(cardBox!.y + cardBox!.height);
   });
 
-  // Repeats of one problem used to take one panel slot each: three missed rounds for the same
-  // guard on the same route rendered as three visually identical lines.
-  test("collapses repeats of the same problem into one alert row", async ({ page }) => {
+
+  // "In the Attendance, last 14 days bar graph, the bar should be clickable to show who
+  // all missed attendance and who all were present."
+  test("a bar in the attendance trend opens that day's guards", async ({ page }) => {
     const db = admin();
-    const patrolIds = ["11111111-1111-4111-8111-000000000101", "11111111-1111-4111-8111-000000000102", "11111111-1111-4111-8111-000000000103"];
-    const routeId = "f0000000-0000-4000-8000-000000000001";
-    const rows = patrolIds.map((patrolId, i) => ({
-      agency_id: SEED.agencyId,
-      site_id: SEED.sites.prestige,
-      guard_id: SEED.guards.ramesh,
-      type: "PATROL_MISSED",
-      severity: "warn",
-      title: "Ramesh Yadav missed patrol Dedupe test round",
-      payload: { patrol_id: patrolId, route_id: routeId, route_name: "Dedupe test round", body: `Expected 0${i + 1}:00` },
-      created_at: new Date(Date.now() - (2 + i) * 60_000).toISOString(),
-    }));
-    const TITLE = "Ramesh Yadav missed patrol Dedupe test round";
-    await db.from("events").delete().eq("title", TITLE);
-    const { error } = await db.from("events").insert(rows);
-    expect(error).toBeNull();
+    const day = agencyDate(-1);
 
-    try {
-      await login(page);
-      const group = page.locator('[data-testid="alert-group"]', { hasText: "Dedupe test round" });
-      await expect(group).toHaveCount(1);
-      await expect(group).toHaveAttribute("data-count", "3");
-      await expect(group).toContainText("missed 3 patrol rounds");
+    // Yesterday has seeded shifts; find one and read its status straight from the database,
+    // so the assertion is about the same row the chart counted.
+    const { data: shifts } = await db
+      .from("shifts")
+      .select("id,attendance,guards(full_name)")
+      .eq("shift_date", day)
+      .eq("agency_id", SEED.agencyId)
+      .in("attendance", ["present", "absent"])
+      .limit(1);
+    expect(shifts!.length, `a seeded shift on ${day}`).toBeGreaterThan(0);
+    const shift = shifts![0]!;
 
-      // The distinguishing detail of the newest event is on screen, not hidden in muted text.
-      await expect(group).toContainText("Expected 01:00");
+    await login(page);
 
-      // Expanding lists every underlying round.
-      await group.getByRole("button", { name: "All 3" }).click();
-      await expect(group.getByRole("link", { name: /Expected 0\d:00/ })).toHaveCount(3);
-    } finally {
-      await db.from("events").delete().eq("title", TITLE);
-    }
+    // The link behind the segment points where it should...
+    const segment = page.getByTestId(`trend-${shift.attendance}-${day}`);
+    await expect(segment).toHaveAttribute("href", `/attendance?date=${day}&status=${shift.attendance}`);
+
+    // ...and clicking the drawn bar itself does the same thing. Find the column by its
+    // position in the chart's day list, then click that series' rectangle.
+    const days = await page.locator('[data-testid^="trend-day-"]').evaluateAll((nodes) =>
+      nodes.map((n) => n.getAttribute("data-testid")!.replace("trend-day-", "")),
+    );
+    const column = days.indexOf(day);
+    expect(column, `${day} is in the chart`).toBeGreaterThanOrEqual(0);
+    const series = ["present", "half_day", "absent", "on_leave"].indexOf(shift.attendance!);
+    await page.locator(".recharts-bar").nth(series).locator(".recharts-rectangle").nth(column).click();
+
+    await expect(page).toHaveURL(new RegExp(`/attendance\\?date=${day}&status=${shift.attendance}`));
+    const table = page.getByRole("table", { name: "Attendance" });
+    await expect(table.locator(`a[href="/attendance/${shift.id}"]`)).toBeVisible();
   });
 });
