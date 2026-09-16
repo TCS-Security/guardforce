@@ -2,17 +2,20 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { CalendarPlus } from "lucide-react";
 import { requirePermission, requireSession } from "@/lib/auth/session";
-import { loadRosterSites, loadRosterWeek } from "@/lib/data/roster";
+import { loadRosterMonth, loadRosterSites, loadRosterWeek } from "@/lib/data/roster";
 import { PageHeader } from "@/components/gf/page-header";
 import { EmptyState } from "@/components/gf/empty-state";
 import { RosterBoard } from "@/components/roster/roster-board";
+import { RosterMonthBoard } from "@/components/roster/roster-month-board";
 import { RosterToolbar } from "@/components/roster/roster-toolbar";
 import { PatternsPanel } from "@/components/roster/patterns-panel";
-import { toLocalDate } from "@/lib/domain/format";
-import { weekDays } from "@/lib/domain/roster";
+import { fmtDate, toLocalDate } from "@/lib/domain/format";
+import { dayAnchor, monthLabel, parseRosterView } from "@/lib/domain/roster";
 
 export const metadata: Metadata = { title: "Roster" };
 export const dynamic = "force-dynamic";
+
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 export default async function RosterPage({ searchParams }: PageProps<"/roster">) {
   const session = await requireSession();
@@ -29,24 +32,37 @@ export default async function RosterPage({ searchParams }: PageProps<"/roster">)
   }
 
   const siteId = typeof sp.site === "string" && sites.some((s) => s.id === sp.site) ? sp.site : sites[0]!.id;
-  const weekParam = typeof sp.week === "string" && /^\d{4}-\d{2}-\d{2}$/.test(sp.week) ? sp.week : null;
-  const anchor = weekParam ? new Date(`${weekParam}T12:00:00`) : new Date();
-
-  const data = await loadRosterWeek(session, siteId, anchor);
-  if (!data.site) notFound();
-
+  const view = parseRosterView(sp.view);
+  // `week` is the anchor date for both views: the week, or the month, that contains it.
+  const weekParam = typeof sp.week === "string" && ISO_DATE.test(sp.week) ? sp.week : null;
+  const focusDay = typeof sp.day === "string" && ISO_DATE.test(sp.day) ? sp.day : null;
+  // Default to today in the agency's timezone, not the server's: an IST evening is
+  // already tomorrow in UTC, which would open the wrong week (and, on the 1st, month).
   const today = toLocalDate(new Date(), session.agency.timezone);
-  const days = weekDays(anchor);
+  const anchorDate = weekParam ?? today;
+  const anchor = dayAnchor(anchorDate);
+
+  const data = view === "month" ? await loadRosterMonth(session, siteId, anchor) : await loadRosterWeek(session, siteId, anchor);
+  if (!data.site) notFound();
+  const days = data.days;
 
   return (
     <div className="mx-auto flex max-w-[1500px] flex-col gap-5">
       <PageHeader
-        eyebrow={`${data.site.name} · week of ${days[0]}`}
+        eyebrow={`${data.site.name} · ${view === "month" ? monthLabel(anchor) : `week of ${fmtDate(`${days[0]}T00:00:00Z`, "UTC", "d MMM yyyy")}`}`}
         title="Roster"
         description="Assign guards to shifts across the week."
       />
 
-      <RosterToolbar sites={sites} siteId={siteId} days={days} today={today} />
+      <RosterToolbar
+        sites={sites}
+        siteId={siteId}
+        anchor={anchorDate}
+        days={days}
+        today={today}
+        view={view}
+        canEdit={session.can("roster:write")}
+      />
 
       {data.shiftTypes.length === 0 ? (
         <EmptyState
@@ -54,12 +70,23 @@ export default async function RosterPage({ searchParams }: PageProps<"/roster">)
           title="This site has no shifts yet"
           description="Define the shift windows on the site before rostering guards into them."
         />
+      ) : view === "month" ? (
+        <RosterMonthBoard
+          siteId={siteId}
+          siteName={data.site.name}
+          anchor={anchor}
+          days={days}
+          today={today}
+          shiftTypes={data.shiftTypes}
+          shifts={data.shifts}
+        />
       ) : (
         <RosterBoard
           siteId={siteId}
           siteName={data.site.name}
           days={days}
           today={today}
+          focusDay={focusDay}
           shiftTypes={data.shiftTypes}
           shifts={data.shifts}
           guards={data.guards}
