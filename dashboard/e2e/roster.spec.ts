@@ -118,7 +118,7 @@ test.describe("roster", () => {
       await expect(page.getByRole("dialog")).toHaveCount(0);
       await expect(page.getByText(/KYC_INCOMPLETE|cannot be rostered/)).toHaveCount(0);
       await expect(
-        page.getByRole("table", { name: /Roster for Sobha/ }).getByText("Santosh"),
+        page.getByRole("table", { name: /Roster week for Sobha/ }).getByText("Santosh"),
       ).toBeVisible();
     } finally {
       await db.from("shifts").delete().eq("guard_id", SEED.guards.santoshIncompleteKyc).eq("shift_date", day);
