@@ -93,7 +93,11 @@ test.describe("roster", () => {
 
       await option.click();
       // The warning informs; it does not disable the thing you came here to press.
-      await expect(page.getByText(/can be rostered, but their KYC/)).toBeVisible();
+      // Each gap is a whole statement, listed rather than spliced into the prose —
+      // reading them into the sentence produced "short of police verification missing".
+      const warning = page.getByText(/can be rostered\. KYC still incomplete:/);
+      await expect(warning).toBeVisible();
+      await expect(warning).toContainText("Police verification missing");
       const submit = page.getByRole("button", { name: "Assign" });
       await expect(submit).toBeEnabled();
       await submit.click();
