@@ -128,7 +128,7 @@ export function AssignDialog({
 
           {selected && selected.kyc_gaps.length > 0 && (
             <FormAlert tone="warning">
-              {selected.full_name} can be rostered, but their KYC is still short of {selected.kyc_gaps.map((g) => KYC_GAP_LABELS[g].toLowerCase()).join(", ")}.
+              {selected.full_name} can be rostered. KYC still incomplete: {selected.kyc_gaps.map((g) => KYC_GAP_LABELS[g]).join("; ")}.
             </FormAlert>
           )}
 
