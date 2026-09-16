@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { DayStepper, FilterBar, FilterField } from "../filter-bar";
 
 describe("FilterBar", () => {
-  it("puts its controls on a bordered, filled strip so they read as controls", () => {
+  it("is a tinted tray, so the controls on it are the lightest thing in the strip", () => {
     const { container } = render(
       <FilterBar>
         <FilterField label="Site" htmlFor="site">
@@ -14,8 +14,13 @@ describe("FilterBar", () => {
     );
     const bar = container.querySelector("[data-slot=filter-bar]")!;
     expect(bar.className).toContain("border");
-    expect(bar.className).toContain("bg-card");
-    expect(bar.className).toContain("shadow-sm");
+    // The tray itself is tinted...
+    expect(bar.className).toContain("bg-secondary");
+    expect(bar.className.split(" ")).not.toContain("bg-card");
+    // ...and it lifts the controls sitting on it to the card surface. Without this the
+    // strip is a white box holding near-white selects, which is what got missed.
+    expect(bar.className).toContain("[&_[data-slot=select-trigger]]:bg-card");
+    expect(bar.className).toContain("[&_[data-slot=input]]:bg-card");
     // the label is tied to the control it names
     expect(screen.getByLabelText("Site")).toHaveAttribute("id", "site");
   });
