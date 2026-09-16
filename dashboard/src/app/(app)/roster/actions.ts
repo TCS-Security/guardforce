@@ -4,19 +4,9 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { deny, requireSession } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
-import { canUnassign } from "@/lib/domain/roster";
+import { canUnassign, rosterErrorMessage } from "@/lib/domain/roster";
 
 export type ActionState = { error?: string; ok?: boolean } | undefined;
-
-/** Postgres raises P0001 from the KYC trigger; surface it as guidance, not a stack trace. */
-function friendly(message: string) {
-  if (message.includes("KYC_INCOMPLETE")) {
-    const missing = message.split("missing:")[1]?.replace(/\)$/, "").trim();
-    return `This guard's KYC is incomplete${missing ? ` — missing ${missing.replace(/_/g, " ")}` : ""}. Complete it on the guard's profile before rostering.`;
-  }
-  if (message.includes("duplicate key")) return "That guard is already on this shift for the day.";
-  return message;
-}
 
 const assignSchema = z.object({
   site_id: z.string().uuid(),
@@ -56,7 +46,7 @@ export async function assignShift(_prev: ActionState, formData: FormData): Promi
       ends_on: parsed.data.ends_on || null,
       created_by: session.userId,
     });
-    if (error) return { error: friendly(error.message) };
+    if (error) return { error: rosterErrorMessage(error.message) };
 
     const to = new Date(parsed.data.shift_date);
     to.setDate(to.getDate() + 14);
@@ -83,7 +73,7 @@ export async function assignShift(_prev: ActionState, formData: FormData): Promi
       scheduled_end: row!.ends_at,
       created_by: session.userId,
     });
-    if (error) return { error: friendly(error.message) };
+    if (error) return { error: rosterErrorMessage(error.message) };
   }
 
   revalidatePath("/roster");

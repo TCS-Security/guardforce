@@ -43,7 +43,7 @@ export default async function RosterPage({ searchParams }: PageProps<"/roster">)
       <PageHeader
         eyebrow={`${data.site.name} · week of ${days[0]}`}
         title="Roster"
-        description="Assign guards to shifts. A guard with incomplete KYC cannot be rostered."
+        description="Assign guards to shifts across the week."
       />
 
       <RosterToolbar sites={sites} siteId={siteId} days={days} today={today} />

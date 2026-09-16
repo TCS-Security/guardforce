@@ -50,10 +50,8 @@ export function AssignDialog({
   const filtered = useMemo(() => {
     const q = query.toLowerCase().trim();
     const rows = guards.filter((g) => !q || [g.full_name, g.employee_code, g.designation].filter(Boolean).some((v) => v!.toLowerCase().includes(q)));
-    // Guards posted at this site first, then deployable, then blocked ones last.
+    // Guards posted at this site first, then everyone else, alphabetically.
     return rows.sort((a, b) => {
-      const blocked = Number(a.kyc_gaps.length > 0) - Number(b.kyc_gaps.length > 0);
-      if (blocked !== 0) return blocked;
       const home = Number(b.is_home_site) - Number(a.is_home_site);
       if (home !== 0) return home;
       return a.full_name.localeCompare(b.full_name);
@@ -95,7 +93,9 @@ export function AssignDialog({
           <div role="radiogroup" aria-label="Guard" className="max-h-[260px] overflow-y-auto rounded-md border">
             {filtered.length === 0 && <p className="px-3 py-6 text-center text-sm text-muted-foreground">No guards match.</p>}
             {filtered.map((g) => {
-              const blocked = g.kyc_gaps.length > 0;
+              // KYC gaps are shown, not enforced: rostering a guard whose paperwork is
+              // still being chased is normal, so this is a nudge rather than a gate.
+              const incomplete = g.kyc_gaps.length > 0;
               const active = g.id === guardId;
               return (
                 <button
@@ -103,12 +103,10 @@ export function AssignDialog({
                   type="button"
                   role="radio"
                   aria-checked={active}
-                  disabled={blocked}
                   onClick={() => setGuardId(g.id)}
                   className={cn(
-                    "flex w-full items-center gap-2.5 border-b px-3 py-2 text-left last:border-b-0",
+                    "flex w-full items-center gap-2.5 border-b px-3 py-2 text-left last:border-b-0 hover:bg-muted/60",
                     active && "bg-primary/10",
-                    blocked ? "cursor-not-allowed opacity-60" : "hover:bg-muted/60",
                   )}
                 >
                   <GuardAvatar name={g.full_name} size="sm" />
@@ -118,8 +116,8 @@ export function AssignDialog({
                       {g.employee_code}{g.designation ? ` · ${g.designation}` : ""}{g.is_home_site ? "" : " · other site"}
                     </div>
                   </div>
-                  {blocked && (
-                    <StatusPill tone="signal" size="xs" className="shrink-0">
+                  {incomplete && (
+                    <StatusPill tone="half-day" size="xs" className="shrink-0">
                       <ShieldAlert className="size-3" /> KYC
                     </StatusPill>
                   )}
@@ -130,7 +128,7 @@ export function AssignDialog({
 
           {selected && selected.kyc_gaps.length > 0 && (
             <FormAlert tone="warning">
-              {selected.full_name} cannot be rostered yet — missing {selected.kyc_gaps.map((g) => KYC_GAP_LABELS[g].toLowerCase()).join(", ")}.
+              {selected.full_name} can be rostered, but their KYC is still short of {selected.kyc_gaps.map((g) => KYC_GAP_LABELS[g].toLowerCase()).join(", ")}.
             </FormAlert>
           )}
 
@@ -173,7 +171,7 @@ export function AssignDialog({
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-            <Button type="submit" disabled={pending || !guardId || (selected?.kyc_gaps.length ?? 0) > 0}>
+            <Button type="submit" disabled={pending || !guardId}>
               {pending && <Loader2 className="animate-spin" />}
               {repeat ? "Create pattern" : "Assign"}
             </Button>
