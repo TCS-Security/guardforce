@@ -120,14 +120,17 @@ test.describe("supervisor app contract", () => {
       // a site outside the scope is refused too
       expect((await app.rpc("add_guard", { p_full_name: "Elsewhere", p_phone: "9" + String(Date.now() + 1).slice(-9), p_site_id: SEED.sites.prestige })).error?.message).toContain("FORBIDDEN");
 
-      // ---- 5. KYC is incomplete, so the roster refuses the new guard
+      // ---- 5. the roster does not wait for KYC (0014 withdrew that block): an agency rosters
+      //         a guard the day it hires them and chases the paperwork afterwards
       const shiftTypes = await app.from("shift_types").select("id,name,start_time").eq("site_id", SEED.sites.metro).order("start_time");
       expect(shiftTypes.error).toBeNull();
       const dayShift = shiftTypes.data!.find((s) => s.name === "Day")!;
       const rosterDate = agencyDate(5);
-      const tooEarly = await app.rpc("assign_shift", { p_guard_id: guardId, p_site_id: SEED.sites.metro, p_shift_type_id: dayShift.id, p_date: rosterDate });
-      expect(tooEarly.error?.message).toContain("KYC_INCOMPLETE");
+      assignmentId = await rpc<string>(app, "assign_shift", { p_guard_id: guardId, p_site_id: SEED.sites.metro, p_shift_type_id: dayShift.id, p_date: rosterDate });
+      expect((await db.from("shift_assignments").select("guard_id,shift_date").eq("id", assignmentId).single()).data)
+        .toMatchObject({ guard_id: guardId, shift_date: rosterDate });
 
+      // placed on a shift, and still visibly incomplete — the gaps are reported, they just do not gate
       let record = await rpc<{ kyc_missing: string[]; guard: { site_name: string }; documents: unknown[]; supervisor: { name: string } }>(app, "guard_record", { p_guard_id: guardId });
       expect(record.guard.site_name).toContain("Metro");
       expect(record.supervisor.name).toBe(SEED.supervisor2.name);
@@ -173,8 +176,7 @@ test.describe("supervisor app contract", () => {
       record = await rpc(app, "guard_record", { p_guard_id: guardId });
       expect(record.kyc_missing).toEqual([]);
 
-      // ---- 8. assign_shift now succeeds, and an offline retry returns the same row
-      assignmentId = await rpc<string>(app, "assign_shift", { p_guard_id: guardId, p_site_id: SEED.sites.metro, p_shift_type_id: dayShift.id, p_date: rosterDate });
+      // ---- 8. an offline retry of the same assignment returns the same row rather than raising
       expect(await rpc<string>(app, "assign_shift", { p_guard_id: guardId, p_site_id: SEED.sites.metro, p_shift_type_id: dayShift.id, p_date: rosterDate })).toBe(assignmentId);
       // the shift_assignments_create_shift trigger made the scheduled shift
       const madeShift = await db.from("shifts").select("id,status").eq("assignment_id", assignmentId).single();

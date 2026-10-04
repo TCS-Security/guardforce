@@ -103,18 +103,24 @@ test.describe("reports", () => {
     const from = agencyDate(-14);
     const to = agencyDate(0);
     const body = await (await page.request.get(`/reports/export/punch?from=${from}&to=${to}`)).text();
-    const link = /https:\/\/www\.google\.com\/maps\?q=(-?\d+\.\d+),(-?\d+\.\d+)/.exec(body);
-    expect(link, "punch export carries a Google Maps link").not.toBeNull();
+    // Punch rows are one per physical punch, ordered by time, so which direction comes first
+    // depends on the seed — take a check-in row rather than whichever link appears first.
+    const row = body.split("\n").find((l) => l.includes(",Check-in,") && l.includes("maps?q="));
+    const link = row ? /https:\/\/www\.google\.com\/maps\?q=(-?\d+\.\d+),(-?\d+\.\d+)/.exec(row) : null;
+    expect(link, "a check-in row carries a Google Maps link").not.toBeNull();
 
-    // The pin matches the fix the database stored for that shift.
+    // The pin matches the fix the database stored for that shift. Within a rounding step, not
+    // exactly: the export prints six decimals, and the seed builds coordinates by arithmetic, so
+    // the stored double is a neighbour of the printed one and `eq` would never match it.
     const [, lat, lng] = link!;
+    const near = 1e-6;
     const { data } = await admin()
       .from("shifts")
       .select("id")
       .gte("shift_date", from)
       .lte("shift_date", to)
-      .eq("start_lat", Number(lat))
-      .eq("start_lng", Number(lng))
+      .gte("start_lat", Number(lat) - near).lte("start_lat", Number(lat) + near)
+      .gte("start_lng", Number(lng) - near).lte("start_lng", Number(lng) + near)
       .limit(1);
     expect(data!.length, "the link's coordinates belong to a real shift").toBeGreaterThan(0);
   });
