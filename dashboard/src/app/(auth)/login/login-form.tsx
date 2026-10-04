@@ -11,18 +11,18 @@ import { signIn, type LoginState } from "./actions";
 export function LoginForm({ next, initialError }: { next: string; initialError?: string }) {
   const [state, action, pending] = useActionState<LoginState, FormData>(signIn, initialError ? { error: initialError } : undefined);
   return (
-    <form action={action} className="flex flex-col gap-4">
+    <form action={action} className="flex flex-col gap-5">
       <input type="hidden" name="next" value={next} />
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-2">
         <Label htmlFor="email">Email</Label>
-        <Input id="email" name="email" type="email" autoComplete="email" required placeholder="you@agency.in" className="h-10" />
+        <Input id="email" name="email" type="email" autoComplete="email" required placeholder="you@agency.in" className="h-11" />
       </div>
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-2">
         <Label htmlFor="password">Password</Label>
-        <Input id="password" name="password" type="password" autoComplete="current-password" required className="h-10" />
+        <Input id="password" name="password" type="password" autoComplete="current-password" required className="h-11" />
       </div>
       {state?.error && <FormAlert>{state.error}</FormAlert>}
-      <Button type="submit" size="lg" disabled={pending} className="mt-2 h-10">
+      <Button type="submit" size="lg" disabled={pending} className="mt-1 h-11">
         {pending && <Loader2 className="animate-spin" />}
         Sign in
       </Button>

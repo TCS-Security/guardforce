@@ -64,6 +64,56 @@ test.describe("attendance", () => {
     await expect(table.getByText("Brigade Meadows")).toHaveCount(0);
   });
 
+  // The overview tiles link here with ?status=on_duty / ?status=worked, which filter
+  // different columns (shifts.status vs shifts.attendance).
+  test("filters to who is on duty now, and to who actually worked", async ({ page }) => {
+    const db = admin();
+    const shift = await createTestShift();
+    try {
+      const { error: inError } = await db.rpc("check_in", {
+        p_guard_id: SEED.guards.harish,
+        p_site_id: SEED.sites.sobha,
+        p_lat: SOBHA.lat,
+        p_lng: SOBHA.lng,
+        p_accuracy_m: 8,
+        p_selfie_path: `${SEED.agencyId}/selfies/${shift.id}/start.jpg`,
+        p_captured_at: new Date(Date.now() - 55 * 60 * 1000).toISOString(),
+        p_device: { battery_pct: 84 },
+        p_shift_id: shift.id,
+      });
+      expect(inError).toBeNull();
+
+      await login(page);
+      const table = page.getByRole("table", { name: "Attendance" });
+      // Harish has other seeded shifts that day, so match this shift's own row.
+      const row = table.locator(`a[href="/attendance/${shift.id}"]`);
+      await page.goto(`/attendance?date=${shift.shift_date}&status=on_duty`);
+      await expect(row).toBeVisible();
+
+      const { error: outError } = await db.rpc("check_out", {
+        p_shift_id: shift.id,
+        p_lat: SOBHA.lat,
+        p_lng: SOBHA.lng,
+        p_accuracy_m: 9,
+        p_selfie_path: `${SEED.agencyId}/selfies/${shift.id}/end.jpg`,
+        p_captured_at: new Date().toISOString(),
+        p_device: { battery_pct: 70 },
+      });
+      expect(outError).toBeNull();
+      const { data: done } = await db.from("shifts").select("status,attendance").eq("id", shift.id).single();
+      expect(done!.status).toBe("completed");
+      expect(["present", "half_day"]).toContain(done!.attendance);
+
+      // finished, so it drops out of "on duty now" and into "present or half day"
+      await page.goto(`/attendance?date=${shift.shift_date}&status=on_duty`);
+      await expect(row).toHaveCount(0);
+      await page.goto(`/attendance?date=${shift.shift_date}&status=worked`);
+      await expect(row).toBeVisible();
+    } finally {
+      await destroyTestShift(shift.id);
+    }
+  });
+
   test("a full verified shift: check in, wander out, lose location, void, then rescue with an exception", async ({ page }) => {
     const db = admin();
     const shift = await createTestShift();

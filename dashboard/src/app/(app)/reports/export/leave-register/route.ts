@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import { requireSession } from "@/lib/auth/session";
 import { loadLeaveReportRows } from "@/lib/data/reports";
 import { leaveColumns } from "@/lib/domain/reports";
-import { toCsv, csvResponse } from "@/lib/domain/csv";
+import { exportFormat, reportDownload } from "@/lib/domain/export";
 import { toLocalDate } from "@/lib/domain/format";
 
 export async function GET(request: NextRequest) {
@@ -11,6 +11,11 @@ export async function GET(request: NextRequest) {
   const to = sp.get("to") ?? toLocalDate(new Date(), session.agency.timezone);
   const from = sp.get("from") ?? to;
   const rows = await loadLeaveReportRows({ from, to, siteId: sp.get("site") });
-  const csv = toCsv(rows, leaveColumns(session.agency.timezone));
-  return csvResponse(csv, `leave-register_${from}_${to}.csv`);
+  return reportDownload({
+    format: exportFormat(sp.get("format")),
+    rows,
+    columns: leaveColumns(session.agency.timezone),
+    basename: `leave-register_${from}_${to}`,
+    name: "Leave register",
+  });
 }

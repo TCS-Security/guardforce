@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import { requireSession } from "@/lib/auth/session";
 import { loadMusterRows } from "@/lib/data/reports";
 import { buildMusterMatrix, daysInRange, monthRange, musterColumns } from "@/lib/domain/reports";
-import { toCsv, csvResponse } from "@/lib/domain/csv";
+import { exportFormat, reportDownload } from "@/lib/domain/export";
 import { toLocalDate } from "@/lib/domain/format";
 
 export async function GET(request: NextRequest) {
@@ -13,6 +13,11 @@ export async function GET(request: NextRequest) {
   const rows = await loadMusterRows({ from, to, siteId: sp.get("site") });
   const days = daysInRange(from, to);
   const matrix = buildMusterMatrix(rows, days);
-  const csv = toCsv(matrix, musterColumns(days));
-  return csvResponse(csv, `muster-roll_${month}.csv`);
+  return reportDownload({
+    format: exportFormat(sp.get("format")),
+    rows: matrix,
+    columns: musterColumns(days),
+    basename: `muster-roll_${month}`,
+    name: `Muster ${month}`,
+  });
 }

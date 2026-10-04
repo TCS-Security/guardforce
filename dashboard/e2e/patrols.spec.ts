@@ -63,6 +63,30 @@ test.describe("patrols", () => {
     await expect(page.getByText("Photo proof required to close a round").first()).toBeVisible();
   });
 
+  test("the day and site filters drive the board", async ({ page }) => {
+    const yesterday = agencyDate(-1);
+    await login(page);
+    await page.goto(`/patrols?date=${yesterday}`);
+    await expect(page.getByRole("table", { name: /Patrols at Prestige/ })).toBeVisible();
+
+    // Site filter: pick one site, the other sites' tables stop being rendered.
+    await page.getByRole("combobox", { name: "Site" }).click();
+    await page.getByRole("option", { name: "Metro Cash & Carry, Yeshwanthpur" }).click();
+    await expect(page).toHaveURL(new RegExp(`site=${SEED.sites.metro}`));
+    await expect(page.getByRole("table", { name: /Patrols at Prestige/ })).toHaveCount(0);
+    await expect(page.getByRole("table", { name: /Patrols at Metro/ })).toBeVisible();
+
+    // Day stepper: stepping forward re-queries the board for the next day.
+    await page.getByRole("button", { name: "Next day" }).click();
+    await expect(page).toHaveURL(new RegExp(`date=${agencyDate(0)}`));
+    await expect(page.locator("#day")).toHaveValue(agencyDate(0));
+
+    // ...and back, which restores yesterday's rounds at that site.
+    await page.getByRole("button", { name: "Previous day" }).click();
+    await expect(page).toHaveURL(new RegExp(`date=${yesterday}`));
+    await expect(page.getByRole("table", { name: /Patrols at Metro/ })).toBeVisible();
+  });
+
   test("creates, edits and pauses a patrol route", async ({ page }) => {
     const name = `E2E Route ${stamp()}`;
     await login(page);

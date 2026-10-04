@@ -4,19 +4,9 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { deny, requireSession } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
-import { canUnassign } from "@/lib/domain/roster";
+import { canUnassign, rangeLabel, rangeSpanDays, rosterErrorMessage } from "@/lib/domain/roster";
 
 export type ActionState = { error?: string; ok?: boolean } | undefined;
-
-/** Postgres raises P0001 from the KYC trigger; surface it as guidance, not a stack trace. */
-function friendly(message: string) {
-  if (message.includes("KYC_INCOMPLETE")) {
-    const missing = message.split("missing:")[1]?.replace(/\)$/, "").trim();
-    return `This guard's KYC is incomplete${missing ? ` — missing ${missing.replace(/_/g, " ")}` : ""}. Complete it on the guard's profile before rostering.`;
-  }
-  if (message.includes("duplicate key")) return "That guard is already on this shift for the day.";
-  return message;
-}
 
 const assignSchema = z.object({
   site_id: z.string().uuid(),
@@ -56,7 +46,7 @@ export async function assignShift(_prev: ActionState, formData: FormData): Promi
       ends_on: parsed.data.ends_on || null,
       created_by: session.userId,
     });
-    if (error) return { error: friendly(error.message) };
+    if (error) return { error: rosterErrorMessage(error.message) };
 
     const to = new Date(parsed.data.shift_date);
     to.setDate(to.getDate() + 14);
@@ -83,7 +73,7 @@ export async function assignShift(_prev: ActionState, formData: FormData): Promi
       scheduled_end: row!.ends_at,
       created_by: session.userId,
     });
-    if (error) return { error: friendly(error.message) };
+    if (error) return { error: rosterErrorMessage(error.message) };
   }
 
   revalidatePath("/roster");
@@ -128,13 +118,46 @@ export async function endPattern(formData: FormData): Promise<void> {
   revalidatePath("/roster");
 }
 
-export async function materializeWeek(formData: FormData): Promise<void> {
+const fillSchema = z.object({
+  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+});
+
+export type FillState = { error?: string; ok?: boolean; message?: string } | undefined;
+
+/**
+ * "Fill from patterns": materialises the shifts the weekly patterns imply across the
+ * range that is on screen — a week in the week view, the whole visible grid in the
+ * month view. Reports the range it covered so the toolbar can say what it just did.
+ */
+export async function materializeWeek(_prev: FillState, formData: FormData): Promise<FillState> {
   const session = await requireSession();
-  if (!session.can("roster:write")) return;
-  const from = String(formData.get("from") ?? "");
-  const to = String(formData.get("to") ?? "");
-  if (!from || !to) return;
+  const denied = deny(session, "roster:write");
+  if (denied) return denied;
+  const parsed = fillSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: "Pick a valid date range to fill." };
+
+  const { from, to } = parsed.data;
+  const span = rangeSpanDays(from, to);
+  if (span < 1) return { error: "That range ends before it starts." };
+  if (span > 62) return { error: "Fill at most two months at a time." };
+
   const supabase = await createClient();
-  await supabase.rpc("materialize_roster", { p_agency_id: session.agency.id, p_from: from, p_to: to });
+  const { data, error } = await supabase.rpc("materialize_roster", {
+    p_agency_id: session.agency.id,
+    p_from: from,
+    p_to: to,
+  });
+  if (error) return { error: rosterErrorMessage(error.message) };
+
+  const created = typeof data === "number" ? data : 0;
   revalidatePath("/roster");
+  revalidatePath("/attendance");
+  return {
+    ok: true,
+    message:
+      created === 0
+        ? `Nothing to add — ${rangeLabel(from, to)} already matches the patterns.`
+        : `Filled ${rangeLabel(from, to)} — ${created} shift${created === 1 ? "" : "s"} created.`,
+  };
 }

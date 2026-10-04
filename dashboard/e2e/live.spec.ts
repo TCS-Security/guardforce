@@ -88,6 +88,35 @@ test.describe("live map", () => {
     }
   });
 
+  test("selecting a guard exposes buttons that open their shift", async ({ page }) => {
+    await login(page);
+    await page.goto("/live");
+    await expect(page.getByTestId("map")).toBeVisible();
+
+    const shiftId = await startShift();
+    try {
+      const row = page.getByTestId(`presence-row-${SEED.guards.harish}`);
+      await expect(row).toBeVisible({ timeout: 20_000 });
+      await row.click();
+
+      const panel = page.getByTestId("selected-guard");
+      await expect(panel).toBeVisible();
+      await expect(panel.getByText("Selected guard")).toBeVisible();
+
+      const open = page.getByRole("button", { name: /Open shift for Harish Chandra/ });
+      // A real, comfortably sized button rather than a 12px text link.
+      const box = await open.boundingBox();
+      expect(box!.height).toBeGreaterThanOrEqual(36);
+
+      await open.click();
+      await page.waitForURL(`**/attendance/${shiftId}`);
+      // The shift page itself rendered, not just a URL change.
+      await expect(page.getByRole("heading", { name: "Harish Chandra" })).toBeVisible();
+    } finally {
+      await cleanup(shiftId);
+    }
+  });
+
   test("filtering to a site narrows the panel", async ({ page }) => {
     await login(page);
     await page.goto(`/live?site=${SEED.sites.metro}`);

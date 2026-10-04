@@ -496,3 +496,71 @@ values ('a0000000-0000-4000-8000-000000000001', 'e0000000-0000-4000-8000-0000000
 insert into public.devices (agency_id, guard_id, fcm_token, device_model, os_version, app_version, bundle_version, last_seen_at)
 select agency_id, id, 'fcm-' || employee_code, (array['Redmi 9A','Samsung M12','Realme C11','Vivo Y20'])[1 + (random() * 3)::int], (array['11','12','13'])[1 + (random() * 2)::int], '1.0.0', '2026.09.1', now() - (random() * interval '6 hours')
 from public.guards where status = 'active';
+
+-- ---------------------------------------------------------------------------
+-- Incidents (F11). Human-reported major events, deliberately distinct from the
+-- automated `events` feed. Each one is pinned onto a real breadcrumb time so the
+-- "where was everyone when it happened" map has positions to draw.
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  v_agency uuid := 'a0000000-0000-4000-8000-000000000001';
+  v_prestige uuid := 'c0000000-0000-4000-8000-000000000001';
+  v_brigade uuid := 'c0000000-0000-4000-8000-000000000002';
+  v_metro uuid := 'c0000000-0000-4000-8000-000000000003';
+  v_site record;
+  v_when timestamptz;
+  v_guard uuid;
+begin
+  -- 1. Open: a theft at Prestige, minutes ago, while the post is still manned.
+  select * into v_site from public.sites where id = v_prestige;
+  select lp.recorded_at, sh.guard_id into v_when, v_guard
+  from public.location_pings lp
+  join public.shifts sh on sh.id = lp.shift_id
+  where sh.site_id = v_prestige and sh.status = 'in_progress'
+  order by lp.recorded_at desc limit 1;
+  v_when := coalesce(v_when, now() - interval '20 minutes');
+
+  insert into public.incidents (id, agency_id, site_id, type, severity, title, description, occurred_at,
+    reported_by, guard_id, lat, lng, status)
+  values ('11000000-0000-4000-8000-000000000001', v_agency, v_prestige, 'theft', 'high',
+    'Two laptops taken from a car on the B2 parking level',
+    'The client''s IT manager reported two laptops missing from a parked car on B2. The boom-barrier register shows an unregistered white hatchback leaving without a visitor pass around the same time. CCTV pull requested from the client; the guard on Gate 3 did not record the vehicle number. Client has been told we will report back by tomorrow morning.',
+    v_when, 'b0000000-0000-4000-8000-000000000002', v_guard,
+    v_site.lat + 0.0007, v_site.lng - 0.0005, 'open');
+
+  -- 2. Investigating: trespass at Brigade Meadows earlier today.
+  select * into v_site from public.sites where id = v_brigade;
+  select lp.recorded_at, sh.guard_id into v_when, v_guard
+  from public.location_pings lp
+  join public.shifts sh on sh.id = lp.shift_id
+  where sh.site_id = v_brigade and lp.recorded_at < now() - interval '4 hours'
+  order by lp.recorded_at desc limit 1;
+  v_when := coalesce(v_when, now() - interval '5 hours');
+
+  insert into public.incidents (id, agency_id, site_id, type, severity, title, description, occurred_at,
+    reported_by, guard_id, lat, lng, status)
+  values ('11000000-0000-4000-8000-000000000002', v_agency, v_brigade, 'trespass', 'moderate',
+    'Four men entered through the rear service gate',
+    'Four men without passes walked in through the rear service gate while a delivery van was being checked in and went towards Block C. Residents called the guard room. They left on their own when challenged. The rear gate latch has been broken for a week and was reported to the RWA twice.',
+    v_when, 'b0000000-0000-4000-8000-000000000002', v_guard, null, null, 'investigating');
+
+  -- 3. Resolved: a fight at Metro two days ago, closed with a resolution note.
+  select * into v_site from public.sites where id = v_metro;
+  select lp.recorded_at, sh.guard_id into v_when, v_guard
+  from public.location_pings lp
+  join public.shifts sh on sh.id = lp.shift_id
+  where sh.site_id = v_metro and sh.shift_date = current_date - 2
+  order by lp.recorded_at desc limit 1;
+  v_when := coalesce(v_when, now() - interval '2 days');
+
+  insert into public.incidents (id, agency_id, site_id, type, severity, title, description, occurred_at,
+    reported_by, guard_id, lat, lng, status, resolution, resolved_at, resolved_by)
+  values ('11000000-0000-4000-8000-000000000003', v_agency, v_metro, 'fight', 'critical',
+    'Fight between two loaders at the rear loading dock',
+    'Two contract loaders came to blows at the rear dock over a queue dispute. One of them picked up a trolley bar. Our guard separated them and called the store manager; no serious injury, one loader had a cut lip and was taken to the clinic by the client.',
+    v_when, 'b0000000-0000-4000-8000-000000000003', v_guard,
+    v_site.lat - 0.0009, v_site.lng + 0.0008, 'resolved',
+    'Store manager suspended both loaders pending the contractor''s enquiry. We have added a second guard to the dock for the evening peak and briefed the team to call the control room before intervening physically.',
+    v_when + interval '20 hours', 'b0000000-0000-4000-8000-000000000001');
+end $$;

@@ -1,27 +1,20 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { PanelLeftClose, PanelLeftOpen, Search } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { LiveMap, MARKER_STYLE } from "./live-map";
+import { SelectedGuard } from "./selected-guard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { GuardAvatar } from "@/components/gf/guard-avatar";
 import { StatusPill } from "@/components/gf/status-pill";
 import { Mono } from "@/components/gf/mono";
 import { Eyebrow } from "@/components/gf/eyebrow";
-import { presenceState, type PresenceState } from "@/lib/domain/status";
+import { presenceState } from "@/lib/domain/status";
 import { fmtAgo, fmtTime } from "@/lib/domain/format";
 import type { LivePresence, LiveSite } from "@/lib/data/live";
 import { cn } from "cn";
-
-const STATE_TONE: Record<PresenceState, "present" | "neutral" | "signal"> = {
-  live: "present",
-  stale: "neutral",
-  location_off: "signal",
-  off_duty: "neutral",
-};
 
 /**
  * Live monitoring surface. Presence rows arrive over Supabase realtime; a slow timer
@@ -95,6 +88,11 @@ export function LiveBoard({
       outside: all.filter((p) => p.in_fence === false).length,
     };
   }, [presence, siteId, stalenessMin]);
+
+  const selectedPresence = useMemo(
+    () => visible.find((p) => p.guard_id === selected) ?? null,
+    [visible, selected],
+  );
 
   const bySite = useMemo(() => {
     const map = new Map<string, LivePresence[]>();
@@ -181,9 +179,13 @@ export function LiveBoard({
                             <li key={p.guard_id}>
                               <button
                                 type="button"
+                                data-testid={`presence-row-${p.guard_id}`}
                                 onClick={() => setSelected(p.guard_id === selected ? null : p.guard_id)}
                                 aria-pressed={p.guard_id === selected}
-                                className={cn("flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-muted/60", p.guard_id === selected && "bg-primary/10")}
+                                className={cn(
+                                  "flex w-full cursor-pointer items-center gap-2.5 border-l-2 border-transparent px-3 py-2.5 text-left transition-colors outline-none hover:bg-muted focus-visible:bg-muted focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
+                                  p.guard_id === selected && "border-primary bg-primary/10 hover:bg-primary/15",
+                                )}
                               >
                                 <span className="relative">
                                   <GuardAvatar name={name} size="sm" />
@@ -212,56 +214,17 @@ export function LiveBoard({
             </div>
 
             {selected && (
-              <SelectedGuard presence={visible.find((p) => p.guard_id === selected) ?? null} timezone={timezone} stalenessMin={stalenessMin} />
+              <SelectedGuard
+                presence={selectedPresence}
+                siteName={sites.find((s) => s.id === selectedPresence?.site_id)?.name}
+                timezone={timezone}
+                stalenessMin={stalenessMin}
+                onClear={() => setSelected(null)}
+              />
             )}
           </aside>
         )}
       </div>
-    </div>
-  );
-}
-
-function SelectedGuard({ presence, timezone, stalenessMin }: { presence: LivePresence | null; timezone: string; stalenessMin: number }) {
-  if (!presence) return null;
-  const state = presenceState(presence, stalenessMin);
-  const name = presence.guards?.full_name ?? "Guard";
-  return (
-    <div className="border-t bg-background/80 p-3">
-      <div className="flex items-center gap-2.5">
-        <GuardAvatar name={name} />
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-medium">{name}</div>
-          <Mono className="text-[11px] text-muted-foreground">{presence.guards?.employee_code} · {presence.guards?.designation ?? "Guard"}</Mono>
-        </div>
-        <StatusPill tone={STATE_TONE[state]} size="xs">{MARKER_STYLE[state].label}</StatusPill>
-      </div>
-      <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
-        <Detail k="Since" v={fmtTime(presence.shifts?.started_at, timezone)} />
-        <Detail k="Until" v={fmtTime(presence.shifts?.scheduled_end, timezone)} />
-        <Detail k="Battery" v={presence.battery_pct != null ? `${presence.battery_pct}%` : "—"} />
-        <Detail k="GPS" v={presence.accuracy_m != null ? `±${Math.round(presence.accuracy_m)} m` : "—"} />
-        <Detail k="Fence" v={presence.in_fence === false ? "Outside" : "Inside"} />
-        <Detail k="Last seen" v={fmtAgo(presence.last_seen_at)} />
-      </dl>
-      <div className="mt-2.5 flex gap-1.5">
-        {presence.shift_id && (
-          <Link href={`/attendance/${presence.shift_id}`} className="text-xs font-medium text-primary hover:underline">
-            Open shift →
-          </Link>
-        )}
-        <Link href={`/guards/${presence.guard_id}`} className="ml-auto text-xs text-muted-foreground hover:text-foreground hover:underline">
-          Guard profile
-        </Link>
-      </div>
-    </div>
-  );
-}
-
-function Detail({ k, v }: { k: string; v: string }) {
-  return (
-    <div className="flex justify-between gap-2">
-      <dt className="text-muted-foreground">{k}</dt>
-      <dd className="font-mono tabular">{v}</dd>
     </div>
   );
 }

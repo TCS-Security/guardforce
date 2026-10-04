@@ -37,7 +37,8 @@ describe("describePermissions", () => {
   it("names the common shapes", () => {
     expect(describePermissions(PERMISSION_KEYS)).toBe("Everything");
     expect(describePermissions(PERMISSION_KEYS.filter((k) => k.endsWith(":read")))).toBe("Read-only, everything");
-    expect(describePermissions(["sites:read", "guards:read"])).toBe("Read-only, 2 of 13 areas");
-    expect(describePermissions(["sites:read", "sites:write"])).toBe("2 of 26");
+    // Counts come from the catalogue, so adding an area does not break this test.
+    expect(describePermissions(["sites:read", "guards:read"])).toBe(`Read-only, 2 of ${PERMISSION_RESOURCES.length} areas`);
+    expect(describePermissions(["sites:read", "sites:write"])).toBe(`2 of ${PERMISSION_KEYS.length}`);
   });
 });

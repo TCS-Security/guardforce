@@ -1,6 +1,27 @@
 import { test, expect } from "@playwright/test";
 import { admin, agencyDate, login, SEED } from "./helpers";
 
+/** Splits one CSV record, honouring the quoting the export uses for names with commas. */
+function parseCsvRow(line: string): string[] {
+  const out: string[] = [];
+  let cell = "";
+  let quoted = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (quoted) {
+      if (ch === '"' && line[i + 1] === '"') { cell += '"'; i++; }
+      else if (ch === '"') quoted = false;
+      else cell += ch;
+    } else if (ch === '"') quoted = true;
+    else if (ch === ",") { out.push(cell); cell = ""; }
+    else cell += ch;
+  }
+  out.push(cell);
+  // The export writes a UTF-8 BOM so Excel reads Indian names correctly.
+  if (out.length) out[0] = out[0]!.replace(/^\uFEFF/, "");
+  return out;
+}
+
 test.describe("reports", () => {
   test("analytics render with numbers and a per-site table", async ({ page }) => {
     await login(page);
@@ -32,6 +53,91 @@ test.describe("reports", () => {
       expect(body, item.path).toContain(item.header);
       expect(body.split("\r\n").length, `${item.path} should have data rows`).toBeGreaterThan(2);
     }
+
+    // The same reports as a real spreadsheet: a zip (PK magic bytes) served as xlsx.
+    for (const item of exports) {
+      const path = `${item.path}&format=xlsx`;
+      const res = await page.request.get(path);
+      expect(res.status(), path).toBe(200);
+      expect(res.headers()["content-type"], path).toContain("spreadsheetml.sheet");
+      expect(res.headers()["content-disposition"], path).toContain(".xlsx");
+      const body = await res.body();
+      expect(body.length, path).toBeGreaterThan(500);
+      expect([...body.subarray(0, 2)], `${path} is a zip`).toEqual([0x50, 0x4b]);
+      // The sheet XML is deflated inside, but the part names are stored in the clear.
+      expect(body.toString("latin1"), path).toContain("xl/worksheets/sheet1.xml");
+    }
+  });
+
+  test("dates read DD-MM-YY, times HH:MM, and worked time is in hours", async ({ page }) => {
+    await login(page);
+    const from = agencyDate(-14);
+    const to = agencyDate(0);
+    const body = await (await page.request.get(`/reports/export/daily-attendance?from=${from}&to=${to}`)).text();
+    const [header, ...rows] = body.trim().split("\r\n").map(parseCsvRow);
+
+    expect(header).toContain("Worked (h)");
+    expect(header.join(",")).not.toMatch(/accuracy/i);
+    expect(header.join(",")).not.toMatch(/latitude|longitude/i);
+
+    const at = (name: string) => {
+      const i = header.indexOf(name);
+      expect(i, `column ${name}`).toBeGreaterThanOrEqual(0);
+      return i;
+    };
+    const dateCol = at("Date");
+    const inCol = at("In");
+    const workedCol = at("Worked (h)");
+
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) {
+      expect(row[dateCol], "date is DD-MM-YY").toMatch(/^\d{2}-\d{2}-\d{2}$/);
+      if (row[inCol]) expect(row[inCol], "time is HH:MM, never seconds").toMatch(/^\d{2}:\d{2}$/);
+      // Hours, not minutes: a shift reads 8.5, not 510.
+      if (row[workedCol]) expect(Number(row[workedCol])).toBeLessThan(24);
+    }
+  });
+
+  test("a check-in is a map link, not raw coordinates", async ({ page }) => {
+    await login(page);
+    const from = agencyDate(-14);
+    const to = agencyDate(0);
+    const body = await (await page.request.get(`/reports/export/punch?from=${from}&to=${to}`)).text();
+    const link = /https:\/\/www\.google\.com\/maps\?q=(-?\d+\.\d+),(-?\d+\.\d+)/.exec(body);
+    expect(link, "punch export carries a Google Maps link").not.toBeNull();
+
+    // The pin matches the fix the database stored for that shift.
+    const [, lat, lng] = link!;
+    const { data } = await admin()
+      .from("shifts")
+      .select("id")
+      .gte("shift_date", from)
+      .lte("shift_date", to)
+      .eq("start_lat", Number(lat))
+      .eq("start_lng", Number(lng))
+      .limit(1);
+    expect(data!.length, "the link's coordinates belong to a real shift").toBeGreaterThan(0);
+  });
+
+  test("identity columns stay put when a report is scrolled sideways", async ({ page }) => {
+    await login(page);
+    await page.goto(`/reports?from=${agencyDate(-14)}&to=${agencyDate(0)}`);
+    const table = page.getByRole("table", { name: "Guard scorecards" });
+    await expect(table).toBeVisible();
+
+    const firstCell = table.locator("tbody tr").first().locator("td").first();
+    await expect(firstCell).toBeVisible();
+    const before = (await firstCell.boundingBox())!;
+
+    const scroller = table.locator("xpath=ancestor::div[1]");
+    await scroller.evaluate((el) => { el.scrollLeft = el.scrollWidth; });
+    await expect
+      .poll(async () => (await scroller.evaluate((el: HTMLElement) => el.scrollLeft)))
+      .toBeGreaterThan(0);
+
+    // Pinned: the guard column has not moved with the scroll.
+    const after = (await firstCell.boundingBox())!;
+    expect(Math.abs(after.x - before.x)).toBeLessThan(2);
   });
 
   test("guard scorecards list punctuality per guard", async ({ page }) => {

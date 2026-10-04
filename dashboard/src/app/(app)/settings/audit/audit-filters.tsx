@@ -2,8 +2,8 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
+import { FilterBar, FilterField } from "@/components/gf/filter-bar";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -31,11 +31,10 @@ export function AuditFilters({
   const hasFilters = !!(current.entityType || current.actorId || current.from || current.to);
 
   return (
-    <div className="reveal flex flex-wrap items-end gap-3 rounded-lg border bg-card p-3">
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="entity" className="eyebrow">Entity</Label>
+    <FilterBar aria-label="Filter the audit log">
+      <FilterField label="Entity" htmlFor="entity">
         <Select value={current.entityType ?? "all"} onValueChange={(v) => set("entity", v as string)}>
-          <SelectTrigger id="entity" size="sm" className="w-40">
+          <SelectTrigger id="entity" className="w-40">
             <SelectValue>{(v) => (v === "all" ? "All entities" : String(v))}</SelectValue>
           </SelectTrigger>
           <SelectContent>
@@ -43,11 +42,10 @@ export function AuditFilters({
             {entityTypes.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
           </SelectContent>
         </Select>
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="actor" className="eyebrow">Actor</Label>
+      </FilterField>
+      <FilterField label="Actor" htmlFor="actor">
         <Select value={current.actorId ?? "all"} onValueChange={(v) => set("actor", v as string)}>
-          <SelectTrigger id="actor" size="sm" className="w-48">
+          <SelectTrigger id="actor" className="w-48">
             <SelectValue>{(v) => (v === "all" ? "Anyone" : actors.find((a) => a.id === v)?.full_name ?? "Anyone")}</SelectValue>
           </SelectTrigger>
           <SelectContent>
@@ -55,20 +53,18 @@ export function AuditFilters({
             {actors.map((a) => <SelectItem key={a.id} value={a.id}>{a.full_name}</SelectItem>)}
           </SelectContent>
         </Select>
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="from" className="eyebrow">From</Label>
-        <Input id="from" type="date" defaultValue={current.from ?? ""} onChange={(e) => set("from", e.target.value || null)} className="h-7 w-36" />
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="to" className="eyebrow">To</Label>
-        <Input id="to" type="date" defaultValue={current.to ?? ""} onChange={(e) => set("to", e.target.value || null)} className="h-7 w-36" />
-      </div>
+      </FilterField>
+      <FilterField label="From" htmlFor="from">
+        <Input id="from" type="date" defaultValue={current.from ?? ""} onChange={(e) => set("from", e.target.value || null)} className="w-36 font-mono text-xs md:text-xs" />
+      </FilterField>
+      <FilterField label="To" htmlFor="to">
+        <Input id="to" type="date" defaultValue={current.to ?? ""} onChange={(e) => set("to", e.target.value || null)} className="w-36 font-mono text-xs md:text-xs" />
+      </FilterField>
       {hasFilters && (
-        <Button variant="ghost" size="sm" onClick={() => startTransition(() => router.replace(pathname, { scroll: false }))}>
+        <Button variant="ghost" size="sm" className="h-8" onClick={() => startTransition(() => router.replace(pathname, { scroll: false }))}>
           Clear
         </Button>
       )}
-    </div>
+    </FilterBar>
   );
 }

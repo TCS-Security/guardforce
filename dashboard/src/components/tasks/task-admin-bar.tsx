@@ -34,7 +34,7 @@ export function TaskAdminBar({ taskId, status }: { taskId: string; status: TaskS
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Delete this task?</DialogTitle>
-            <DialogDescription>It disappears from the guards' app and from reports. Completed evidence is lost.</DialogDescription>
+            <DialogDescription>It disappears from the guards&apos; app and from reports. Completed evidence is lost.</DialogDescription>
           </DialogHeader>
           <form action={deleteTask} className="contents">
             <input type="hidden" name="task_id" value={taskId} />

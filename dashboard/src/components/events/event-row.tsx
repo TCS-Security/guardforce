@@ -52,7 +52,11 @@ export function EventRow({ event, time }: { event: Row; time: string }) {
         <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
           <span>{event.sites?.name ?? "Agency"}</span>
           {event.guards?.full_name && <span>· {event.guards.full_name}</span>}
-          {lines.length > 0 && <span>· {lines[0]}</span>}
+          {/* The distinguishing detail of a repeated alert ("Expected 20:04"): mono and
+              unmuted, because three missed rounds are otherwise the same row three times. */}
+          {lines.length > 0 && (
+            <span className="rounded bg-muted px-1.5 py-px font-mono tabular text-[11px] text-foreground whitespace-nowrap">{lines[0]}</span>
+          )}
           {lines.length > 1 && (
             <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="inline-flex items-center gap-0.5 hover:text-foreground">
               <ChevronRight className={cn("size-3 transition-transform", open && "rotate-90")} /> more

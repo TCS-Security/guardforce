@@ -1,13 +1,47 @@
-import { Download } from "lucide-react";
+import { Download, FileSpreadsheet } from "lucide-react";
 import { Section } from "@/components/gf/section";
 import { ButtonLink } from "@/components/gf/button-link";
 import { EmptyState } from "@/components/gf/empty-state";
+import { DataTable, type DataTableColumn } from "@/components/gf/data-table";
 import type { CsvColumn } from "@/lib/domain/csv";
 
-/** A peek, not a data dump — the CSV is the deliverable. */
+/** A peek, not a data dump — the download is the deliverable. */
 const PREVIEW_LIMIT = 8;
 
-/** A CSV report card: description, "Download CSV" link to the route handler, and a preview of the first 50 rows. */
+/** `href` already carries the report's filters; append the format the user picked. */
+function withFormat(href: string, format: "csv" | "xlsx") {
+  return href.includes("?") ? `${href}&format=${format}` : `${href}?format=${format}`;
+}
+
+/** Maps the shared report column list onto the spreadsheet-style preview table. */
+function toTableColumns<T>(columns: CsvColumn<T>[]): DataTableColumn<T>[] {
+  return columns.map((c) => ({
+    key: c.header,
+    header: c.header,
+    align: c.align,
+    pin: c.pin,
+    width: c.width,
+    className: c.align === "right" ? "font-mono tabular" : undefined,
+    cell: (row) => {
+      const link = c.link?.(row);
+      if (link) {
+        return (
+          <a href={link.href} target="_blank" rel="noreferrer" className="text-primary underline underline-offset-2 hover:no-underline">
+            {link.label}
+          </a>
+        );
+      }
+      const v = c.value(row);
+      return v == null || v === "" ? <span className="text-muted-foreground">—</span> : String(v);
+    },
+  }));
+}
+
+/**
+ * A report card: description, CSV + Excel download links to the route handler,
+ * and a spreadsheet-shaped preview of the first few rows (pinned identity
+ * columns, column dividers).
+ */
 export function ExportCard<T>({
   title,
   description,
@@ -27,52 +61,47 @@ export function ExportCard<T>({
 }) {
   const preview = rows.slice(0, PREVIEW_LIMIT);
   const total = totalCount ?? rows.length;
-  const downloadButton = (
-    <ButtonLink href={href} variant="outline" size="sm" prefetch={false}>
-      <Download data-icon="inline-start" /> Download CSV
-    </ButtonLink>
-  );
-  const body = preview.length === 0 ? (
-    <EmptyState title="Nothing to export" description={emptyLabel} className="border-0" />
-  ) : (
+  const label = title || "Report";
+  const downloadButtons = (
     <>
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs" aria-label={`${title || "Report"} preview`}>
-          <thead>
-            <tr className="eyebrow border-b text-left [&>th]:px-3 [&>th]:py-1.5 [&>th]:font-normal [&>th]:whitespace-nowrap">
-              {columns.map((c) => (
-                <th key={c.header}>{c.header}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {preview.map((row, i) => (
-              <tr key={i} className="hover:bg-muted/50">
-                {columns.map((c) => (
-                  <td key={c.header} className="px-3 py-1.5 font-mono tabular whitespace-nowrap">{String(c.value(row) ?? "")}</td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <div className="border-t px-3 py-1.5 text-xs text-muted-foreground">
-        Preview of {preview.length} · {total} row{total === 1 ? "" : "s"} in the download.
-      </div>
+      <ButtonLink href={withFormat(href, "csv")} variant="outline" size="sm" prefetch={false} aria-label={`Download ${label} as CSV`}>
+        <Download data-icon="inline-start" /> CSV
+      </ButtonLink>
+      <ButtonLink href={withFormat(href, "xlsx")} variant="outline" size="sm" prefetch={false} aria-label={`Download ${label} as Excel`}>
+        <FileSpreadsheet data-icon="inline-start" /> Excel
+      </ButtonLink>
+    </>
+  );
+
+  const body = (
+    <>
+      <DataTable
+        dense
+        columns={toTableColumns(columns)}
+        rows={preview}
+        rowKey={(_, i) => String(i)}
+        ariaLabel={`${label} preview`}
+        empty={<EmptyState title="Nothing to export" description={emptyLabel} className="border-0" />}
+      />
+      {preview.length > 0 && (
+        <div className="px-3 py-1.5 text-xs text-muted-foreground">
+          Preview of {preview.length} · {total} row{total === 1 ? "" : "s"} in the download.
+        </div>
+      )}
     </>
   );
 
   if (!title) {
     return (
       <div className="overflow-hidden rounded-lg border">
-        <div className="flex justify-end border-b bg-muted/30 px-3 py-1.5">{downloadButton}</div>
+        <div className="flex justify-end gap-1.5 border-b bg-muted/30 px-3 py-1.5">{downloadButtons}</div>
         {body}
       </div>
     );
   }
 
   return (
-    <Section title={title} description={description} actions={downloadButton} bodyClassName="p-0">
+    <Section title={title} description={description} actions={downloadButtons} bodyClassName="p-0">
       {body}
     </Section>
   );
