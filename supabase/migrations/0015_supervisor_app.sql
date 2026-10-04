@@ -363,10 +363,13 @@ begin
   values (v_agency, p_site_id, trim(p_title), p_description, p_due_at, coalesce(p_photo_required, true), auth.uid())
   returning id into v_id;
 
+  -- The site is scoped above, but the assignees need their own check: tenancy alone would let a
+  -- site-scoped supervisor put a guard from someone else's site on this task.
   insert into public.task_assignments (task_id, guard_id, agency_id)
   select v_id, g.id, v_agency
   from public.guards g
   where g.id = any (coalesce(p_guard_ids, '{}'::uuid[])) and g.agency_id = v_agency
+    and public.staff_can_access_guard(g.id)
   on conflict do nothing;
 
   return v_id;

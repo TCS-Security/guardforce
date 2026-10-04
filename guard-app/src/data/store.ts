@@ -67,7 +67,23 @@ export function recompute() {
 const safePendingNative = () => { try { return GuardTracking.getPendingCount(); } catch { return 0; } };
 
 // --- auth -------------------------------------------------------------------------------------
+/**
+ * A refresh token that no longer works makes supabase-js sign out locally. Without this the app
+ * would sit on cached screens, every write queueing behind a 401 with nothing to tell the guard.
+ * The outbox is SQLite, so whatever is queued survives and replays once they sign in again.
+ */
+let sessionWatched = false;
+function watchSession() {
+  if (sessionWatched) return;
+  sessionWatched = true;
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (session || event !== "SIGNED_OUT") return;
+    if (get().stage !== "signed_out") set({ stage: "signed_out", me: null, home: null, duty: null });
+  });
+}
+
 export async function bootstrap() {
+  watchSession();
   const { data } = await supabase.auth.getSession();
   if (!data.session) { set({ stage: "signed_out" }); return; }
   if ((await prefs.mode()) === "staff") { set({ stage: "staff", mode: "staff" }); return; }

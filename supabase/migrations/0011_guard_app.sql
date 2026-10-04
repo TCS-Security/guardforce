@@ -104,9 +104,15 @@ begin
 
   select coalesce(jsonb_agg(to_jsonb(x) order by x.expected_at), '[]'::jsonb) into v_patrols
   from (
-    select p.id, p.route_id, r.name as route_name, r.min_photos, r.frequency_min, r.grace_min, p.expected_at, p.started_at, p.ended_at, p.status, p.distance_m, p.duration_s
-    from public.patrols p left join public.patrol_routes r on r.id = p.route_id
-    where p.guard_id = g.id and (p.shift_id = v_active.id or (v_active.id is null and p.expected_at::date = v_today))
+    select p.id, p.route_id, r.name as route_name, r.min_photos, r.frequency_min, r.grace_min, p.expected_at, p.started_at, p.ended_at, p.status, p.distance_m, p.duration_s,
+           p.site_id, ps.patrol_photo_required
+    from public.patrols p
+    left join public.patrol_routes r on r.id = p.route_id
+    join public.sites ps on ps.id = p.site_id
+    -- expected_at is a timestamptz: cast it in agency time, or in the early IST hours "today"
+    -- is still yesterday in UTC and the guard sees no patrols at all.
+    where p.guard_id = g.id and (p.shift_id = v_active.id
+      or (v_active.id is null and (p.expected_at at time zone ag.timezone)::date = v_today))
   ) x;
 
   select coalesce(jsonb_agg(to_jsonb(x) order by x.due_at nulls last), '[]'::jsonb) into v_tasks

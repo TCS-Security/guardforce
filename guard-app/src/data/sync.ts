@@ -138,7 +138,9 @@ async function resolvePermanent(op: OutboxRow, err: ApiError): Promise<boolean> 
       if (err.code !== "SHIFT_NOT_IN_PROGRESS") emitIssue(err.code);
       outbox.delete(op.id); return true;
     }
+    case Kinds.PATROL_START: overrides.delete("patrol", (p as PatrolStartPayload).patrolId); emitIssue(err.code); outbox.delete(op.id); return true;
     case Kinds.PATROL_COMPLETE: overrides.delete("patrol", (p as PatrolCompletePayload).patrolId); emitIssue(err.code); outbox.delete(op.id); return true;
+    case Kinds.TASK_START: overrides.delete("task", (p as TaskStartPayload).taskId); emitIssue(err.code); outbox.delete(op.id); return true;
     case Kinds.TASK_COMPLETE: overrides.delete("task", (p as TaskCompletePayload).taskId); emitIssue(err.code); outbox.delete(op.id); return true;
     default: emitIssue(err.code); outbox.delete(op.id); return true;
   }

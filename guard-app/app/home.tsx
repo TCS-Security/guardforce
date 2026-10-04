@@ -3,7 +3,7 @@ import { useRouter } from "expo-router";
 import { useEffect } from "react";
 import { View } from "react-native";
 import { refreshAll, time, useStore } from "@/data/store";
-import type { DutyState } from "@/domain/duty";
+import { startWindowMs, type DutyState } from "@/domain/duty";
 import { useT } from "@/i18n";
 import { Banner, BigButton, Body, Card, Display, Dot, Eyebrow, Mono, Pill, Screen, Section, TextButton, Tile, Title } from "@/ui/components";
 import { attendance, duration, flag, flagTone, kycGap, lateBy, patrol as patrolLabel, relative } from "@/ui/labels";
@@ -69,14 +69,21 @@ function DutyCard({ duty, onStart, onEnd }: { duty: DutyState | null; onStart: (
   if (!duty) return <Card><Body>{t("loading")}</Body></Card>;
   switch (duty.kind) {
     case "no_shift": return <Card><Eyebrow>{t("home_no_shift_title")}</Eyebrow><View style={{ height: 6 }} /><Body muted>{t("home_no_shift_body")}</Body>{duty.canStartAdHoc ? <><View style={{ height: 14 }} /><BigButton text={t("home_start_shift")} onPress={onStart} /></> : null}</Card>;
-    case "upcoming": case "ready": return (
-      <Card>
-        <Eyebrow>{t("home_upcoming_title")}</Eyebrow><View style={{ height: 4 }} />
-        <Display size={24}>{t("home_scheduled", tt.clock(duty.shift.scheduled_start), tt.clock(duty.shift.scheduled_end))}</Display>
-        <Body muted>{[duty.shift.shift_type, duty.shift.site_name].filter(Boolean).join(" · ")}</Body>
-        <View style={{ height: 14 }} /><BigButton text={t("home_start_shift")} onPress={onStart} tone={duty.kind === "ready" ? "olive" : "neutral"} />
-      </Card>
-    );
+    case "upcoming": case "ready": {
+      // "upcoming" is a shift whose check-in window has not opened. The button stays visible so
+      // the guard can see what is coming, but it does not work yet and says when it will.
+      const ready = duty.kind === "ready";
+      const opensAt = Date.parse(duty.shift.scheduled_start ?? "") - startWindowMs;
+      return (
+        <Card>
+          <Eyebrow>{t("home_upcoming_title")}</Eyebrow><View style={{ height: 4 }} />
+          <Display size={24}>{t("home_scheduled", tt.clock(duty.shift.scheduled_start), tt.clock(duty.shift.scheduled_end))}</Display>
+          <Body muted>{[duty.shift.shift_type, duty.shift.site_name].filter(Boolean).join(" · ")}</Body>
+          {!ready && !Number.isNaN(opensAt) ? <><View style={{ height: 6 }} /><Body muted size={13}>{t("home_start_opens", tt.clock(opensAt))}</Body></> : null}
+          <View style={{ height: 14 }} /><BigButton text={t("home_start_shift")} onPress={onStart} tone={ready ? "olive" : "neutral"} disabled={!ready} />
+        </Card>
+      );
+    }
     case "starting_offline": return <Card><Eyebrow>{t("home_on_duty")}</Eyebrow><View style={{ height: 4 }} /><Display size={24}>{t("home_since", tt.clock(duty.sinceMs))}</Display><View style={{ height: 6 }} /><Pill text={t("checkin_queued")} tone="halfDay" /><View style={{ height: 14 }} /><BigButton text={t("home_end_shift")} onPress={onEnd} tone="signal" /></Card>;
     case "on_duty": {
       const s = duty.shift;

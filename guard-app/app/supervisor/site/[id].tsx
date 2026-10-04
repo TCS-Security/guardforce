@@ -14,6 +14,8 @@ export default function SiteDayScreen() {
   const t = useT(); const router = useRouter(); const tt = staffTime();
   const { id } = useLocalSearchParams<{ id: string }>();
   const site = useStaff((s) => s.me?.sites.find((x) => x.id === id));
+  // supervisor_home() counts late past the agency threshold; this screen has to agree with it.
+  const lateThreshold = useStaff((s) => s.me?.agency.late_threshold_min ?? 0);
   const [date, setDate] = useState(tt.todayIso());
   const [shifts, setShifts] = useState<SiteShift[] | null>(null); const [error, setError] = useState<string | null>(null);
 
@@ -27,7 +29,7 @@ export default function SiteDayScreen() {
 
   const list = shifts ?? [];
   const onSite = list.filter((s) => s.status === "in_progress").length;
-  const late = list.filter((s) => s.late_by_min > 0).length;
+  const late = list.filter((s) => s.late_by_min > lateThreshold).length;
   const absent = list.filter((s) => s.status === "absent" || s.attendance === "absent").length;
 
   return (

@@ -31,6 +31,8 @@ export type ShiftInfo = {
 export type PatrolInfo = {
   id: string; route_id?: string | null; route_name?: string | null; min_photos: number; frequency_min?: number | null; grace_min?: number | null;
   expected_at?: string | null; started_at?: string | null; ended_at?: string | null; status: string; distance_m?: number | null; duration_s?: number | null;
+  /** The patrol's own site decides whether photos are required — not the guard's home site. */
+  site_id: string; patrol_photo_required: boolean;
 };
 export type TaskInfo = {
   id: string; title: string; description?: string | null; due_at?: string | null; photo_required: boolean; site_id: string; site_name?: string | null;

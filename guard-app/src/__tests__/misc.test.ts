@@ -26,3 +26,16 @@ test("PL/pgSQL raises become domain-coded errors; network errors are retryable",
   expect(toApiError({ message: "boom", status: 503 }).retryable).toBe(true);
   expect(toApiError({ message: "Token has expired", status: 400 }).code).toBe("ERROR");
 });
+test("a server having a bad moment is retryable, however it reports itself", () => {
+  // A PostgrestError carries no `status`; a transport failure arrives with the status in `code`.
+  expect(toApiError({ message: "<html>502 Bad Gateway</html>", code: "502", details: "", hint: "" }).retryable).toBe(true);
+  expect(toApiError({ message: "upstream timeout", code: "504" }).code).toBe("SERVER");
+  expect(toApiError({ message: "too many connections", code: "53300" }).retryable).toBe(true);
+  expect(toApiError({ message: "canceling statement", code: "57014" }).retryable).toBe(true);
+  expect(toApiError({ message: "deadlock detected", code: "40P01" }).retryable).toBe(true);
+  // ...while a verdict on the write is not: the outbox must resolve these, not keep retrying.
+  expect(toApiError({ message: "JWT expired", code: "PGRST301" }).retryable).toBe(false);
+  expect(toApiError({ message: "JWT expired", code: "PGRST301" }).code).toBe("UNAUTHORIZED");
+  expect(toApiError({ message: "duplicate key value", code: "23505" }).retryable).toBe(false);
+  expect(toApiError({ message: "SHIFT_ALREADY_STARTED", code: "P0010" }).retryable).toBe(false);
+});

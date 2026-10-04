@@ -179,6 +179,9 @@ class TrackingService : Service() {
     private fun stopTracking() {
         handler.removeCallbacks(watchdog)
         runCatching { fused.removeLocationUpdates(callback) }
+        // requestUpdates() is a no-op when the interval has not changed, so a stop that leaves
+        // this set would make the next start on the same service instance record nothing.
+        currentIntervalS = 0
         LocationOffWarningReceiver.cancel(this)
         Notifications.cancelLocationOff(this)
         running = false

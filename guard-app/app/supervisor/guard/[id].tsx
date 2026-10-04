@@ -22,8 +22,9 @@ function maskAadhaar(v: string): string | null {
   return d.length >= 4 ? `XXXX XXXX ${d.slice(-4)}` : null;
 }
 function maskPan(v: string): string | null {
+  // AAAAA9999A: five letters, four digits, one letter. Only the digits are shown.
   const s = v.toUpperCase().replace(/\s/g, "");
-  return s.length >= 8 ? `XXXXX${s.slice(4, 8)}X` : null;
+  return s.length >= 10 ? `XXXXX${s.slice(5, 9)}X` : null;
 }
 
 export default function GuardRecordScreen() {

@@ -24,7 +24,7 @@ export default function PatrolRunScreen() {
   const [photos, setPhotos] = useState<LocalPhoto[]>([]); const [notes, setNotes] = useState(""); const [camera, setCamera] = useState(false);
   const [busy, setBusy] = useState(false); const [error, setError] = useState<string | null>(null);
   const [startedAt, setStartedAt] = useState<number | null>(null); const [tick, setTick] = useState(() => Date.now()); const [points, setPoints] = useState(0);
-  const required = me?.site?.patrol_photo_required ? patrol?.min_photos ?? 1 : 0;
+  const required = patrol?.patrol_photo_required ? patrol.min_photos ?? 1 : 0;
   const maxKb = me?.config?.photo_max_kb ?? 250;
 
   useEffect(() => {

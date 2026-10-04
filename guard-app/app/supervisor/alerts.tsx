@@ -27,7 +27,7 @@ export default function AlertsScreen() {
     <Screen eyebrow={t("sup_alerts_eyebrow")} title={t("sup_alerts")} onBack={() => router.back()}>
       {error ? <Banner text={error} tone="signal" /> : null}
       {!open.length ? <EmptyState text={t("sup_alerts_none")} /> : open.map((a) => (
-        <Card key={a.id} onPress={a.shift_id && a.site_id ? () => router.push({ pathname: "/supervisor/shift/[id]", params: { id: a.shift_id ?? "", site: a.site_id ?? "", date: a.created_at.slice(0, 10) } } as never) : undefined}>
+        <Card key={a.id} onPress={a.shift_id && a.site_id ? () => router.push({ pathname: "/supervisor/shift/[id]", params: { id: a.shift_id ?? "", site: a.site_id ?? "", date: a.shift_date ?? a.created_at.slice(0, 10) } } as never) : undefined}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
             <Dot tone={alertTone(a.severity)} />
             <View style={{ flex: 1 }}><Title>{a.title}</Title></View>

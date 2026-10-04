@@ -202,6 +202,10 @@ test.describe("supervisor app contract", () => {
       expect(taskRow.data).toMatchObject({ title: "E2E gate sweep", site_id: SEED.sites.metro, photo_required: true, created_by: me.profile.id });
       expect((await db.from("task_assignments").select("guard_id").eq("task_id", taskId)).data).toEqual([{ guard_id: guardId }]);
       expect((await app.rpc("create_task", { p_site_id: SEED.sites.prestige, p_title: "Nope" })).error?.message).toContain("FORBIDDEN");
+      // a guard outside the supervisor's scope cannot be smuggled in as an assignee
+      const foreignTask = await rpc<string>(app, "create_task", { p_site_id: SEED.sites.metro, p_title: "E2E scope probe", p_guard_ids: [guardId, SEED.guards.ramesh] });
+      expect((await db.from("task_assignments").select("guard_id").eq("task_id", foreignTask)).data).toEqual([{ guard_id: guardId }]);
+      await db.from("tasks").delete().eq("id", foreignTask);
 
       // ---- 11. leave inbox: pending → decided → gone
       const leaveFrom = agencyDate(90);
