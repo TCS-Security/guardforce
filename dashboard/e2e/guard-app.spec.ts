@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { admin, agencyDate, login, SEED } from "./helpers";
 
 /**
- * The Android guard app's contract (supabase/migrations/0011_guard_app.sql), driven exactly
+ * The Android guard app's contract (supabase/migrations/0016_guard_app.sql), driven exactly
  * as the app drives it: an anon client signs in with phone + OTP, claims the guard account,
  * sets a PIN, then runs a shift under its own JWT so every RLS policy is exercised for real.
  */

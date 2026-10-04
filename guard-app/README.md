@@ -34,7 +34,7 @@ and call, leave inbox, guard list, add guard, guard record with camera capture o
 photo and KYC documents (access-logged on view), roster day with ad-hoc assignment, task
 assignment, account. Every action is gated by the same permission keys as the dashboard
 (`useCan("roster:write")` etc.), so a custom role sees exactly what the owner allowed. The
-backend contract is `src/api/staffApi.ts` ↔ `supabase/migrations/0015_supervisor_app.sql`,
+backend contract is `src/api/staffApi.ts` ↔ `supabase/migrations/0017_supervisor_app.sql`,
 tested end to end in `dashboard/e2e/supervisor-app.spec.ts`.
 
 ## Checks

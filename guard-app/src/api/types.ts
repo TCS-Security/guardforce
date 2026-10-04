@@ -1,4 +1,4 @@
-// Shapes returned by guard_me() / guard_home() (supabase/migrations/0011_guard_app.sql).
+// Shapes returned by guard_me() / guard_home() (supabase/migrations/0016_guard_app.sql).
 export type DocInfo = { type: string; status: string; has_file: boolean };
 export type SiteInfo = {
   id: string; name: string; client_name?: string | null; address?: string | null; lat: number; lng: number;

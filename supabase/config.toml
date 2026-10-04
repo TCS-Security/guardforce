@@ -256,7 +256,7 @@ otp_expiry = 3600
 # content_path = "./supabase/templates/password_changed_notification.html"
 
 [auth.sms]
-# Guards sign up with phone + OTP from the Android app (see migrations/0011_guard_app.sql).
+# Guards sign up with phone + OTP from the Android app (see migrations/0016_guard_app.sql).
 enable_signup = true
 # If enabled, users need to confirm their phone number before signing in.
 enable_confirmations = false
