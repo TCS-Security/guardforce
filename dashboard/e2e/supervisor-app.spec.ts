@@ -3,7 +3,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { admin, agencyDate, SEED } from "./helpers";
 
 /**
- * Supervisor mode's contract (supabase/migrations/0015_supervisor_app.sql), driven exactly as
+ * Supervisor mode's contract (supabase/migrations/0017_supervisor_app.sql), driven exactly as
  * the Android app drives it: an anon supabase-js client signs in with email + password and
  * every read and write goes through an RPC under that user's own JWT, so the site scoping and
  * the permission checks are exercised for real rather than mocked.

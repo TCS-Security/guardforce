@@ -1,5 +1,11 @@
 -- Guard app contract.
 --
+-- Numbered 0016 although it was written before 0012-0014: it sat on a branch while the dashboard
+-- moved on, and `supabase db push` refuses to insert a migration before the last one already
+-- applied on the remote. Nothing here is order-sensitive against 0012-0014 — this file only adds
+-- functions and replaces select policies on tables those three never touch — so the renumber is
+-- a rename, not a rewrite. 0017_supervisor_app.sql follows it for the same reason.
+--
 -- Guards authenticate with phone + OTP through GoTrue (SMS signups on), which yields an
 -- auth.users row with a phone but no tenant membership. claim_guard_account() links that
 -- user to the guards row carrying the same phone: it creates the guard-kind profile that

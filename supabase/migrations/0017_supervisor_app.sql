@@ -6,7 +6,7 @@
 -- budget phone, and writes that are RPCs so the permission check lives in SQL rather than in
 -- a screen. That contract is guard-app/src/api/staffTypes.ts and this file implements it.
 --
--- Shape rules, same as 0011_guard_app.sql:
+-- Shape rules, same as 0016_guard_app.sql:
 --   * every function is `security definer set search_path = public` and granted to authenticated;
 --   * reads return jsonb bundles, writes return the id they created;
 --   * denial is a plain `raise exception 'FORBIDDEN'` (the app shows the generic screen);

@@ -1,4 +1,4 @@
-// Contract for the supervisor mode (supabase/migrations/0015_supervisor_app.sql). Field names are SQL column names.
+// Contract for the supervisor mode (supabase/migrations/0017_supervisor_app.sql). Field names are SQL column names.
 export type StaffMe = {
   profile: { id: string; full_name: string; email?: string | null; phone?: string | null; role: string; role_name?: string | null; all_sites: boolean };
   agency: { id: string; name: string; status: string; timezone: string; late_threshold_min: number };
