@@ -6,7 +6,7 @@ import { refreshAll, time, useStore } from "@/data/store";
 import type { DutyState } from "@/domain/duty";
 import { useT } from "@/i18n";
 import { Banner, BigButton, Body, Card, Display, Dot, Eyebrow, Mono, Pill, Screen, Section, TextButton, Tile, Title } from "@/ui/components";
-import { attendance, duration, flag, flagTone, kycGap, patrol as patrolLabel, relative } from "@/ui/labels";
+import { attendance, duration, flag, flagTone, kycGap, lateBy, patrol as patrolLabel, relative } from "@/ui/labels";
 
 export default function HomeScreen() {
   const t = useT(); const router = useRouter();
@@ -86,7 +86,7 @@ function DutyCard({ duty, onStart, onEnd }: { duty: DutyState | null; onStart: (
           <View style={{ height: 4 }} /><Display size={24}>{t("home_since", tt.clock(duty.sinceMs))}</Display>
           {s ? <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 6 }}>
             {s.scheduled_end ? <Mono>{"→ " + tt.clock(s.scheduled_end)}</Mono> : null}
-            {s.late_by_min > 0 ? <Pill text={t("home_late", s.late_by_min)} tone="halfDay" /> : null}
+            {s.late_by_min > 0 ? <Pill text={lateBy(s.late_by_min)} tone="halfDay" /> : null}
             {s.away_seconds > 0 ? <Pill text={t("home_away", duration(s.away_seconds))} tone="halfDay" /> : null}
             {s.flags.filter((f) => f !== "LATE_START").map((f) => <Pill key={f} text={flag(f)} tone={flagTone(f)} />)}
           </View> : null}

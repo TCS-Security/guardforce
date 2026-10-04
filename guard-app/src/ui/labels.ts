@@ -1,4 +1,5 @@
 import { ApiError } from "../api/errors";
+import type { Relative } from "../domain/time";
 import { t, type StringKey } from "../i18n";
 import type { Tone } from "./theme";
 
@@ -18,8 +19,10 @@ export const docType = (d: string) => t(docKeys[d] ?? "doc_other");
 export const docStatus = (s: string | null | undefined): [string, Tone] =>
   s === "verified" ? [t("doc_verified"), "present"] : s === "rejected" ? [t("doc_rejected"), "absent"] : s === "pending" ? [t("doc_pending"), "halfDay"] : [t("doc_missing"), "neutral"];
 export const kycGap = (g: string) => (g === "phone_verification" ? t("gap_phone_verification") : g === "registration_selfie" ? t("gap_registration_selfie") : g === "designation" ? t("gap_designation") : docType(g));
-export const relative = (r: { unit: "now" | "min" | "hr"; n: number }) => (r.unit === "now" ? t("time_now") : r.unit === "min" ? t("time_min_ago", r.n) : t("time_hr_ago", r.n));
+export const relative = (r: Relative) => (r.unit === "now" ? t("time_now") : r.unit === "min" ? t("time_min_ago", r.n) : r.unit === "hr" ? t("time_hr_ago", r.n) : t("time_day_ago", r.n));
 export const duration = (seconds: number) => { const h = Math.floor(seconds / 3600), m = Math.floor((seconds % 3600) / 60); return h > 0 ? t("duration_hm", h, String(m).padStart(2, "0")) : t("duration_m", m); };
+/** Lateness, like every other span in the app: minutes under an hour, hours and minutes past it. */
+export const lateBy = (minutes: number) => t("home_late", duration(minutes * 60));
 
 export function errorText(e: unknown): string {
   const err = e instanceof ApiError ? e : null;

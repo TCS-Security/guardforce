@@ -7,7 +7,7 @@ import type { SiteShift } from "@/api/staffTypes";
 import { refreshStaffHome, staffTime, useCan, useStaff } from "@/data/staffStore";
 import { useT } from "@/i18n";
 import { Banner, BigButton, Body, Card, Eyebrow, KvRow, Loading, Mono, Pill, Screen, SecondaryButton, Section, Title } from "@/ui/components";
-import { attendance as attendanceLabel, duration, errorText, flag, flagTone, relative } from "@/ui/labels";
+import { attendance as attendanceLabel, duration, errorText, flag, flagTone, lateBy, relative } from "@/ui/labels";
 import { CallButton, Chips, Input } from "@/ui/supervisor/monitor/controls";
 import { shiftStatus, trust } from "@/ui/supervisor/monitor/labels";
 import { radius } from "@/ui/theme";
@@ -67,7 +67,7 @@ export default function ShiftScreen() {
 
       <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
         <View style={{ flex: 1 }}><KvRow label={t("sup_shift_in")} value={tt.clock(shift.start_captured_at ?? shift.started_at)} mono /></View>
-        {shift.late_by_min > 0 ? <Pill text={t("home_late", shift.late_by_min)} tone="halfDay" /> : null}
+        {shift.late_by_min > 0 ? <Pill text={lateBy(shift.late_by_min)} tone="halfDay" /> : null}
       </View>
       <KvRow label={t("sup_shift_out")} value={tt.clock(shift.ended_at)} mono />
       <KvRow label={t("sup_shift_worked")} value={duration(shift.worked_minutes * 60)} mono />

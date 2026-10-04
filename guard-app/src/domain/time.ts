@@ -1,3 +1,5 @@
+export type Relative = { unit: "now" | "min" | "hr" | "day"; n: number };
+
 /** Time in the agency's timezone (IST for every pilot agency). */
 export function makeTime(zone: string) {
   const hm = new Intl.DateTimeFormat("en-GB", { timeZone: zone, hour: "2-digit", minute: "2-digit", hour12: false });
@@ -12,9 +14,13 @@ export function makeTime(zone: string) {
     todayIso: () => ymd.format(new Date()),
     isoAt: (ms: number) => new Date(ms).toISOString(),
     nowIso: () => new Date().toISOString(),
-    relative: (ms: number, now = Date.now()): { unit: "now" | "min" | "hr"; n: number } => {
-      const d = Math.max(0, now - ms); const m = Math.floor(d / 60_000);
-      return m < 1 ? { unit: "now", n: 0 } : m < 60 ? { unit: "min", n: m } : { unit: "hr", n: Math.floor(m / 60) };
+    // Minutes only read as minutes for the first hour; past that a guard wants hours, then days.
+    relative: (ms: number, now = Date.now()): Relative => {
+      const m = Math.floor(Math.max(0, now - ms) / 60_000);
+      if (m < 1) return { unit: "now", n: 0 };
+      if (m < 60) return { unit: "min", n: m };
+      const h = Math.floor(m / 60);
+      return h < 24 ? { unit: "hr", n: h } : { unit: "day", n: Math.floor(h / 24) };
     },
     dateOffset: (days: number) => ymd.format(new Date(Date.now() + days * 86_400_000)),
   };

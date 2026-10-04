@@ -6,7 +6,7 @@ import type { SiteShift } from "@/api/staffTypes";
 import { staffTime, useStaff } from "@/data/staffStore";
 import { useT } from "@/i18n";
 import { Banner, Body, Card, EmptyState, Loading, Mono, Pill, Screen, Section, Title } from "@/ui/components";
-import { attendance, errorText, flag, flagTone, relative } from "@/ui/labels";
+import { attendance, errorText, flag, flagTone, lateBy, relative } from "@/ui/labels";
 import { shiftStatus } from "@/ui/supervisor/monitor/labels";
 import { Counts, DaySelector } from "@/ui/supervisor/monitor/controls";
 
@@ -65,7 +65,7 @@ function ShiftCard({ shift, onPress }: { shift: SiteShift; onPress: () => void }
       </View>
       <View style={{ flexDirection: "row", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
         {shift.attendance && shift.attendance !== "pending" ? <Pill text={attLabel} tone={attTone} /> : null}
-        {shift.late_by_min > 0 ? <Pill text={t("home_late", shift.late_by_min)} tone="halfDay" /> : null}
+        {shift.late_by_min > 0 ? <Pill text={lateBy(shift.late_by_min)} tone="halfDay" /> : null}
         {shift.flags.map((f) => <Pill key={f} text={flag(f)} tone={flagTone(f)} />)}
       </View>
       {shift.status === "in_progress" ? (
