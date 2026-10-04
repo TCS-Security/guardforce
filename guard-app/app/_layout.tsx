@@ -43,7 +43,9 @@ export default function RootLayout() {
     (async () => {
       const blocked = me && (me.agency.status === "suspended" || me.agency.status === "churned") ? "suspended" : me?.guard.status === "inactive" ? "inactive" : null;
       const target = landingRoute(stage, await prefs.permissionsDone(), !me || !!me.guard.registration_selfie_path, needsUpdate(env.appVersion, me?.config?.min_app_version), blocked);
-      const current = segments[0] ?? "";
+      // Typed routes say segments[0] is always a route, but on the index route there is no
+      // segment at all, so the empty string is a real state the gate has to compare against.
+      const current: string = segments[0] ?? "";
       if (target === "/supervisor") { if (current !== "supervisor") router.replace("/supervisor" as never); return; }
       if (target) { if (`/${current}` !== target && !(target === "/phone" && (current === "otp" || current === "staff-login"))) router.replace(target as never); }
       else if (current === "" || GATES.has(current)) router.replace("/home");

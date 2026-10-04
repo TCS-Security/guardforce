@@ -1,7 +1,6 @@
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { Pressable, ToastAndroid, View } from "react-native";
-import { ApiError } from "@/api/errors";
 import { staffApi } from "@/api/staffApi";
 import type { GuardListItem, RosterAssignment, ShiftType } from "@/api/staffTypes";
 import { staffTime, useCan, useStaff } from "@/data/staffStore";
@@ -39,11 +38,10 @@ export default function RosterScreen() {
   const [shiftTypeId, setShiftTypeId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [kycBlocked, setKycBlocked] = useState(false);
 
   useEffect(() => {
     if (!assigning || !formSite) return;
-    setGuards(null); setGuardId(null); setShiftTypes(null); setShiftTypeId(null); setKycBlocked(false); setFormError(null);
+    setGuards(null); setGuardId(null); setShiftTypes(null); setShiftTypeId(null); setFormError(null);
     staffApi.guards(formSite).then(setGuards).catch(() => setGuards([]));
     staffApi.shiftTypes(formSite).then((types) => { setShiftTypes(types); setShiftTypeId(types[0]?.id ?? null); }).catch(() => setShiftTypes([]));
   }, [assigning, formSite]);
@@ -64,16 +62,14 @@ export default function RosterScreen() {
 
   const submitAssign = async () => {
     if (!formSite || !guardId || !shiftTypeId) return;
-    setBusy(true); setFormError(null); setKycBlocked(false);
+    setBusy(true); setFormError(null);
     try {
       await staffApi.assignShift(guardId, formSite, shiftTypeId, date);
       ToastAndroid.show(t("sup_assign_done"), ToastAndroid.SHORT);
       setAssigning(false);
       await load();
     } catch (e) {
-      const msg = e instanceof ApiError ? e.message : String(e);
-      if (/KYC/i.test(msg)) setKycBlocked(true);
-      else setFormError(errorText(e));
+      setFormError(errorText(e));
     } finally { setBusy(false); }
   };
 
@@ -105,15 +101,15 @@ export default function RosterScreen() {
           {guards == null ? <Loading /> : !guards.length ? <EmptyState text={t("sup_guards_none")} /> : (
             <View style={{ gap: 8 }}>
               {guards.map((g) => (
-                <Pressable key={g.id} disabled={!g.kyc_complete} onPress={() => setGuardId(g.id)}
-                  style={{ flexDirection: "row", alignItems: "center", gap: 10, padding: 10, borderRadius: 10, borderWidth: 1, borderColor: guardId === g.id ? p.olive : p.border, backgroundColor: guardId === g.id ? p.oliveSoft : p.card, opacity: g.kyc_complete ? 1 : 0.5 }}>
+                <Pressable key={g.id} onPress={() => setGuardId(g.id)}
+                  style={{ flexDirection: "row", alignItems: "center", gap: 10, padding: 10, borderRadius: 10, borderWidth: 1, borderColor: guardId === g.id ? p.olive : p.border, backgroundColor: guardId === g.id ? p.oliveSoft : p.card }}>
                   <View style={{ flex: 1 }}><Body>{g.full_name}</Body></View>
                   <Pill text={g.kyc_complete ? t("sup_kyc_complete") : t("sup_kyc_incomplete")} tone={g.kyc_complete ? "present" : "halfDay"} />
                 </Pressable>
               ))}
             </View>
           )}
-          {guards?.some((g) => !g.kyc_complete) ? <Body muted size={12}>{t("sup_assign_kyc_blocked")}</Body> : null}
+          {guards?.some((g) => !g.kyc_complete) ? <Body muted size={12}>{t("sup_assign_kyc_note")}</Body> : null}
 
           <View style={{ height: 8 }} />
           <Body muted size={12}>{t("sup_assign_shift_type")}</Body>
@@ -126,7 +122,6 @@ export default function RosterScreen() {
           </View>
 
           <View style={{ height: 12 }} />
-          {kycBlocked ? <Banner text={t("sup_assign_kyc_blocked")} tone="signal" /> : null}
           {formError ? <Banner text={formError} tone="signal" /> : null}
           <View style={{ height: 8 }} />
           <BigButton text={t("sup_assign")} loading={busy} disabled={!formSite || !guardId || !shiftTypeId} onPress={() => { void submitAssign(); }} />

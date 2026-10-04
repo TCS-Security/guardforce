@@ -19,3 +19,14 @@ jobs:
       - run: bun run lint
       - run: bun run typecheck
       - run: bun run test
+
+      # The guard app is part of the same product and the same release. `checks` is the only
+      # required status on main, so its checks run here rather than in a job nobody gates on.
+      - run: bun install --frozen-lockfile
+        working-directory: guard-app
+      - run: bun run lint
+        working-directory: guard-app
+      - run: bun run typecheck
+        working-directory: guard-app
+      - run: bun run test
+        working-directory: guard-app
