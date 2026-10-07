@@ -119,8 +119,8 @@ const NOTES: { priority: HandoverPriority; text: string }[] = [
 
 const ITEMS = ["Gate keys ×3", "Radio", "Visitor register", "Torch", "Vehicle register", "Lathi", "Key box key"];
 
-/** Two handovers a day per site over the last five days; today's not all read yet. */
-export function generateHandovers(crew: Crew): Handover[] {
+/** Two handovers a day per site over the last five days; today's not all read yet. With `now`, nothing after it. */
+export function generateHandovers(crew: Crew, now?: Date): Handover[] {
   const out: Handover[] = [];
   for (const site of crew.sites) {
     const guards = crew.guards.filter((g) => g.site_id === site.id);
@@ -145,5 +145,9 @@ export function generateHandovers(crew: Crew): Handover[] {
       }
     }
   }
-  return out.sort((a, b) => b.at.localeCompare(a.at));
+  const cutoff = now?.toISOString();
+  return out
+    .filter((h) => !cutoff || h.at <= cutoff)
+    .map((h) => (cutoff && h.read_at && h.read_at > cutoff ? { ...h, read_at: null } : h))
+    .sort((a, b) => b.at.localeCompare(a.at));
 }

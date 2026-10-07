@@ -24,7 +24,7 @@ export default async function PostOrdersPage() {
       <PreviewBanner />
       {crew.sites.length === 0
         ? <EmptyState title="No sites yet" description="Post orders are written per site. Add a site first." />
-        : <PostOrdersBoard sites={crew.sites} initial={orders} canEdit={session.can("sites:write")} editor={session.profile.full_name} />}
+        : <PostOrdersBoard sites={crew.sites} guards={crew.guards} initial={orders} canEdit={session.can("sites:write")} editor={session.profile.full_name} />}
     </div>
   );
 }

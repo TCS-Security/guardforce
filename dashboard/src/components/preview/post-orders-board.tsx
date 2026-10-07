@@ -17,12 +17,12 @@ import { EmptyState } from "@/components/gf/empty-state";
 import { GuardAvatar } from "@/components/gf/guard-avatar";
 import { fmtAgo, fmtDate } from "@/lib/domain/format";
 import { POST_ORDER_KIND, ackProgress, publishRevision, type PostOrder, type PostOrderKind } from "@/lib/preview/site-ops";
-import type { CrewSite } from "@/lib/preview/crew";
+import type { CrewGuard, CrewSite } from "@/lib/preview/crew";
 import { cn } from "cn";
 
 type Draft = { mode: "new" } | { mode: "revise"; order: PostOrder };
 
-export function PostOrdersBoard({ sites, initial, canEdit, editor }: { sites: CrewSite[]; initial: PostOrder[]; canEdit: boolean; editor: string }) {
+export function PostOrdersBoard({ sites, guards, initial, canEdit, editor }: { sites: CrewSite[]; guards: CrewGuard[]; initial: PostOrder[]; canEdit: boolean; editor: string }) {
   const [orders, setOrders] = useState(initial);
   const [siteId, setSiteId] = useState(sites[0]!.id);
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -35,8 +35,8 @@ export function PostOrdersBoard({ sites, initial, canEdit, editor }: { sites: Cr
       setOrders((xs) => xs.map((o) => (o.id === draft.order.id ? { ...publishRevision(o, steps, editor, now), title } : o)));
       toast.success(`“${title}” is now v${draft.order.version + 1}`, { description: "Every guard at the site must accept it again. Preview only." });
     } else {
-      const guards = orders.find((o) => o.site_id === siteId)?.acks.map((a) => ({ guard: a.guard, version: null, at: null })) ?? [];
-      setOrders((xs) => [...xs, { id: `po-new-${Date.now()}`, site_id: siteId, kind, title, steps, version: 1, updated_at: now, updated_by: editor, acks: guards }]);
+      const acks = guards.filter((g) => g.site_id === siteId).map((guard) => ({ guard, version: null, at: null }));
+      setOrders((xs) => [...xs, { id: `po-new-${Date.now()}`, site_id: siteId, kind, title, steps, version: 1, updated_at: now, updated_by: editor, acks }]);
       toast.success(`“${title}” published to ${site.name}`, { description: "Preview only — not saved." });
     }
     setDraft(null);

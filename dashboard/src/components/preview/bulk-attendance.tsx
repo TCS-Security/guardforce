@@ -60,11 +60,11 @@ export function BulkAttendance({ sites, guards, today }: { sites: CrewSite[]; gu
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="bm-date">Date</Label>
-            <Input id="bm-date" type="date" value={date} max={today} onChange={(e) => setDate(e.target.value)} />
+            <Input id="bm-date" type="date" value={date} max={today} onChange={(e) => { setDate(e.target.value); setMarks({}); }} />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label>Shift</Label>
-            <ToggleGroup value={[shift]} onValueChange={(v) => v[0] && setShift(v[0])} variant="outline" aria-label="Shift">
+            <ToggleGroup value={[shift]} onValueChange={(v) => { if (v[0]) { setShift(v[0]); setMarks({}); } }} variant="outline" aria-label="Shift">
               <ToggleGroupItem value="day">Day</ToggleGroupItem>
               <ToggleGroupItem value="night">Night</ToggleGroupItem>
             </ToggleGroup>

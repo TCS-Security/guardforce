@@ -187,18 +187,25 @@ function DarPreview({ account, sites, date, agencyName }: { account: ClientAccou
 }
 
 function ScheduleDialog({ account, onClose, onSave }: { account: ClientAccount | null; onClose: () => void; onSave: (a: ClientAccount) => void }) {
-  const [enabled, setEnabled] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   return (
-    <Dialog open={account != null} onOpenChange={(o) => { if (o && account) setEnabled(account.enabled); if (!o) onClose(); }}>
+    <Dialog open={account != null} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Daily report for {account?.name}</DialogTitle>
           <DialogDescription>Sent every morning for the day before, covering all of this client’s sites.</DialogDescription>
         </DialogHeader>
-        {account && (
+        {/* Keyed per client so the switch and any error start from that client's settings. */}
+        {account && <ScheduleForm key={account.key} account={account} onClose={onClose} onSave={onSave} />}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ScheduleForm({ account, onClose, onSave }: { account: ClientAccount; onClose: () => void; onSave: (a: ClientAccount) => void }) {
+  const [enabled, setEnabled] = useState(account.enabled);
+  const [error, setError] = useState<string | null>(null);
+  return (
           <form
-            key={account.key}
             className="flex flex-col gap-4"
             action={(form) => {
               const recipients = String(form.get("recipients") ?? "").split(/[\s,]+/).map((s) => s.trim()).filter(Boolean);
@@ -226,8 +233,5 @@ function ScheduleDialog({ account, onClose, onSave }: { account: ClientAccount |
               <Button type="submit">Save schedule</Button>
             </div>
           </form>
-        )}
-      </DialogContent>
-    </Dialog>
   );
 }

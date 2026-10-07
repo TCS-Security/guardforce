@@ -52,14 +52,14 @@ export function overtimePay(minutes: number, monthlyWage: number, policy: OtPoli
   return Math.round((minutes / 60) * hourly * policy.multiplier);
 }
 
-/** Two weeks of sample overtime: the last few days pending, the rest decided. */
+/** Two weeks of sample overtime, ending yesterday (today's shifts may not have ended): the last two days pending, the rest decided. */
 export function generateOvertime(crew: Crew, policy: OtPolicy = DEFAULT_OT_POLICY): OtEntry[] {
   const entries: OtEntry[] = [];
   for (const guard of crew.guards) {
     const r = rng(`ot:${guard.id}:${crew.today}`);
     // A handful of guards carry most of the overtime, as in real rosters.
     const heavy = r.chance(0.2);
-    for (let back = 0; back < 14; back++) {
+    for (let back = 1; back <= 14; back++) {
       if (!r.chance(heavy ? 0.65 : 0.12)) continue;
       const date = addDays(crew.today, -back);
       const night = r.chance(0.4);

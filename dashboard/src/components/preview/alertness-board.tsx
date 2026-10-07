@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { BellRing, Camera, ScanFace, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,7 @@ import { EmptyState } from "@/components/gf/empty-state";
 import { GuardCell } from "./guard-cell";
 import { fmtDate, fmtSeconds, fmtTime } from "@/lib/domain/format";
 import {
-  DEFAULT_ALERTNESS_POLICY, median, nightlySummary, repeatOffenders,
+  DEFAULT_ALERTNESS_POLICY, checkStatus, median, nightlySummary, repeatOffenders,
   type AlertCheck, type AlertnessPolicy, type CheckStatus,
 } from "@/lib/preview/alertness";
 import type { CrewGuard } from "@/lib/preview/crew";
@@ -31,8 +31,10 @@ const STATUS: Record<CheckStatus, { label: string; tone: Tone }> = {
 
 const pad = (h: number) => `${String(h).padStart(2, "0")}:00`;
 
-export function AlertnessBoard({ checks, guards, canConfigure }: { checks: AlertCheck[]; guards: CrewGuard[]; canConfigure: boolean }) {
+export function AlertnessBoard({ checks: generated, guards, canConfigure }: { checks: AlertCheck[]; guards: CrewGuard[]; canConfigure: boolean }) {
   const [policy, setPolicy] = useState<AlertnessPolicy>(DEFAULT_ALERTNESS_POLICY);
+  // Re-grade against the policy on screen, so the tiles always match the window shown.
+  const checks = useMemo(() => generated.map((c) => ({ ...c, status: checkStatus(c.response_s, policy) })), [generated, policy]);
   const nights = nightlySummary(checks);
   const lastNight = nights.at(-1)?.night;
   const last = checks.filter((c) => c.night === lastNight);
@@ -62,7 +64,7 @@ export function AlertnessBoard({ checks, guards, canConfigure }: { checks: Alert
           title={lastNight ? `Last night · ${fmtDate(`${lastNight}T12:00:00+05:30`, undefined, "EEE d MMM")}` : "Last night"}
           description="Every check sent, latest first"
           bodyClassName="p-0"
-          actions={<SendCheckDialog guards={guards} />}
+          actions={<SendCheckDialog guards={guards} escalateMin={policy.escalate_after_s / 60} />}
           className="xl:self-start"
           style={{ ["--i" as string]: 5 }}
         >
@@ -183,7 +185,7 @@ function PolicySelect({ label, value, options, onChange, format = (v) => v, disa
   );
 }
 
-function SendCheckDialog({ guards }: { guards: CrewGuard[] }) {
+function SendCheckDialog({ guards, escalateMin }: { guards: CrewGuard[]; escalateMin: number }) {
   const [open, setOpen] = useState(false);
   const [guard, setGuard] = useState<string | null>(null);
   const chosen = guards.find((g) => g.id === guard);
@@ -203,7 +205,7 @@ function SendCheckDialog({ guards }: { guards: CrewGuard[] }) {
           </Select>
         </Field>
         <p className="flex items-start gap-2 text-xs text-muted-foreground">
-          <Camera className="mt-px size-3.5 shrink-0" /> The phone rings at full volume until the guard takes a selfie. <TriangleAlert className="mt-px size-3.5 shrink-0" /> No answer in 10 minutes calls the supervisor.
+          <Camera className="mt-px size-3.5 shrink-0" /> The phone rings at full volume until the guard takes a selfie. <TriangleAlert className="mt-px size-3.5 shrink-0" /> No answer in {escalateMin} minutes calls the supervisor.
         </p>
         <div className="flex justify-end gap-2">
           <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>

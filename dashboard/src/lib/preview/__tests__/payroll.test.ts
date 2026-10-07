@@ -73,10 +73,11 @@ describe("overtime", () => {
     expect(overtimeMinutes("2026-10-08T14:30:00Z", "2026-10-08T15:30:00Z")).toBe(60);
   });
 
-  it("keeps the last three days pending and flags entries with no reason", () => {
+  it("starts yesterday, keeps the last two days pending and flags entries with no reason", () => {
     const entries = generateOvertime(crew);
     expect(entries.length).toBeGreaterThan(0);
     for (const e of entries) {
+      expect(e.date < crew.today).toBe(true);
       if (e.date >= "2026-10-06") expect(e.status).toBe("pending");
       if (!e.reason) expect(e.flag).toBe("no_reason");
     }

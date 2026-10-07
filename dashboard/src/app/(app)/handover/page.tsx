@@ -20,7 +20,7 @@ export default async function HandoverPage() {
         description="What the outgoing guard tells the incoming one: open issues, keys and kit that changed hands. The incoming guard reads it before they can start the shift."
       />
       <PreviewBanner />
-      <HandoverBoard initial={generateHandovers(crew)} sites={crew.sites} guards={crew.guards} today={crew.today} />
+      <HandoverBoard initial={generateHandovers(crew, new Date())} sites={crew.sites} guards={crew.guards} today={crew.today} />
     </div>
   );
 }

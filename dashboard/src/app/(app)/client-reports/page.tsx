@@ -27,7 +27,7 @@ export default async function ClientReportsPage() {
       <PreviewBanner>No emails are sent from this screen yet.</PreviewBanner>
       {accounts.length === 0
         ? <EmptyState title="No clients yet" description="Clients come from the client name on each site." />
-        : <ClientReportsBoard accounts={accounts} reports={reports} log={sentLog(accounts, crew.today)} date={yesterday} agencyName={session.agency.name} canEdit={session.can("reports:export")} />}
+        : <ClientReportsBoard accounts={accounts} reports={reports} log={sentLog(accounts, crew.today, new Date())} date={yesterday} agencyName={session.agency.name} canEdit={session.can("reports:export")} />}
     </div>
   );
 }

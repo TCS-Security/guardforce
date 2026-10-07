@@ -38,3 +38,14 @@ describe("handovers", () => {
     for (const h of generateHandovers(crew)) if (!h.read_at) expect(h.at >= "2026-10-07T18:30:00.000Z").toBe(true);
   });
 });
+
+describe("handovers before now", () => {
+  it("leaves out handovers and reads that haven't happened yet", () => {
+    const now = new Date("2026-10-08T01:30:00Z"); // 07:00 IST, before the 08:00 handover
+    const list = generateHandovers(crew, now);
+    for (const h of list) {
+      expect(h.at <= now.toISOString()).toBe(true);
+      if (h.read_at) expect(h.read_at <= now.toISOString()).toBe(true);
+    }
+  });
+});

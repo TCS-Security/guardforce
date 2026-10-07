@@ -26,7 +26,8 @@ export function SosBoard({ initial, lone, now: serverNow, canRespond, responder 
   const [resolving, setResolving] = useState<SosAlert | null>(null);
   const [now, setNow] = useState(() => new Date(serverNow));
   useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 1000);
+    // Durations render in whole minutes, so a 15-second tick is plenty.
+    const t = setInterval(() => setNow(new Date()), 15_000);
     return () => clearInterval(t);
   }, []);
 
@@ -77,7 +78,7 @@ export function SosBoard({ initial, lone, now: serverNow, canRespond, responder 
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button variant="outline" nativeButton={false} render={<a href={mapsUrl(a.lat, a.lng) ?? "#"} target="_blank" rel="noreferrer" />}><MapPin data-icon="inline-start" /> Location</Button>
-                <Button variant="outline" nativeButton={false} render={<a href={`tel:+${a.guard.phone}`} />}><Phone data-icon="inline-start" /> Call guard</Button>
+                <Button variant="outline" nativeButton={false} render={<a href={telHref(a.guard.phone)} />}><Phone data-icon="inline-start" /> Call guard</Button>
                 {canRespond && a.status === "active" && <Button onClick={() => acknowledge(a)}>I’m on it</Button>}
                 {canRespond && <Button variant={a.status === "active" ? "ghost" : "default"} onClick={() => setResolving(a)}><Check data-icon="inline-start" /> Close</Button>}
               </div>
@@ -149,6 +150,12 @@ export function SosBoard({ initial, lone, now: serverNow, canRespond, responder 
       <ResolveDialog alert={resolving} onClose={() => setResolving(null)} onResolve={resolve} />
     </>
   );
+}
+
+/** Guard phones are stored as 10-digit Indian numbers or with the 91 prefix. */
+export function telHref(phone: string) {
+  const digits = phone.replace(/\D/g, "");
+  return `tel:+${digits.length === 10 ? `91${digits}` : digits}`;
 }
 
 function ResolveDialog({ alert, onClose, onResolve }: { alert: SosAlert | null; onClose: () => void; onResolve: (a: SosAlert, note: string) => void }) {
