@@ -1,7 +1,7 @@
 import { TooltipProvider } from "@/components/ui/tooltip";
 import type { Session } from "@/lib/auth/session";
 import { Brand } from "./brand";
-import { SidebarNav } from "./sidebar-nav";
+import { NavScroll, SidebarNav } from "./sidebar-nav";
 import { UserMenu } from "./user-menu";
 import { MobileNav } from "./mobile-nav";
 import { Clock } from "./clock";
@@ -14,18 +14,25 @@ export async function AppShell({ session, children }: { session: Session; childr
   return (
     <TooltipProvider delay={200}>
       <div className="flex min-h-dvh">
-        <aside className="grain sticky top-0 hidden h-dvh w-[232px] shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:flex">
-          <div className="relative z-10 flex h-14 items-center px-5">
-            <Brand />
-          </div>
-          <div className="relative z-10 flex-1 overflow-y-auto px-2 pb-4">
-            <SidebarNav permissions={permissions} />
-          </div>
-          <div className="relative z-10 border-t border-sidebar-border px-5 py-3">
-            <div className="eyebrow text-sidebar-foreground/45">Agency</div>
-            <div className="truncate text-[13px] font-medium">{session.agency.name}</div>
-            <div className="truncate text-[11px] text-sidebar-foreground/55">
-              {session.role?.name ?? "Guard"}{session.agency.status === "trial" ? " · trial" : ""}
+        {/*
+          The panel stretches to the full height of the page (so it never ends partway down a long
+          page, a full-page screenshot or a print); the column inside it is sticky and exactly one
+          screen tall, so the nav scrolls on its own and the agency footer stays pinned.
+        */}
+        <aside aria-label="Main navigation" className="grain hidden w-[232px] shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:block">
+          <div className="sticky top-0 z-10 flex h-dvh flex-col">
+            <div className="flex h-14 shrink-0 items-center px-5">
+              <Brand />
+            </div>
+            <NavScroll className="px-2 pt-1 pb-4">
+              <SidebarNav permissions={permissions} />
+            </NavScroll>
+            <div className="shrink-0 border-t border-sidebar-border px-5 py-3">
+              <div className="eyebrow text-sidebar-foreground/45">Agency</div>
+              <div className="truncate text-[13px] font-medium">{session.agency.name}</div>
+              <div className="truncate text-[11px] text-sidebar-foreground/55">
+                {session.role?.name ?? "Guard"}{session.agency.status === "trial" ? " · trial" : ""}
+              </div>
             </div>
           </div>
         </aside>
