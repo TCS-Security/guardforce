@@ -1,0 +1,21 @@
+node_modules/
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+# Continuous native generation: the app's android/ and ios/ trees are produced by
+# `expo prebuild`. Anchored to this directory: the local Expo modules under modules/
+# keep their own hand-written android/ source, which must stay in git.
+/android/
+/ios/
+# Gradle output inside the local modules (the sources beside it are tracked).
+modules/*/android/build/
+modules/*/android/.cxx/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+.env*.local
+android-debug.apk

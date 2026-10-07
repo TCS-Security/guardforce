@@ -23,7 +23,11 @@ export const SEED = {
     santoshIncompleteKyc: "e0000000-0000-4000-8000-000000000014",
     manjunathInvited: "e0000000-0000-4000-8000-000000000015",
     rajniIncompleteKyc: "e0000000-0000-4000-8000-000000000016",
+    /** Metro Cash & Carry night guard; reserved for the guard-app contract spec. */
+    gopal: "e0000000-0000-4000-8000-000000000012",
   },
+  /** Seeded guard phones verify with OTP 123456 locally (supabase/config.toml [auth.sms.test_otp]). */
+  guardOtp: "123456",
   shareToken: "demo-share-suresh-gowda-7f3a9c",
 };
 
