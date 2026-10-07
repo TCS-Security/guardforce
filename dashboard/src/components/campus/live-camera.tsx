@@ -64,7 +64,7 @@ export function LiveCamera({ watermark, onCapture, value, label = "Live photo", 
     ctx.fillText(`● ${watermark.by}`, 24, h - 80);
     ctx.font = "22px ui-monospace, monospace";
     ctx.fillText(`${now} IST · ${watermark.place}`, 24, h - 48);
-    ctx.fillText(`${watermark.gps ?? "GPS fixed"} · GuardForce verified capture`, 24, h - 18);
+    ctx.fillText(`${watermark.gps ?? "GPS fixed"} · GuardWatch AI verified capture`, 24, h - 18);
     return c.toDataURL("image/jpeg", 0.82);
   }
 

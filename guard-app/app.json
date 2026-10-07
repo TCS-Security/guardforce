@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "GuardForce",
+    "name": "GuardWatch AI",
     "slug": "guardforce-guard",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -51,13 +51,13 @@
       ["expo-splash-screen", { "image": "./assets/images/splash-icon.png", "imageWidth": 160, "backgroundColor": "#F9F7F3", "dark": { "backgroundColor": "#1D1711" } }],
       ["expo-font", { "fonts": ["./assets/fonts/bricolage_grotesque.ttf", "./assets/fonts/schibsted_grotesk.ttf", "./assets/fonts/jetbrains_mono.ttf"] }],
       ["expo-location", {
-        "locationAlwaysAndWhenInUsePermission": "GuardForce records your location for the whole shift so it counts.",
+        "locationAlwaysAndWhenInUsePermission": "GuardWatch AI records your location for the whole shift so it counts.",
         "isAndroidBackgroundLocationEnabled": true,
         "isAndroidForegroundServiceEnabled": true
       }],
       ["expo-camera", { "cameraPermission": "One selfie at shift start and end, plus patrol and task photos." }],
       ["expo-notifications", { "icon": "./assets/images/notification-icon.png", "color": "#375028" }],
-      ["expo-local-authentication", { "faceIDPermission": "Unlock GuardForce" }],
+      ["expo-local-authentication", { "faceIDPermission": "Unlock GuardWatch AI" }],
       ["expo-build-properties", { "android": { "compileSdkVersion": 36, "targetSdkVersion": 36, "minSdkVersion": 26, "usesCleartextTraffic": true } }]
     ],
     "experiments": { "typedRoutes": true },

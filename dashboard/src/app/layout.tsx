@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Bricolage_Grotesque, Schibsted_Grotesk, JetBrains_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeScript } from "@/components/shell/theme-script";
+import { PRODUCT_NAME } from "@/lib/brand";
 import "./globals.css";
 
 const display = Bricolage_Grotesque({
@@ -21,7 +22,7 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: { default: "GuardForce", template: "%s · GuardForce" },
+  title: { default: PRODUCT_NAME, template: `%s · ${PRODUCT_NAME}` },
   description: "Every guard verified, every patrol proved, every record ready to share.",
 };
 

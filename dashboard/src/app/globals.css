@@ -63,7 +63,7 @@
 }
 
 :root {
-  /* GuardForce — "control room ledger": warm paper, ink, uniform olive, one signal accent */
+  /* GuardWatch AI — "control room ledger": warm paper, ink, uniform olive, one signal accent */
   --paper: oklch(0.977 0.006 85);
   --ink: oklch(0.21 0.015 70);
   --olive: oklch(0.40 0.07 135);

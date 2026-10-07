@@ -28,7 +28,7 @@ export default async function PlatformHome() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        eyebrow="GuardForce · provider"
+        eyebrow="GuardWatch AI · provider"
         title="Tenants"
         description="Every agency on the platform, its plan, its size and whether anyone is using it."
         actions={<ButtonLink href="/platform/tenants/new"><Plus data-icon="inline-start" /> New tenant</ButtonLink>}

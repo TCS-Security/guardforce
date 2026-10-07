@@ -70,7 +70,7 @@ async function assignableRole(agencyId: string, roleId: string) {
   const supabase = await createClient();
   const { data } = await supabase.from("roles").select("id,name,system_key").eq("id", roleId).eq("agency_id", agencyId).maybeSingle();
   if (!data) return { error: "That role does not exist." } as const;
-  if (data.system_key === "owner") return { error: "The Owner role cannot be assigned here. Ownership is transferred by GuardForce support." } as const;
+  if (data.system_key === "owner") return { error: "The Owner role cannot be assigned here. Ownership is transferred by GuardWatch AI support." } as const;
   return { role: data } as const;
 }
 

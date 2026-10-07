@@ -47,7 +47,7 @@ export function inviteDeepLink(token: string) {
 }
 
 export function inviteMessage(guardName: string, agencyName: string, token: string) {
-  return `Hi ${guardName}, ${agencyName} has added you to GuardForce. Install the app and open this link to finish registration: ${inviteDeepLink(token)}`;
+  return `Hi ${guardName}, ${agencyName} has added you to GuardWatch AI. Install the app and open this link to finish registration: ${inviteDeepLink(token)}`;
 }
 
 /** wa.me link for the manager to forward the invite over WhatsApp. */

@@ -76,7 +76,7 @@ export function PhoneFrame({
           <ChevronLeft className="size-5 opacity-90" aria-hidden />
           {avatar ?? (
             <span className="flex size-8 items-center justify-center rounded-full bg-white/90 font-display text-xs font-bold" style={{ color: WA.bar }}>
-              GF
+              GW
             </span>
           )}
           <div className="min-w-0 flex-1 leading-tight">

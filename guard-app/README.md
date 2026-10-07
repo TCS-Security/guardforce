@@ -1,4 +1,4 @@
-# GuardForce guard app (Expo / React Native)
+# GuardWatch AI guard app (Expo / React Native)
 
 The guard's shift is enforced from this phone: selfie + GPS check-in, continuous tracking in a
 native foreground service, patrols with photo proof, tasks, leave, and an offline outbox so every

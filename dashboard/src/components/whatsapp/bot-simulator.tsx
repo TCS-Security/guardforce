@@ -8,7 +8,7 @@ import { Mono } from "@/components/gf/mono";
 import { PhoneFrame, type PhoneLine } from "@/components/campus/phone-frame";
 import { render, TEMPLATES, type WaTemplate } from "@/lib/whatsapp/templates";
 import { playLadder, RUNG_LABEL, type Rung, type RungState } from "@/lib/whatsapp/rules";
-import { scenePhoto } from "@/lib/whatsapp/bot";
+import { BOT, scenePhoto } from "@/lib/whatsapp/bot";
 import { cn } from "cn";
 
 /**
@@ -157,12 +157,12 @@ export function BotSimulator() {
           {guardInvolved && (
             <div className="flex flex-col items-center gap-2">
               <span className="eyebrow">Guard’s phone</span>
-              <PhoneFrame title="GuardForce Alerts" lines={guardLines} label="Guard's WhatsApp" onReply={(text) => !answer && setAnswer({ at: elapsed, text, by: "guard" })} />
+              <PhoneFrame title={BOT.name} lines={guardLines} label="Guard's WhatsApp" onReply={(text) => !answer && setAnswer({ at: elapsed, text, by: "guard" })} />
             </div>
           )}
           <div className="flex flex-col items-center gap-2">
             <span className="eyebrow">Supervisor’s phone</span>
-            <PhoneFrame title="GuardForce Alerts" lines={supLines} label="Supervisor's WhatsApp" onReply={(text) => !answer && setAnswer({ at: elapsed, text, by: "supervisor" })} />
+            <PhoneFrame title={BOT.name} lines={supLines} label="Supervisor's WhatsApp" onReply={(text) => !answer && setAnswer({ at: elapsed, text, by: "supervisor" })} />
           </div>
         </div>
       </div>

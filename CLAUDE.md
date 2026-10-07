@@ -1,4 +1,6 @@
-# GuardForce — working conventions
+# GuardWatch AI — working conventions
+
+> **Name:** the product is **GuardWatch AI** (renamed from GuardForce, Oct 2026). User-facing copy uses `PRODUCT_NAME` from `dashboard/src/lib/brand.ts`. Identifiers already out in the world keep the old name on purpose: Android package `com.guardforce.guard`, the `guardforce://` invite scheme, the on-device `guardforce.db`, the Expo slug, the Supabase project, the repo, and the seed password `guardforce`.
 
 Guard management platform for Indian security agencies. Spec: `prd-v2-guard-platform.md` (source of truth), founder notes in `guard-crm-notes.md`.
 
