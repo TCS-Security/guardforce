@@ -26,7 +26,9 @@ import {
   toPatrolExportRows,
   toPunchRows,
 } from "@/lib/domain/reports";
+import { Route } from "lucide-react";
 import { PageHeader } from "@/components/gf/page-header";
+import { ButtonLink } from "@/components/gf/button-link";
 import { StatTile } from "@/components/gf/stat-tile";
 import { Section } from "@/components/gf/section";
 import { EmptyState } from "@/components/gf/empty-state";
@@ -89,6 +91,11 @@ export default async function ReportsPage({ searchParams }: PageProps<"/reports"
         eyebrow="Analytics & exports"
         title="Reports"
         description="Attendance analytics, guard scorecards and spreadsheet exports for any site, guard or date range."
+        actions={
+          <ButtonLink variant="outline" href="/reports/distance">
+            <Route data-icon="inline-start" /> Distance travelled
+          </ButtonLink>
+        }
       />
 
       <ReportFilterBar

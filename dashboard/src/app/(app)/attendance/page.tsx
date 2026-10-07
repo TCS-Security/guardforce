@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ClipboardCheck } from "lucide-react";
+import { ClipboardCheck, UsersRound } from "lucide-react";
+import { ButtonLink } from "@/components/gf/button-link";
 import { requirePermission, requireSession } from "@/lib/auth/session";
 import { defaultAttendanceDate, loadAttendanceDay } from "@/lib/data/attendance";
 import { PageHeader } from "@/components/gf/page-header";
@@ -40,6 +41,13 @@ export default async function AttendancePage({ searchParams }: PageProps<"/atten
         eyebrow="The money path"
         title="Attendance"
         description="A shift counts when the guard sent a selfie from inside the fence and kept location on."
+        actions={
+          session.can("attendance:correct") && (
+            <ButtonLink variant="outline" href="/attendance/mark">
+              <UsersRound data-icon="inline-start" /> Mark a whole site
+            </ButtonLink>
+          )
+        }
       />
 
       <AttendanceFilters sites={sites} current={filters} />

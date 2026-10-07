@@ -41,6 +41,11 @@ export function SidebarNav({ onNavigate, permissions }: { onNavigate?: () => voi
                   >
                     <item.icon className={cn("size-4 shrink-0", active ? "text-sidebar-primary" : "opacity-70 group-hover:opacity-100")} strokeWidth={1.75} />
                     <span>{item.label}</span>
+                    {item.preview && (
+                      <span className="ml-auto font-mono text-[9.5px] tracking-wider text-sidebar-foreground/40 uppercase" title="Runs on sample data for now">
+                        Preview
+                      </span>
+                    )}
                   </Link>
                 </li>
               );
