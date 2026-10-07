@@ -239,3 +239,11 @@
 /* MapLibre */
 .maplibregl-ctrl-attrib { font-family: var(--font-mono); font-size: 10px; }
 .maplibregl-popup-content { font-family: var(--font-sans); border-radius: 8px; padding: 8px 10px; box-shadow: 0 8px 24px oklch(0 0 0 / 0.18); }
+
+/* Printing a slip or a QR label: only the element marked data-print-root goes to paper. */
+@media print {
+  body:has([data-print-root]) * { visibility: hidden; }
+  [data-print-root], [data-print-root] * { visibility: visible; }
+  [data-print-root] { position: absolute; inset: 0 auto auto 0; width: 100%; box-shadow: none !important; }
+  [data-print-hide] { display: none !important; }
+}
