@@ -1,14 +1,42 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "cn";
 import { NAV_GROUPS } from "./nav";
 import { ROUTE_PERMISSION } from "@/lib/auth/permissions";
 
+/**
+ * The nav's own scroll area, shared by the desktop sidebar and the phone drawer. The list is
+ * longer than a laptop screen, so it scrolls inside the panel; the soft fade at either edge says
+ * there is more, and the thin scrollbar matches the dark panel instead of the OS default.
+ */
+export function NavScroll({ className, children }: { className?: string; children: React.ReactNode }) {
+  return (
+    <div
+      data-slot="nav-scroll"
+      className={cn(
+        "min-h-0 flex-1 overflow-y-auto overscroll-contain",
+        "[scrollbar-color:var(--sidebar-border)_transparent] [scrollbar-width:thin]",
+        "[mask-image:linear-gradient(to_bottom,transparent,black_10px,black_calc(100%-18px),transparent)]",
+        className,
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
 /** Sidebar. Sections the user cannot read are omitted, not greyed out. */
 export function SidebarNav({ onNavigate, permissions }: { onNavigate?: () => void; permissions: readonly string[] }) {
   const pathname = usePathname();
+  const ref = useRef<HTMLElement>(null);
+  // Bring the current page into view inside the scrolling list (deep links, short windows, and
+  // the phone drawer opening on a page near the bottom). `nearest` leaves the window alone.
+  useEffect(() => {
+    ref.current?.querySelector('[aria-current="page"]')?.scrollIntoView({ block: "nearest" });
+  }, [pathname]);
   const allowed = new Set(permissions);
   const groups = NAV_GROUPS.map((g) => ({
     ...g,
@@ -19,7 +47,7 @@ export function SidebarNav({ onNavigate, permissions }: { onNavigate?: () => voi
   })).filter((g) => g.items.length > 0);
 
   return (
-    <nav className="flex flex-col gap-5">
+    <nav ref={ref} className="flex flex-col gap-5">
       {groups.map((group) => (
         <div key={group.label}>
           <div className="eyebrow mb-1.5 px-3 text-sidebar-foreground/45">{group.label}</div>
