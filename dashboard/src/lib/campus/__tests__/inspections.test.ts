@@ -73,7 +73,12 @@ describe("ledgerStats", () => {
       answers: { ...allOk, ...(fail ? { "ck-01": false } : {}) }, gps_ok: true,
       started_at: "2026-10-08T04:00:00Z", finished_at: new Date(Date.parse("2026-10-08T04:00:00Z") + mins * 60_000).toISOString(),
     }) as unknown as FloorInspection;
-    const s = ledgerStats([mk(false, 30), mk(false, 40), mk(true, 20), mk(false, 30)], CHECKLIST.length);
+    const s = ledgerStats([mk(false, 30), mk(false, 40), mk(true, 20), mk(false, 30)]);
     expect(s).toMatchObject({ total: 4, clean: 3, flagged: 1, compliance: 75, avgMin: 30, gpsPct: 100 });
+  });
+
+  it("does not count old surveys as faulty when a question is added later", () => {
+    const old = { answers: Object.fromEntries(CHECKLIST.map((c) => [c.id, true])), gps_ok: true, started_at: "2026-10-08T04:00:00Z", finished_at: "2026-10-08T04:30:00Z" } as unknown as FloorInspection;
+    expect(ledgerStats([old, old]).compliance).toBe(100);
   });
 });

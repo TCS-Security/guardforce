@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildCampus } from "@/lib/campus/sample";
+import { decodeApprovalCard } from "@/lib/campus/visitors";
+import type { Visitor } from "@/lib/campus/types";
 import { demoClock } from "@/lib/data/campus";
 import { toLocalDate } from "@/lib/domain/format";
 import { EmptyState } from "@/components/gf/empty-state";
@@ -16,15 +18,20 @@ export const dynamic = "force-dynamic";
  */
 export default async function ApprovePage({ params, searchParams }: PageProps<"/approve/[ref]">) {
   const { ref } = await params;
-  const { site: siteId } = await searchParams;
+  const { site: siteId, v } = await searchParams;
   // Service role, as for the other public share pages: only the site's display fields.
   const { data: site } = typeof siteId === "string" && /^[0-9a-f-]{36}$/.test(siteId)
-    ? await createAdminClient().from("sites").select("id,name,client_name,address,city,lat,lng").eq("id", siteId).maybeSingle()
+    ? await createAdminClient().from("sites").select("id,name,client_name,address,city,lat,lng").eq("id", siteId).eq("is_active", true).maybeSingle()
     : { data: null };
 
   const now = demoClock(new Date(), "Asia/Kolkata");
   const campus = site ? buildCampus(site, [], [], now, toLocalDate(now)) : null;
-  const visitor = campus?.visitors.find((v) => v.ref === ref.toUpperCase());
+  const card = typeof v === "string" ? decodeApprovalCard(v) : null;
+  const visitor: Visitor | undefined =
+    campus?.visitors.find((x) => x.ref === ref.toUpperCase()) ??
+    (card && card.ref === ref.toUpperCase() && campus?.tenants.some((t) => t.id === card.tenant_id)
+      ? { ...campus.visitors[0]!, ...card, status: "pending", pre_authorised: false }
+      : undefined);
 
   return (
     <main className="min-h-dvh bg-background px-4 py-8">

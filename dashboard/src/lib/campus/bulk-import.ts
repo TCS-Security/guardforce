@@ -5,12 +5,22 @@
  * ones that will not, before anything is written.
  */
 
-export type ImportColumn = { key: string; label: string; required: boolean; pattern?: RegExp; hint?: string };
+export type ImportColumn = {
+  key: string;
+  label: string;
+  required: boolean;
+  pattern?: RegExp;
+  hint?: string;
+  /** Numeric bounds, checked after the pattern. */
+  range?: [number, number];
+  /** The value must be one of the codes already on the campus (see `lookups`). */
+  ref?: "floor" | "tower";
+};
 
 export const TENANT_COLUMNS: ImportColumn[] = [
   { key: "name", label: "Company", required: true },
   { key: "code", label: "Code", required: true, pattern: /^[A-Z0-9-]{3,12}$/, hint: "3–12 capitals, digits or dashes" },
-  { key: "floor", label: "Floor code", required: true },
+  { key: "floor", label: "Floor code", required: true, ref: "floor" },
   { key: "unit", label: "Unit", required: true },
   { key: "contact", label: "Contact person", required: true },
   { key: "phone", label: "Phone", required: true, pattern: /^(\+?91)?[6-9]\d{9}$/, hint: "10-digit mobile" },
@@ -20,10 +30,10 @@ export const TENANT_COLUMNS: ImportColumn[] = [
 export const FLOOR_COLUMNS: ImportColumn[] = [
   { key: "name", label: "Floor", required: true },
   { key: "code", label: "Code", required: true, pattern: /^[A-Z0-9-]{2,12}$/, hint: "2–12 capitals, digits or dashes" },
-  { key: "tower", label: "Tower code", required: true },
+  { key: "tower", label: "Tower code", required: true, ref: "tower" },
   { key: "lat", label: "Latitude", required: false, pattern: /^-?\d{1,2}\.\d+$/, hint: "e.g. 12.9354" },
   { key: "lng", label: "Longitude", required: false, pattern: /^-?\d{1,3}\.\d+$/, hint: "e.g. 77.6925" },
-  { key: "radius", label: "Radius (m)", required: false, pattern: /^\d{1,3}$/, hint: "10–200" },
+  { key: "radius", label: "Radius (m)", required: false, pattern: /^\d{1,3}$/, hint: "10–200", range: [10, 200] },
 ];
 
 export type ImportResult = {
@@ -50,7 +60,12 @@ function split(line: string): string[] {
 
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
 
-export function parseImport(text: string, columns: ImportColumn[], existingCodes: string[] = []): ImportResult {
+export function parseImport(
+  text: string,
+  columns: ImportColumn[],
+  existingCodes: string[] = [],
+  lookups: Partial<Record<"floor" | "tower", string[]>> = {},
+): ImportResult {
   const lines = text.split(/\r?\n/).map((l, i) => ({ l, n: i + 1 })).filter(({ l }) => l.trim() !== "");
   if (lines.length === 0) return { rows: [], errors: [{ line: 0, message: "Nothing to import — paste a header row and at least one row." }], unknownHeaders: [] };
 
@@ -82,6 +97,8 @@ export function parseImport(text: string, columns: ImportColumn[], existingCodes
       row[c.key] = v;
       if (c.required && !v) problems.push(`${c.label} is empty`);
       else if (v && c.pattern && !c.pattern.test(v)) problems.push(`${c.label} “${v}” should be ${c.hint ?? "valid"}`);
+      else if (v && c.range && (Number(v) < c.range[0] || Number(v) > c.range[1])) problems.push(`${c.label} ${v} should be ${c.range[0]}–${c.range[1]}`);
+      else if (v && c.ref && lookups[c.ref] && !lookups[c.ref]!.some((x) => x.toUpperCase() === v.toUpperCase())) problems.push(`${c.label} “${v}” is not on this campus`);
     }
     if (row.code && seen.has(row.code)) problems.push(`code ${row.code} already exists`);
     if (problems.length) errors.push({ line: n, message: problems.join("; ") });

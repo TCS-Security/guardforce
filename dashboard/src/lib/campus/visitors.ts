@@ -159,3 +159,33 @@ export function validateVisitor(input: NewVisitorInput): Partial<Record<keyof Ne
   if (input.purpose.trim().length < 3) e.purpose = "A few words on why they are here.";
   return e;
 }
+
+/**
+ * Preview only: a walk-in registered at the desk exists in nobody's database, so its approval
+ * link carries the request itself, base64url-encoded. In production the link is a signed,
+ * single-use token that resolves server-side; this is what that lookup would return.
+ */
+export type ApprovalCard = Pick<Visitor, "ref" | "name" | "company" | "type" | "purpose" | "tenant_id" | "gate_id" | "id_type" | "id_last4" | "arrived_at" | "photo_hue">;
+
+export function encodeApprovalCard(v: ApprovalCard): string {
+  const json = JSON.stringify([v.ref, v.name, v.company, v.type, v.purpose, v.tenant_id, v.gate_id, v.id_type, v.id_last4, v.arrived_at, v.photo_hue]);
+  const bytes = new TextEncoder().encode(json);
+  let bin = "";
+  bytes.forEach((b) => (bin += String.fromCharCode(b)));
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+export function decodeApprovalCard(s: string): ApprovalCard | null {
+  try {
+    const bin = atob(s.replace(/-/g, "+").replace(/_/g, "/"));
+    const a = JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0))));
+    if (!Array.isArray(a) || a.length !== 11) return null;
+    const [ref, name, company, type, purpose, tenant_id, gate_id, id_type, id_last4, arrived_at, photo_hue] = a;
+    const str = (x: unknown, max = 120) => typeof x === "string" && x.length > 0 && x.length <= max;
+    if (![ref, name, company, purpose, tenant_id, gate_id, id_last4, arrived_at].every((x) => str(x))) return null;
+    if (!(type in VISITOR_TYPE) || !(id_type in ID_TYPE) || typeof photo_hue !== "number" || Number.isNaN(Date.parse(arrived_at))) return null;
+    return { ref, name, company, type, purpose, tenant_id, gate_id, id_type, id_last4, arrived_at, photo_hue };
+  } catch {
+    return null;
+  }
+}

@@ -1,7 +1,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import type { Session } from "@/lib/auth/session";
-import { toLocalDate } from "@/lib/domain/format";
+import { fromLocalInput, toLocalDate } from "@/lib/domain/format";
 import { buildCampus } from "@/lib/campus/sample";
 
 export type CampusSiteOption = { id: string; name: string; client_name: string | null };
@@ -40,5 +40,5 @@ export async function loadCampus(session: Session, siteParam?: string | null) {
 export function demoClock(now: Date, tz: string): Date {
   const hour = Number(new Intl.DateTimeFormat("en-GB", { hour: "numeric", hour12: false, timeZone: tz }).format(now));
   if (hour >= 8 && hour < 20) return now;
-  return new Date(`${toLocalDate(now, tz)}T15:00:00+05:30`);
+  return fromLocalInput(`${toLocalDate(now, tz)}T15:00`, tz);
 }

@@ -28,7 +28,7 @@ import { PhoneFrame, type PhoneLine } from "./phone-frame";
 import { QrCode } from "./qr-code";
 import { useDemoNow } from "./use-demo-now";
 import {
-  approve, autoFillFromTenant, checkIn, checkOut, deny, ID_TYPE, maskId, nextRef, OVERSTAY_MIN, stayMinutes, validateVisitor,
+  approve, autoFillFromTenant, checkIn, checkOut, deny, encodeApprovalCard, ID_TYPE, maskId, nextRef, OVERSTAY_MIN, stayMinutes, validateVisitor,
   VISITOR_STATUS, VISITOR_TYPE, visitorStats, watchlist, type NewVisitorInput,
 } from "@/lib/campus/visitors";
 import { downloadCsv } from "@/lib/campus/csv";
@@ -162,7 +162,7 @@ export function VisitorDesk({ data, deskGuard, canWrite }: { data: CampusData; d
                           <td className="px-4 py-2.5">{f.reason === "overstay" ? <StatusPill tone="signal" size="xs">Inside {fmtMinutes(f.minutes)}</StatusPill> : <StatusPill tone="absent" size="xs">Denied by host</StatusPill>}</td>
                           <td className="px-4 py-2.5">
                             <div className="flex justify-end gap-1.5">
-                              {f.reason === "overstay" && canWrite && <Button size="sm" variant="ghost" onClick={() => { setExtended((e) => ({ ...e, [f.visitor.id]: (e[f.visitor.id] ?? 0) + 60 + (f.minutes ?? 0) - OVERSTAY_MIN })); toast.success(`${t.contact_name} extended ${f.visitor.name}'s visit by an hour`); }}><TimerReset data-icon="inline-start" /> Host extended</Button>}
+                              {f.reason === "overstay" && canWrite && <Button size="sm" variant="ghost" onClick={() => { setExtended((e) => ({ ...e, [f.visitor.id]: (f.minutes ?? OVERSTAY_MIN) - OVERSTAY_MIN + 60 })); toast.success(`${t.contact_name} extended ${f.visitor.name}'s visit by an hour`); }}><TimerReset data-icon="inline-start" /> Host extended</Button>}
                               {f.reason === "overstay" && canWrite && <Button size="sm" variant="outline" onClick={() => setCheckingOut(f.visitor)}><ArrowRightFromLine data-icon="inline-start" /> Check out</Button>}
                               <Button size="sm" variant={escalated[f.visitor.id] ? "ghost" : "destructive"} disabled={escalated[f.visitor.id]} onClick={() => { setEscalated((e) => ({ ...e, [f.visitor.id]: true })); toast.warning("Escalated to the security supervisor", { description: "The WhatsApp bot sent the visitor's photo, host and time inside." }); }}>
                                 <ShieldAlert data-icon="inline-start" /> {escalated[f.visitor.id] ? "Escalated" : "Escalate"}
@@ -384,7 +384,9 @@ function Approvals({ pending, all, data, now, photos, selected, onSelect, hostRe
               const f = data.floors.find((x) => x.id === t.floor_id)!;
               const waitMin = Math.max(0, Math.round((now.getTime() - new Date(v.arrived_at).getTime()) / 60_000));
               const isShown = shown?.id === v.id;
-              const link = `/approve/${v.ref}?site=${data.campus.site_id}`;
+              // Sample-day visitors resolve on the server by ref; a desk walk-in carries its card.
+              const fromSample = data.visitors.some((x) => x.ref === v.ref);
+              const link = `/approve/${v.ref}?site=${data.campus.site_id}${fromSample ? "" : `&v=${encodeApprovalCard(v)}`}`;
               return (
                 <li key={v.id} className={cn("rounded-lg border bg-card p-4 transition-colors", isShown && "border-primary/50 shadow-[inset_3px_0_0_0_var(--primary)]")}>
                   <div className="flex flex-wrap gap-4">

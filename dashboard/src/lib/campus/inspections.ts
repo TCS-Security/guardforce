@@ -73,9 +73,13 @@ export function floorStates(floors: Floor[], inspections: FloorInspection[], tod
   });
 }
 
-export function ledgerStats(inspections: FloorInspection[], checklistSize: number) {
+/**
+ * A survey is clean when every question it was asked passed. Judged against its own answers,
+ * not today's checklist, so adding a question later does not turn the whole history into faults.
+ */
+export function ledgerStats(inspections: FloorInspection[]) {
   const total = inspections.length;
-  const clean = inspections.filter((i) => Object.values(i.answers).every(Boolean) && Object.keys(i.answers).length === checklistSize).length;
+  const clean = inspections.filter((i) => Object.values(i.answers).every(Boolean)).length;
   const flagged = total - clean;
   const durations = inspections.map((i) => (new Date(i.finished_at).getTime() - new Date(i.started_at).getTime()) / 60_000);
   const gps = inspections.filter((i) => i.gps_ok).length;

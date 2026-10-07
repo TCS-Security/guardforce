@@ -170,12 +170,13 @@ export function PropertyMasters({ data, canWrite }: { data: CampusData; canWrite
       <ImportDialog
         kind={importing} onClose={() => setImporting(null)}
         existing={importing === "tenants" ? tenants.map((t) => t.code) : floors.map((f) => f.code)}
+        lookups={{ floor: floors.map((f) => f.code), tower: towers.map((t) => t.code) }}
         onImport={(rows) => {
           if (importing === "tenants") {
-            setTenants((xs) => [...xs, ...rows.map((r, i): Tenant => ({ id: `tn-i${Date.now()}-${i}`, code: r.code!, name: r.name!, floor_id: floors.find((f) => f.code === r.floor)?.id ?? floors[0]!.id, unit: r.unit!, contact_name: r.contact!, contact_phone: r.phone!.slice(-10), contact_email: r.email ?? "", approval_channel: "whatsapp" }))]);
+            setTenants((xs) => [...xs, ...rows.map((r, i): Tenant => ({ id: `tn-i${Date.now()}-${i}`, code: r.code!, name: r.name!, floor_id: floors.find((f) => f.code.toUpperCase() === r.floor!.toUpperCase())!.id, unit: r.unit!, contact_name: r.contact!, contact_phone: r.phone!.slice(-10), contact_email: r.email ?? "", approval_channel: "whatsapp" }))]);
           } else {
             const base = data.campus.anchor;
-            const nf = rows.map((r, i): Floor => ({ id: `fl-i${Date.now()}-${i}`, code: r.code!, name: r.name!, tower_id: towers.find((t) => t.code === r.tower)?.id ?? towers[0]!.id, radius_m: Number(r.radius || 35), units: "", ...(r.lat && r.lng ? { lat: Number(r.lat), lng: Number(r.lng) } : offsetM(base, 10 * i, 15)) }));
+            const nf = rows.map((r, i): Floor => ({ id: `fl-i${Date.now()}-${i}`, code: r.code!, name: r.name!, tower_id: towers.find((t) => t.code.toUpperCase() === r.tower!.toUpperCase())!.id, radius_m: Number(r.radius || 35), units: "", ...(r.lat && r.lng ? { lat: Number(r.lat), lng: Number(r.lng) } : offsetM(base, 10 * i, 15)) }));
             setFloors((xs) => [...xs, ...nf]);
             setCheckpoints((xs) => [...xs, ...nf.map((f, i): Checkpoint => ({ id: `cp-i${i}-${f.id}`, code: `CHK-${f.code}`, floor_id: f.id, location: "Main corridor", radius_m: f.radius_m, lat: f.lat, lng: f.lng }))]);
           }
@@ -193,14 +194,16 @@ export function PropertyMasters({ data, canWrite }: { data: CampusData; canWrite
   );
 }
 
-function ImportDialog({ kind, existing, onClose, onImport }: { kind: "tenants" | "floors" | null; existing: string[]; onClose: () => void; onImport: (rows: Record<string, string>[]) => void }) {
+function ImportDialog({ kind, existing, lookups, onClose, onImport }: {
+  kind: "tenants" | "floors" | null; existing: string[]; lookups: { floor: string[]; tower: string[] }; onClose: () => void; onImport: (rows: Record<string, string>[]) => void;
+}) {
   const [text, setText] = useState("");
   if (!kind) return <Dialog open={false} />;
   const columns: ImportColumn[] = kind === "tenants" ? TENANT_COLUMNS : FLOOR_COLUMNS;
   const sample = kind === "tenants"
     ? templateFor(columns, [["Indus Legal LLP", "INDUS-06", "3F-LUMN", "Suite 310", "Meera Pillai", "9845011223", "meera@induslegal.in"], ["Bad Row Co", "x", "2F-NWFN", "Suite 2", "Ravi", "12345", ""]])
     : templateFor(columns, [["4th floor (Indus)", "4F-INDS", "TWR-B", "", "", "35"], ["Terrace", "TR-TOP", "TWR-A", "", "", "50"]]);
-  const res = text.trim() ? parseImport(text, columns, existing) : null;
+  const res = text.trim() ? parseImport(text, columns, existing, lookups) : null;
   return (
     <Dialog open onOpenChange={(o) => { if (!o) { setText(""); onClose(); } }}>
       <DialogContent className="sm:max-w-2xl">

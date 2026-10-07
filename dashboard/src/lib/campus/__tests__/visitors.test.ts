@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { approve, checkIn, checkOut, deny, maskId, nextRef, stayMinutes, validateVisitor, visitorStats, watchlist } from "../visitors";
+import { approve, checkIn, checkOut, decodeApprovalCard, deny, encodeApprovalCard, maskId, nextRef, stayMinutes, validateVisitor, visitorStats, watchlist } from "../visitors";
 import type { Visitor } from "../types";
 
 const at = new Date("2026-10-08T06:00:00Z");
@@ -87,5 +87,19 @@ describe("helpers", () => {
     const e = validateVisitor({ name: "K", phone: "12345", company: "", type: "", id_type: "aadhaar", id_number: "1234", tenant_id: "", purpose: "" });
     expect(Object.keys(e).sort()).toEqual(["company", "id_number", "name", "phone", "purpose", "tenant_id", "type"]);
     expect(validateVisitor({ name: "Karan Mehta", phone: "+91 98765 43210", company: "Self", type: "guest", id_type: "aadhaar", id_number: "4234 2342 3412", tenant_id: "t1", purpose: "Lunch" })).toEqual({});
+  });
+});
+
+describe("approval card", () => {
+  it("round-trips a desk walk-in, including non-Latin names", () => {
+    const v = { ...base, name: "प्रिया शर्मा", ref: "VIS-4632" };
+    expect(decodeApprovalCard(encodeApprovalCard(v))).toMatchObject({ ref: "VIS-4632", name: "प्रिया शर्मा", tenant_id: "t1", type: "vendor" });
+  });
+
+  it("rejects anything tampered or malformed", () => {
+    expect(decodeApprovalCard("not-base64!!")).toBeNull();
+    expect(decodeApprovalCard(btoa(JSON.stringify(["VIS-1", "x"])))).toBeNull();
+    const bad = encodeApprovalCard({ ...base, type: "hacker" as never });
+    expect(decodeApprovalCard(bad)).toBeNull();
   });
 });

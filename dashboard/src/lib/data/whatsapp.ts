@@ -25,7 +25,7 @@ export async function loadWhatsapp(session: Session) {
     supabase.from("supervisor_sites").select("profile_id,sites(name)"),
     supabase.from("shifts").select("shift_date,guards(full_name,phone),sites(name),shift_types(name)").eq("attendance", "absent").gte("shift_date", since).lte("shift_date", today).order("shift_date", { ascending: false }),
     supabase.from("incidents").select("id,type,title,description,severity,occurred_at,sites(name),guards!incidents_guard_id_fkey(full_name,phone),profiles!incidents_reported_by_fkey(full_name,phone)").order("occurred_at", { ascending: false }).limit(4),
-    supabase.from("guard_presence").select("guard_id,last_seen_at,in_fence,shift_id,guards(full_name,phone),sites(name),shifts(shift_types(name))").not("shift_id", "is", null),
+    supabase.from("guard_presence").select("guard_id,last_seen_at,in_fence,shift_id,guards(full_name,phone),sites(name),shifts(status,scheduled_end,shift_types(name))").not("shift_id", "is", null),
   ]);
 
   const crew = (guards ?? []).map(({ sites: s, ...g }) => ({ ...g, site_name: (s as Named)?.name ?? null }));
@@ -47,10 +47,13 @@ export async function loadWhatsapp(session: Session) {
     groups.set(key, entry);
   }
 
+  // guard_presence.shift_id is only cleared at check-out, so a shift nobody closed would read
+  // as a guard missing for days. Watch only shifts in progress and at most an hour past their end.
   const watches: GuardWatch[] = (presence ?? []).map((p) => {
     const g = p.guards as GuardRef;
-    const shift = (p.shifts as { shift_types: Named } | null)?.shift_types?.name ?? "current";
-    return { guard_id: p.guard_id, name: g?.full_name ?? "Guard", phone: g?.phone ?? null, site: (p.sites as Named)?.name ?? "Site", shift, on_shift: true, last_seen_at: p.last_seen_at, in_fence: p.in_fence };
+    const sh = p.shifts as { status: string; scheduled_end: string | null; shift_types: Named } | null;
+    const live = sh?.status === "in_progress" && (!sh.scheduled_end || new Date(sh.scheduled_end).getTime() > now.getTime() - 3_600_000);
+    return { guard_id: p.guard_id, name: g?.full_name ?? "Guard", phone: g?.phone ?? null, site: (p.sites as Named)?.name ?? "Site", shift: sh?.shift_types?.name ?? "current", on_shift: live, last_seen_at: p.last_seen_at, in_fence: p.in_fence };
   });
 
   const alerts = buildBotAlerts({

@@ -37,7 +37,7 @@ export function InspectionBoard({ data, inspector, canSignOff }: { data: CampusD
 
   const states = floorStates(data.floors, inspections, data.today, now);
   const pending = inspections.filter((i) => i.state === "pending_approval");
-  const stats = ledgerStats(inspections, checklist.length);
+  const stats = ledgerStats(inspections);
   const guardName = (id: string) => data.deployments.find((d) => d.guard.id === id)?.guard.full_name ?? (id === inspector.id ? inspector.name : "Guard");
   const floor = (id: string) => data.floors.find((f) => f.id === id)!;
   const ledger = [...inspections].filter((i) => floorFilter === "all" || i.floor_id === floorFilter).sort((a, b) => b.finished_at.localeCompare(a.finished_at));

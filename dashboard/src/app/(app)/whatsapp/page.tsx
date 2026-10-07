@@ -19,7 +19,7 @@ export default async function WhatsappPage() {
         description="One verified number that tells supervisors who is absent (with their phone numbers), raises incidents the moment they are logged, chases guards on long breaks or gone missing, and sends the photo report of anything serious."
       />
       <PreviewBanner>Absences, incidents and guard presence are read from your live data; nothing is actually sent.</PreviewBanner>
-      <BotConsole alerts={alerts} contacts={contacts} messages={messages} now={now} canAck={session.can("events:acknowledge")} canManage={session.can("settings:write")} />
+      <BotConsole alerts={alerts} contacts={contacts} messages={messages} now={now} canAck={session.can("events:acknowledge")} canManage={session.can("settings:write")} agencyName={session.agency.name} />
     </div>
   );
 }

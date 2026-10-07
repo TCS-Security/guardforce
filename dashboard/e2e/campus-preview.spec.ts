@@ -45,6 +45,15 @@ test.describe("gate & campus preview", () => {
     await expect(sheet.getByAltText("Captured photo with watermark")).toBeVisible();
     await sheet.getByRole("button", { name: "Save & ask host" }).click();
 
+    // Its no-login link works for a walk-in the sample day never had.
+    const href = await page.locator('a[href^="/approve/VIS-4632?"]').getAttribute("href");
+    expect(href).toContain("&v=");
+    const host = await page.context().browser()!.newPage();
+    await host.goto(new URL(href!, page.url()).toString());
+    await expect(host.getByText("Piyush Khare")).toBeVisible();
+    await expect(host.getByRole("button", { name: "Approve" })).toBeVisible();
+    await host.close();
+
     // The new walk-in is the one shown on the host's phone; the host taps Approve there.
     const phone = page.getByRole("figure", { name: "Host WhatsApp for VIS-4632" });
     await expect(phone).toContainText("Piyush Khare from Shivit Technologies");

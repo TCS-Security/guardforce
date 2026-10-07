@@ -40,8 +40,8 @@ const TICKS: Record<Delivery, { text: string; className: string; label: string }
   failed: { text: "!", className: "text-absent", label: "Failed" },
 };
 
-export function BotConsole({ alerts: initial, contacts: initialContacts, messages, now, canAck, canManage }: {
-  alerts: BotAlert[]; contacts: WaContact[]; messages: WaMessage[]; now: string; canAck: boolean; canManage: boolean;
+export function BotConsole({ alerts: initial, contacts: initialContacts, messages, now, canAck, canManage, agencyName }: {
+  alerts: BotAlert[]; contacts: WaContact[]; messages: WaMessage[]; now: string; canAck: boolean; canManage: boolean; agencyName: string;
 }) {
   const [alerts, setAlerts] = useState(initial);
   const [selected, setSelected] = useState(initial[0]?.id ?? null);
@@ -278,7 +278,7 @@ export function BotConsole({ alerts: initial, contacts: initialContacts, message
             <Section title="Connection" description="WhatsApp Business Platform (Cloud API), through your Meta Business account">
               <ol className="flex flex-col gap-3" aria-label="Setup steps">
                 {[
-                  { icon: ShieldCheck, title: "Meta Business account verified", sub: "Sentinel Security Services Pvt Ltd" },
+                  { icon: ShieldCheck, title: "Meta Business account verified", sub: agencyName },
                   { icon: Phone, title: "Phone number registered", sub: `${BOT.number} · verified by OTP · not used on the WhatsApp app` },
                   { icon: BadgeCheck, title: "Display name approved", sub: BOT.name },
                   { icon: MessageCircle, title: "Templates approved", sub: `${TEMPLATES.filter((t) => t.status === "approved").length} approved, ${TEMPLATES.filter((t) => t.status === "pending").length} in review` },

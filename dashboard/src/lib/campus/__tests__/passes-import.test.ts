@@ -42,6 +42,12 @@ describe("bulk import", () => {
     expect(r.errors[1]!.message).toMatch(/already exists/);
   });
 
+  it("refuses codes that are not on the campus, and radii out of range, instead of re-homing them", () => {
+    const r = parseImport("Floor,Code,Tower code,Radius (m)\nA,4F-A,TWR-Z,35\nB,4F-B,twr-a,999\nC,4F-C,TWR-A,40", FLOOR_COLUMNS, [], { tower: ["TWR-A"] });
+    expect(r.rows.map((x) => x.code)).toEqual(["4F-C"]);
+    expect(r.errors.map((e) => e.message)).toEqual(["Tower code “TWR-Z” is not on this campus", "Radius (m) 999 should be 10–200"]);
+  });
+
   it("accepts quoted CSV and reports a header missing required columns", () => {
     const ok = parseImport('Floor,Code,Tower code,Radius (m)\n"4th floor, east",4F-EAST,TWR-A,35', FLOOR_COLUMNS);
     expect(ok.rows[0]).toMatchObject({ name: "4th floor, east", code: "4F-EAST", radius: "35" });
