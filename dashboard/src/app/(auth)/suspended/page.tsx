@@ -28,9 +28,9 @@ export default async function SuspendedPage() {
           {agency.status === "churned" ? "This account has been closed" : "This account is suspended"}
         </h1>
         <p className="mt-3 text-sm text-muted-foreground">
-          {agency.suspended_reason ?? "Access to the dashboard has been paused by GuardForce. Your data is safe and nothing has been deleted."}
+          {agency.suspended_reason ?? "Access to the dashboard has been paused by GuardWatch AI. Your data is safe and nothing has been deleted."}
         </p>
-        <p className="mt-2 text-sm text-muted-foreground">Contact GuardForce support to restore access.</p>
+        <p className="mt-2 text-sm text-muted-foreground">Contact GuardWatch AI support to restore access.</p>
         <form action={signOut} className="mt-6">
           <Button type="submit" variant="outline">Sign out</Button>
         </form>

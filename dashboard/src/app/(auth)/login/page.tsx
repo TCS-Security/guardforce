@@ -6,7 +6,7 @@ export const metadata: Metadata = { title: "Sign in" };
 const ERRORS: Record<string, string> = {
   "no-profile": "This account isn't linked to an agency.",
   disabled: "This login has been disabled. Ask your agency owner.",
-  "not-platform": "That page is for GuardForce staff.",
+  "not-platform": "That page is for GuardWatch AI staff.",
 };
 
 function Logo({ className }: { className?: string }) {
@@ -16,7 +16,11 @@ function Logo({ className }: { className?: string }) {
         <path d="M13 2 3.5 5.5v6.2c0 5.6 4 10.4 9.5 12.3 5.5-1.9 9.5-6.7 9.5-12.3V5.5L13 2Z" fill="currentColor" className="text-primary" />
         <path d="M8.5 13.2 11.6 16.3 17.6 9.9" stroke="var(--primary-foreground)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
-      <span className="font-display text-lg font-semibold tracking-tight">GuardForce</span>
+      <span className="flex items-center gap-1.5 font-display text-lg font-semibold tracking-tight">
+        <span>Guard<span className="opacity-70">Watch</span></span>
+        <span className="rounded-[4px] bg-primary px-1 py-px font-mono text-[10px] leading-none font-semibold tracking-[0.08em] text-primary-foreground">AI</span>
+        <span className="sr-only"> GuardWatch AI</span>
+      </span>
     </div>
   );
 }

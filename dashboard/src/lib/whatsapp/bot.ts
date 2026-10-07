@@ -1,4 +1,5 @@
 import { render, TEMPLATES } from "./templates";
+import { BOT_DISPLAY_NAME } from "@/lib/brand";
 import { firstName } from "./messages";
 
 /**
@@ -15,7 +16,7 @@ import { firstName } from "./messages";
  */
 
 export const BOT = {
-  name: "GuardForce Alerts",
+  name: BOT_DISPLAY_NAME,
   number: "+91 80 4718 2200",
   quality: "High" as "High" | "Medium" | "Low",
   tier: "10K conversations / day",
@@ -119,7 +120,7 @@ export function scenePhoto(kind: string, caption: string): string {
 ${kind === "fire" ? "<ellipse cx='320' cy='170' rx='90' ry='60' fill='rgba(220,220,220,0.35)'/><ellipse cx='350' cy='130' rx='70' ry='45' fill='rgba(200,200,200,0.3)'/>" : "<circle cx='320' cy='205' r='26' fill='rgba(255,140,60,0.75)'/>"}
 <rect y='402' width='640' height='78' fill='rgba(0,0,0,0.6)'/>
 <text x='20' y='432' font-family='monospace' font-size='18' fill='#efe9cf'>● ${caption.replace(/[<&'"]/g, "")}</text>
-<text x='20' y='460' font-family='monospace' font-size='14' fill='#efe9cf' opacity='0.8'>GuardForce verified capture · GPS fixed</text></svg>`;
+<text x='20' y='460' font-family='monospace' font-size='14' fill='#efe9cf' opacity='0.8'>GuardWatch AI verified capture · GPS fixed</text></svg>`;
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 

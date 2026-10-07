@@ -47,7 +47,7 @@ export default async function ApprovePage({ params, searchParams }: PageProps<"/
             gate={campus.gates.find((g) => g.id === visitor.gate_id)?.name ?? "the gate"}
           />
         )}
-        <p className="text-center font-mono text-[11px] tracking-wider text-muted-foreground uppercase">Secured by GuardForce · preview</p>
+        <p className="text-center font-mono text-[11px] tracking-wider text-muted-foreground uppercase">Secured by GuardWatch AI · preview</p>
       </div>
     </main>
   );

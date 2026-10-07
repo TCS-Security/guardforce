@@ -1,4 +1,5 @@
 import { cn } from "cn";
+import { PRODUCT_NAME } from "@/lib/brand";
 
 /** Wordmark: a shield-notch glyph and the name in the display face. */
 export function Brand({ className, compact = false }: { className?: string; compact?: boolean }) {
@@ -10,8 +11,10 @@ export function Brand({ className, compact = false }: { className?: string; comp
         <path d="M8.5 13.2 11.6 16.3 17.6 9.9" stroke="var(--sidebar-primary-foreground)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
       {!compact && (
-        <span className="font-display text-[17px] font-semibold tracking-tight">
-          Guard<span className="opacity-70">Force</span>
+        <span className="flex items-center gap-1.5 font-display text-[17px] font-semibold tracking-tight">
+          <span>Guard<span className="opacity-70">Watch</span></span>
+          <span className="rounded-[4px] bg-sidebar-primary px-1 py-px font-mono text-[9.5px] leading-none font-semibold tracking-[0.08em] text-sidebar-primary-foreground">AI</span>
+          <span className="sr-only"> {PRODUCT_NAME}</span>
         </span>
       )}
     </div>

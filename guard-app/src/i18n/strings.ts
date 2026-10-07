@@ -1,7 +1,7 @@
 // Generated from the Android string resources; edit here, English is the key list.
 export const en = {
-  "app_name": "GuardForce",
-  "brand_eyebrow": "GUARDFORCE",
+  "app_name": "GuardWatch AI",
+  "brand_eyebrow": "GUARDWATCH AI",
   "onboarding_eyebrow": "GUARD APP",
   "onboarding_title": "Your duty, on record.",
   "onboarding_body": "Start and end your shift from this phone. Every verified shift protects your pay.",
@@ -50,7 +50,7 @@ export const en = {
   "perm_notifications": "Notifications",
   "perm_notifications_why": "Patrol reminders, task assignments and location warnings.",
   "perm_battery": "Keep running in background",
-  "perm_battery_why": "Some phones kill tracking to save battery. Allow GuardForce to stay on.",
+  "perm_battery_why": "Some phones kill tracking to save battery. Allow GuardWatch AI to stay on.",
   "perm_grant": "Allow",
   "perm_granted": "Allowed",
   "perm_open_settings": "Open settings",
@@ -239,7 +239,7 @@ export const en = {
   "notif_location_off_body": "Your shift is not being counted while location is off. Tap to fix.",
   "notif_patrol_due_title": "Patrol due",
   "notif_patrol_due_body": "{0} is due now. Open the app to start.",
-  "notif_message_title": "GuardForce",
+  "notif_message_title": "GuardWatch AI",
   "time_now": "just now",
   "time_min_ago": "{0} min ago",
   "time_hr_ago": "{0} h ago",
@@ -388,8 +388,8 @@ export const en = {
 } as const;
 
 export const hi: Record<keyof typeof en, string> = {
-  "app_name": "GuardForce",
-  "brand_eyebrow": "GUARDFORCE",
+  "app_name": "GuardWatch AI",
+  "brand_eyebrow": "GUARDWATCH AI",
   "onboarding_eyebrow": "गार्ड ऐप",
   "onboarding_title": "आपकी ड्यूटी, रिकॉर्ड पर।",
   "onboarding_body": "इसी फ़ोन से शिफ्ट शुरू और ख़त्म करें। हर वेरिफ़ाइड शिफ्ट आपकी तनख़्वाह की सुरक्षा है।",
@@ -438,7 +438,7 @@ export const hi: Record<keyof typeof en, string> = {
   "perm_notifications": "नोटिफ़िकेशन",
   "perm_notifications_why": "पेट्रोल की याद, टास्क और लोकेशन चेतावनी।",
   "perm_battery": "बैकग्राउंड में चलते रहना",
-  "perm_battery_why": "कुछ फ़ोन बैटरी बचाने के लिए ट्रैकिंग बंद कर देते हैं। GuardForce को चलते रहने दें।",
+  "perm_battery_why": "कुछ फ़ोन बैटरी बचाने के लिए ट्रैकिंग बंद कर देते हैं। GuardWatch AI को चलते रहने दें।",
   "perm_grant": "अनुमति दें",
   "perm_granted": "अनुमति मिली",
   "perm_open_settings": "सेटिंग खोलें",
@@ -627,7 +627,7 @@ export const hi: Record<keyof typeof en, string> = {
   "notif_location_off_body": "लोकेशन बंद रहने तक आपकी शिफ्ट नहीं गिनी जा रही। ठीक करने के लिए टैप करें।",
   "notif_patrol_due_title": "पेट्रोल का समय",
   "notif_patrol_due_body": "{0} अभी करना है। शुरू करने के लिए ऐप खोलें।",
-  "notif_message_title": "GuardForce",
+  "notif_message_title": "GuardWatch AI",
   "time_now": "अभी",
   "time_min_ago": "{0} मिनट पहले",
   "time_hr_ago": "{0} घंटे पहले",

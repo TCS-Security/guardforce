@@ -1,5 +1,5 @@
 /**
- * Alert rules: which GuardForce event sends which template to whom, and what happens when
+ * Alert rules: which GuardWatch AI event sends which template to whom, and what happens when
  * nobody answers. An alert to a guard climbs a ladder — guard, then supervisor, then a voice
  * call — and stops at the first rung that replies.
  */

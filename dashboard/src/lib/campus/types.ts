@@ -2,7 +2,7 @@ import type { LatLng } from "./geo";
 
 /**
  * The property side of a site: the client's campus, its buildings, floors, gates and the
- * companies that rent space there. A site in GuardForce is where the agency's guards
+ * companies that rent space there. A site in GuardWatch AI is where the agency's guards
  * stand; these are what they guard.
  */
 

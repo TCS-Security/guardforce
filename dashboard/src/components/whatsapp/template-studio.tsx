@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { StatusPill } from "@/components/gf/status-pill";
 import { Mono } from "@/components/gf/mono";
 import { PhoneFrame } from "@/components/campus/phone-frame";
-import { scenePhoto } from "@/lib/whatsapp/bot";
+import { BOT, scenePhoto } from "@/lib/whatsapp/bot";
 import { LANG_LABEL, render, TEMPLATE_STATUS, validateTemplate, variablesIn, type Lang, type WaTemplate } from "@/lib/whatsapp/templates";
 import { cn } from "cn";
 
@@ -31,7 +31,7 @@ export function TemplateStudio({ initial }: { initial: WaTemplate[] }) {
     <div className="grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)_auto]">
       <div className="flex flex-col gap-2">
         <Button variant="outline" size="sm" onClick={() => {
-          const n: WaTemplate = { id: `t-new-${Date.now()}`, name: "new_alert", category: "UTILITY", language: "en", status: "draft", audience: "guard", header: null, body: "Hello {{1}}, ", footer: "GuardForce Alerts", buttons: [{ type: "quick_reply", text: "OK" }], samples: ["Ramesh"], variables: ["Guard first name"] };
+          const n: WaTemplate = { id: `t-new-${Date.now()}`, name: "new_alert", category: "UTILITY", language: "en", status: "draft", audience: "guard", header: null, body: "Hello {{1}}, ", footer: "GuardWatch AI", buttons: [{ type: "quick_reply", text: "OK" }], samples: ["Ramesh"], variables: ["Guard first name"] };
           setTemplates((xs) => [n, ...xs]);
           setId(n.id);
         }}><Plus data-icon="inline-start" /> New template</Button>
@@ -112,7 +112,7 @@ export function TemplateStudio({ initial }: { initial: WaTemplate[] }) {
       <div className="flex flex-col items-center gap-2">
         <span className="eyebrow">Preview</span>
         <PhoneFrame
-          title="GuardForce Alerts"
+          title={BOT.name}
           label="Template preview"
           lines={[{
             id: "p", from: "us", header: t.header_type === "image" ? null : t.header, image: t.header_type === "image" ? scenePhoto("fire", "Photo of the scene") : null,

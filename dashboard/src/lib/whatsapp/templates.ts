@@ -1,3 +1,5 @@
+import { APP_URL } from "@/lib/brand";
+
 /**
  * WhatsApp message templates. Anything we send first (an alert, a reminder) has to be a
  * template Meta approved in advance; free text is only allowed inside the 24-hour window
@@ -80,14 +82,14 @@ export const TEMPLATES: WaTemplate[] = [
   {
     id: "t-absent", name: "absent_guards_rollcall", category: "UTILITY", language: "en", status: "approved", audience: "supervisor",
     header: "Absent on duty", body: "Hello {{1}}, {{2}} guard(s) have not reported for the {{3}} shift at {{4}}: {{5}}. Tap a number to call, or arrange relief below.",
-    footer: "GuardForce Alerts", buttons: [{ type: "quick_reply", text: "Arranging relief" }, { type: "quick_reply", text: "Guards informed me" }, { type: "url", text: "Open roster", url: "https://app.guardforce.in/roster/{{1}}" }],
+    footer: "GuardWatch AI", buttons: [{ type: "quick_reply", text: "Arranging relief" }, { type: "quick_reply", text: "Guards informed me" }, { type: "url", text: "Open roster", url: `${APP_URL}/roster/{{1}}` }],
     samples: ["Priya", "2", "Day", "Prestige Tech Park — Gate 3", "1) Ramesh Kumar · +91 99000 00001 | 2) Mohan Das · +91 99000 00003"],
     variables: ["Supervisor first name", "How many", "Shift", "Site", "Names and phone numbers"],
   },
   {
     id: "t-incident", name: "incident_alert", category: "UTILITY", language: "en", status: "approved", audience: "supervisor",
     header: "🚨 Incident reported", body: "New incident — {{1}} at {{2}}: {{3}}. Severity {{4}}, reported by {{5}} at {{6}}. Reply to take it, or call the guard.",
-    footer: "GuardForce Alerts", buttons: [{ type: "quick_reply", text: "I'm on it" }, { type: "call", text: "Call reporter", phone: "+919900000001" }, { type: "url", text: "Open incident", url: "https://app.guardforce.in/i/{{1}}" }],
+    footer: "GuardWatch AI", buttons: [{ type: "quick_reply", text: "I'm on it" }, { type: "call", text: "Call reporter", phone: "+919900000001" }, { type: "url", text: "Open incident", url: `${APP_URL}/i/{{1}}` }],
     samples: ["Theft", "Metro Cash & Carry, Yeshwanthpur", "Copper cable missing from loading bay", "high", "Gopal Reddy", "02:14"],
     variables: ["Incident type", "Site", "Title", "Severity", "Reported by", "Time"],
   },
@@ -95,7 +97,7 @@ export const TEMPLATES: WaTemplate[] = [
     id: "t-report", name: "incident_photo_report", category: "UTILITY", language: "en", status: "approved", audience: "supervisor",
     header: "Photo of the scene", header_type: "image",
     body: "Incident report — {{1}} at {{2}}. What happened: {{3}}. Action taken: {{4}}. {{5}} photo(s) attached, reported by {{6}}. Tap below to acknowledge.",
-    footer: "Full report and all photos in GuardForce", buttons: [{ type: "quick_reply", text: "Acknowledge" }, { type: "url", text: "Open full report", url: "https://app.guardforce.in/i/{{1}}" }],
+    footer: "Full report and all photos in GuardWatch AI", buttons: [{ type: "quick_reply", text: "Acknowledge" }, { type: "url", text: "Open full report", url: `${APP_URL}/i/{{1}}` }],
     samples: ["Fire", "Sobha Dream Acres", "Smoke from the DG room at 13:40", "Extinguisher used, DG shut, facility called", "3", "Harish Naik"],
     variables: ["Incident type", "Site", "Summary", "Action taken", "Photo count", "Reported by"],
   },
@@ -108,21 +110,21 @@ export const TEMPLATES: WaTemplate[] = [
   {
     id: "t-break-sup", name: "long_break_supervisor", category: "UTILITY", language: "en", status: "approved", audience: "supervisor",
     header: "Long break", body: "Heads-up {{1}}: {{2}} has been on break for {{3}} min (allowed {{4}}) at {{5}} and did not answer the bot. Phone: {{6}} — please check on them.",
-    footer: "GuardForce Alerts", buttons: [{ type: "call", text: "Call guard", phone: "+919900000001" }, { type: "quick_reply", text: "Sending relief" }, { type: "quick_reply", text: "Mark missing" }],
+    footer: "GuardWatch AI", buttons: [{ type: "call", text: "Call guard", phone: "+919900000001" }, { type: "quick_reply", text: "Sending relief" }, { type: "quick_reply", text: "Mark missing" }],
     samples: ["Priya", "Ramesh Kumar", "58", "30", "Prestige Tech Park — Gate 3", "+91 99000 00001"],
     variables: ["Supervisor first name", "Guard", "Minutes on break", "Allowed", "Site", "Guard phone"],
   },
   {
     id: "t-missing", name: "guard_missing", category: "UTILITY", language: "en", status: "approved", audience: "supervisor",
     header: "⚠ Guard not seen", body: "Alert {{1}}: {{2}} has not been seen for {{3}} min during the {{4}} shift at {{5}}. Last seen: {{6}}. Phone: {{7}} — call before sending relief.",
-    footer: "GuardForce Alerts", buttons: [{ type: "quick_reply", text: "Calling now" }, { type: "quick_reply", text: "Sending relief" }, { type: "url", text: "Live map", url: "https://app.guardforce.in/live?g={{1}}" }],
+    footer: "GuardWatch AI", buttons: [{ type: "quick_reply", text: "Calling now" }, { type: "quick_reply", text: "Sending relief" }, { type: "url", text: "Live map", url: `${APP_URL}/live?g={{1}}` }],
     samples: ["Arun", "Gopal Reddy", "42", "Night", "Metro Cash & Carry, Yeshwanthpur", "160 m outside the fence, 01:12", "+91 99000 00012"],
     variables: ["Supervisor first name", "Guard", "Minutes unseen", "Shift", "Site", "Last seen", "Guard phone"],
   },
   {
     id: "t-shift", name: "shift_reminder", category: "UTILITY", language: "en", status: "approved", audience: "guard",
-    header: "Shift reminder", body: "Namaste {{1}}, your {{2}} shift at {{3}} starts at {{4}}. Please check in from the GuardForce app inside the site fence.",
-    footer: "GuardForce · reply STOP to opt out", buttons: [{ type: "quick_reply", text: "On my way" }, { type: "quick_reply", text: "Running late" }, { type: "quick_reply", text: "Can't come" }],
+    header: "Shift reminder", body: "Namaste {{1}}, your {{2}} shift at {{3}} starts at {{4}}. Please check in from the GuardWatch AI app inside the site fence.",
+    footer: "GuardWatch AI · reply STOP to opt out", buttons: [{ type: "quick_reply", text: "On my way" }, { type: "quick_reply", text: "Running late" }, { type: "quick_reply", text: "Can't come" }],
     samples: ["Ramesh", "Night", "Prestige Tech Park — Gate 3", "22:00"], variables: ["Guard first name", "Shift name", "Site", "Shift start"],
   },
   {
@@ -158,7 +160,7 @@ export const TEMPLATES: WaTemplate[] = [
   {
     id: "t-roster", name: "roster_published", category: "UTILITY", language: "en", status: "approved", audience: "guard",
     header: null, body: "Hello {{1}}, next week's roster is out. You are on {{2}} at {{3}}. Weekly off: {{4}}. Reply if this does not work for you.",
-    footer: null, buttons: [{ type: "url", text: "See my roster", url: "https://app.guardforce.in/r/{{1}}" }],
+    footer: null, buttons: [{ type: "url", text: "See my roster", url: `${APP_URL}/r/{{1}}` }],
     samples: ["Mohan", "Day shift (06:00–14:00)", "Metro Cash & Carry", "Sunday"], variables: ["Guard first name", "Shift", "Site", "Weekly off"],
   },
   {
@@ -170,13 +172,13 @@ export const TEMPLATES: WaTemplate[] = [
   {
     id: "t-inspect", name: "inspection_fault_owner", category: "UTILITY", language: "en", status: "approved", audience: "supervisor",
     header: "Floor check failed", body: "Floor check failed — {{1}} on {{2}}: {{3}}. Reported by {{4}} with a photo. A task has been opened for you.",
-    footer: null, buttons: [{ type: "quick_reply", text: "Acknowledge" }, { type: "url", text: "Open task", url: "https://app.guardforce.in/t/{{1}}" }],
+    footer: null, buttons: [{ type: "quick_reply", text: "Acknowledge" }, { type: "url", text: "Open task", url: `${APP_URL}/t/{{1}}` }],
     samples: ["Fire safety", "2nd floor (Northwind)", "Fire exit blocked", "Ramesh Kumar"], variables: ["Category", "Floor", "Fault", "Guard name"],
   },
   {
     id: "t-visitor", name: "visitor_at_gate", category: "UTILITY", language: "en", status: "approved", audience: "host",
     header: "Visitor at the gate", body: "Hello {{1}}, {{2}} from {{3}} is at {{4}} to see you. Purpose: {{5}}. Shall we let them in?",
-    footer: "Sent by the security desk", buttons: [{ type: "quick_reply", text: "Approve" }, { type: "quick_reply", text: "Deny" }, { type: "url", text: "See photo & ID", url: "https://app.guardforce.in/a/{{1}}" }],
+    footer: "Sent by the security desk", buttons: [{ type: "quick_reply", text: "Approve" }, { type: "quick_reply", text: "Deny" }, { type: "url", text: "See photo & ID", url: `${APP_URL}/a/{{1}}` }],
     samples: ["Farah", "Karan Mehta", "Zephyr Logistics", "Gate 2", "Courier contract renewal"], variables: ["Host first name", "Visitor", "Company", "Gate", "Purpose"],
   },
   {

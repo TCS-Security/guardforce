@@ -1,4 +1,6 @@
-# GuardForce
+# GuardWatch AI
+
+_Formerly GuardForce; internal identifiers (package ids, repo, Supabase project) keep the old name._
 
 Guard management platform for Indian security agencies — a Next.js control-room dashboard and an Expo (React Native) guard app, both on one Supabase schema.
 
