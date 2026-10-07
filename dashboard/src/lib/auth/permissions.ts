@@ -84,6 +84,15 @@ export const ROUTE_PERMISSION: Record<string, PermissionKey> = {
   "/payroll": "reports:read",
   "/cashbook": "reports:read",
   "/client-reports": "reports:read",
+  // Gate & campus preview (sample data) borrows the nearest existing key until its own
+  // catalogue rows ship with the tables behind it.
+  "/campus": "sites:read",
+  "/visitors": "sites:read",
+  "/gate-passes": "sites:read",
+  "/inspections": "patrols:read",
+  "/deployments": "guards:read",
+  "/property": "sites:read",
+  "/whatsapp": "events:read",
 };
 
 /** Write permissions imply their read permission; the editor keeps the pair consistent. */
