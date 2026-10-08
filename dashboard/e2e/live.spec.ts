@@ -130,4 +130,21 @@ test.describe("live map", () => {
     await expect(page.getByRole("button", { name: "Metro Cash & Carry, Yeshwanthpur" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Prestige Tech Park" })).toHaveCount(0);
   });
+
+  // Regression: the site-filter strip was a non-wrapping flex with no min-width, so a
+  // tenant with twenty-five sites stretched it to ~4,000px and dragged the whole page
+  // sideways. It needs a lot of sites to bite, so this guards the shape rather than
+  // reproducing the original width.
+  for (const width of [1280, 1440]) {
+    test(`the live board does not scroll sideways at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await login(page);
+      await page.goto("/live");
+      await expect(page.getByRole("button", { name: "All sites" })).toBeVisible();
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      );
+      expect(overflow, `the live board scrolls horizontally at ${width}px`).toBe(0);
+    });
+  }
 });
