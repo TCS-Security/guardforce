@@ -1,4 +1,4 @@
--- GuardForce demo seed. Everything is relative to now() so the dashboard always looks live.
+-- GuardWatch AI demo seed. Everything is relative to now() so the dashboard always looks live.
 -- Logins (password for all: "guardforce"):
 --   platform@guardforce.test  (platform admin — the SaaS provider, not a tenant member)
 --   owner@sentinel.test       (Sentinel owner)
@@ -50,7 +50,7 @@ insert into public.profiles (id, agency_id, role, role_id, all_sites, full_name,
 -- ---------------------------------------------------------------------------
 select pg_temp.seed_user('b0000000-0000-4000-8000-000000000099', 'platform@guardforce.test', 'guardforce');
 insert into public.platform_admins (user_id, email, full_name, role)
-values ('b0000000-0000-4000-8000-000000000099', 'platform@guardforce.test', 'GuardForce Ops', 'platform_owner');
+values ('b0000000-0000-4000-8000-000000000099', 'platform@guardforce.test', 'GuardWatch Ops', 'platform_owner');
 
 insert into public.agencies (id, name, slug, city, status, plan)
 values ('a0000000-0000-4000-8000-000000000002', 'Falcon Facility Services', 'falcon', 'Pune', 'trial', 'pilot');

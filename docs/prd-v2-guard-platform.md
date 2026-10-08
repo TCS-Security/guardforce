@@ -1,4 +1,4 @@
-# PRD v2.1 — GuardForce: Security Guard Management Platform
+# PRD v2.1 — GuardWatch AI: Security Guard Management Platform
 
 | | |
 |---|---|

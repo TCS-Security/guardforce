@@ -122,7 +122,7 @@ function StatusDialog({ agency }: { agency: Agency }) {
             {!locked && (
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="st-reason">Reason</Label>
-                <Textarea id="st-reason" name="reason" rows={3} required minLength={5} placeholder="Invoice 90 days overdue; contact accounts@guardforce.in" />
+                <Textarea id="st-reason" name="reason" rows={3} required minLength={5} placeholder="Invoice 90 days overdue; contact accounts@guardwatch.ai" />
               </div>
             )}
             {state?.error && <FormAlert>{state.error}</FormAlert>}
