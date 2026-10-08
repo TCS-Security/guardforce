@@ -41,10 +41,12 @@ export function generateSos(crew: Crew, now: Date): { alerts: SosAlert[] } {
   const guards = crew.guards;
   if (guards.length === 0) return { alerts };
   const at = (minsAgo: number) => new Date(now.getTime() - minsAgo * 60000).toISOString();
+  // Whoever owns an alert is one of this tenant's own people, not a name from our seed.
+  const owner = () => (crew.staff.length ? r.pick(crew.staff) : "Control room");
   const pos = () => ({ lat: BASE.lat + (r.next() - 0.5) * 0.15, lng: BASE.lng + (r.next() - 0.5) * 0.15 });
 
   alerts.push({ id: "sos-live-1", guard: r.pick(guards), kind: "panic", raised_at: at(3), ...pos(), status: "active", acknowledged_by: null, acknowledged_at: null, resolved_at: null, note: null });
-  alerts.push({ id: "sos-live-2", guard: r.pick(guards), kind: "man_down", raised_at: at(14), ...pos(), status: "acknowledged", acknowledged_by: "Priya (supervisor)", acknowledged_at: at(12), resolved_at: null, note: null });
+  alerts.push({ id: "sos-live-2", guard: r.pick(guards), kind: "man_down", raised_at: at(14), ...pos(), status: "acknowledged", acknowledged_by: owner(), acknowledged_at: at(12), resolved_at: null, note: null });
 
   for (let i = 0; i < 14; i++) {
     const mins = r.int(60 * 6, 60 * 24 * 30);
@@ -56,7 +58,7 @@ export function generateSos(crew: Crew, now: Date): { alerts: SosAlert[] } {
       raised_at: at(mins),
       ...pos(),
       status: "resolved",
-      acknowledged_by: r.pick(["Priya (supervisor)", "Arun (supervisor)", "Control room"]),
+      acknowledged_by: owner(),
       acknowledged_at: at(mins - ack),
       resolved_at: at(mins - ack - r.int(5, 50)),
       note: r.pick(NOTES),

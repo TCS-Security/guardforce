@@ -334,7 +334,8 @@ join (values
   ('BPL Medical Technologies — Jigani%', 'Plant round',      'Material gate, electronics store, ETP and the fence line',       90, 15, 1),
   ('Brother Machinery%',    'Perimeter round',               'Fence line, machine bay shutters, scrap yard and the main gate',  90, 15, 1),
   ('Indian Designs%',       'Floor and exit round',          'Cutting floor, finishing, exit frisking point and the fire exits',120, 15, 1),
-  ('Brigade Group — HQ%',   'Tower round',                   'Lobby, basements, terrace doors and the fire exits',             120, 15, 1)
+  ('Brigade Group — HQ%',   'Tower round',                   'Lobby, basements, terrace doors and the fire exits',             120, 15, 1),
+  ('Eagle Security Agency — HQ%', 'Office round',            'Reception, both floors, records room, parking and the rear gate', 120, 15, 1)
 ) as r(pat, name, descr, freq, grace, photos) on s.name like r.pat
 where s.agency_id = 'a0000000-0000-4000-8000-00000000ea91';
 
@@ -686,5 +687,95 @@ where g.id = (
   order by g2.employee_code
   limit 1
 );
+
+commit;
+
+-- Put the demo guard's own shift back to "not started". simulate_agency_history has
+-- already walked every past shift, including this one, so without this the app opens
+-- on "End shift" and the check-in beat cannot be shown.
+do $$
+declare
+  v_ag uuid := 'a0000000-0000-4000-8000-00000000ea91';
+  v_guard uuid;
+  v_shift uuid;
+  v_task uuid;
+begin
+  select id into v_guard from public.guards where agency_id = v_ag and phone = '9000000001';
+  if v_guard is null then return; end if;
+
+  select id into v_shift from public.shifts
+  where agency_id = v_ag and guard_id = v_guard
+    and shift_date = (now() at time zone 'Asia/Kolkata')::date
+  order by scheduled_start limit 1;
+  if v_shift is null then return; end if;
+
+  delete from public.location_pings where shift_id = v_shift;
+  delete from public.guard_presence where shift_id = v_shift;
+  delete from public.patrol_photos where patrol_id in (select id from public.patrols where shift_id = v_shift);
+  delete from public.patrols where shift_id = v_shift;
+  delete from public.events where shift_id = v_shift;
+
+  update public.shifts set
+    status = 'scheduled', attendance = 'pending',
+    started_at = null, start_captured_at = null, start_selfie_path = null,
+    start_lat = null, start_lng = null, start_accuracy_m = null,
+    start_in_fence = null, start_distance_m = null,
+    ended_at = null, end_captured_at = null, end_selfie_path = null,
+    end_lat = null, end_lng = null, end_in_fence = null,
+    worked_minutes = 0, late_by_min = 0, away_seconds = 0, location_off_seconds = 0,
+    trust = 'clean', flags = '{}', exception_id = null
+  where id = v_shift;
+
+  -- And one task waiting on him, so the phone has something to do besides check in.
+  insert into public.tasks (agency_id, site_id, template_id, title, description, due_at, photo_required, status, created_by)
+  select v_ag, s.id, null,
+    'Visitor register check',
+    'Confirm every visitor entry since the morning has an out-time and a vehicle number',
+    (current_date + time '17:00') at time zone 'Asia/Kolkata', true, 'pending',
+    'b0000000-0000-4000-8000-00000000ea02'
+  from public.sites s where s.agency_id = v_ag and s.name like 'Eagle Security Agency — HQ%'
+  returning id into v_task;
+
+  insert into public.task_assignments (task_id, guard_id, agency_id, status)
+  values (v_task, v_guard, v_ag, 'pending');
+end $$;
+
+commit;
+
+-- ---------------------------------------------------------------------------
+-- 14. Pay and next of kin. An agency cannot run a salary off a name and a phone
+--     number: it needs a bank account to credit, an IFSC to route it, a UAN for the
+--     PF return and an ESIC number for the half-yearly. And when a guard is hurt on a
+--     night shift, somebody has to be called.
+--
+--     Account numbers are masked to the last four digits on purpose — enough to
+--     reconcile a payout against a payslip, without putting a payable account number
+--     in front of every manager who can read the guard list.
+-- ---------------------------------------------------------------------------
+begin;
+
+update public.guards g set
+  bank_name = (array['State Bank of India','Canara Bank','Union Bank of India','Karnataka Bank','Bank of Baroda','Kotak Mahindra Bank'])[1 + (abs(hashtext(g.id::text)) % 6)],
+  bank_account_masked = 'XXXXXX' || lpad((abs(hashtext(g.id::text || 'acct')) % 10000)::text, 4, '0'),
+  bank_ifsc = (array['SBIN0005678','CNRB0002341','UBIN0809128','KARB0000412','BARB0BANGLR','KKBK0008051'])[1 + (abs(hashtext(g.id::text)) % 6)],
+  uan = '10' || lpad((abs(hashtext(g.id::text || 'uan')) % 1000000000)::text, 10, '0'),
+  esic_ip = '31' || lpad((abs(hashtext(g.id::text || 'esic')) % 100000000)::text, 9, '0'),
+  -- Relation and name have to agree, or the first person to read it stops trusting
+  -- everything else on the screen. The relations are all ones that say nothing about
+  -- the guard's own gender, which we do not record — "Wife" on a woman's record is
+  -- exactly the kind of detail that makes a demo look generated.
+  emergency_contact = (
+    case when abs(hashtext(g.id::text || 'rel')) % 2 = 0
+      then (array['Mother','Sister','Daughter'])[1 + (abs(hashtext(g.id::text || 'rel')) % 3)]
+        || ' · ' || (array['Sunita','Kamala','Radha','Manju','Shanti','Girija'])[1 + (abs(hashtext(g.id::text || 'kin')) % 6)]
+      else (array['Father','Brother','Son'])[1 + (abs(hashtext(g.id::text || 'rel')) % 3)]
+        || ' · ' || (array['Ramesh','Mohan','Suresh','Anil','Dinesh','Prakash'])[1 + (abs(hashtext(g.id::text || 'kin')) % 6)]
+    end)
+    || ' · +91 ' || (array['98450','99860','80956','73494','94480'])[1 + (abs(hashtext(g.id::text || 'kinp')) % 5)]
+    || ' ' || lpad((abs(hashtext(g.id::text || 'kinn')) % 100000)::text, 5, '0'),
+  address = (array['Room 4','No. 12','No. 7','Plot 23','Door 9'])[1 + (abs(hashtext(g.id::text || 'ad')) % 5)]
+    || ', ' || (array['Ejipura','Kadugondanahalli','Byatarayanapura','Sudduguntepalya','Lingarajapuram','Hongasandra','Kodigehalli','Marathahalli Bridge'])[1 + (abs(hashtext(g.id::text || 'loc')) % 8)]
+    || ', Bengaluru ' || (array['560047','560045','560092','560029','560084','560068','560097','560037'])[1 + (abs(hashtext(g.id::text || 'pin')) % 8)]
+where g.agency_id = 'a0000000-0000-4000-8000-00000000ea91';
 
 commit;

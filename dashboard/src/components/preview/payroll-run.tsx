@@ -32,6 +32,43 @@ export function PayrollRun({ rows, month }: { rows: PayrollRow[]; month: string 
   const stageIndex = PAYROLL_STAGES.findIndex((s) => s.key === stage);
   const next = NEXT_ACTION[stage];
 
+
+  /**
+   * The NEFT bulk file an agency uploads to its bank to pay everyone at once. A button
+   * that only raised a toast was the weakest thing on this screen: the whole argument of
+   * the payroll module is that verified attendance becomes a payment without re-keying,
+   * and that argument is only credible if the file actually comes out.
+   *
+   * Account numbers are masked here exactly as they are stored. A live run would join the
+   * full number from the bank mandate at the point of upload.
+   */
+  function downloadBankFile() {
+    const header = ["Employee code", "Beneficiary name", "Account (masked)", "IFSC", "Amount (INR)", "Narration"];
+    const paid = rows.filter((r) => !r.hold);
+    const lines = paid.map((r) => [
+      r.guard.employee_code ?? "",
+      r.guard.full_name,
+      r.guard.bank_account_masked ?? "NOT ON FILE",
+      r.guard.bank_ifsc ?? "NOT ON FILE",
+      String(r.slip.net),
+      `SALARY ${month}`,
+    ]);
+    const esc = (v: string) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
+    const csv = [header, ...lines].map((row) => row.map(esc).join(",")).join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `neft-${month}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    const held = rows.length - paid.length;
+    toast.success(`NEFT file for ${month}`, {
+      description: `${paid.length} beneficiaries, ${fmtINR(paid.reduce((n, r) => n + r.slip.net, 0))}` +
+        (held ? ` · ${held} held back and not in the file` : ""),
+    });
+  }
+
   function advance() {
     const to = PAYROLL_STAGES[stageIndex + 1];
     if (!to) return;
@@ -97,7 +134,7 @@ export function PayrollRun({ rows, month }: { rows: PayrollRow[]; month: string 
             })}
           </ol>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => toast("Bank transfer file", { description: `NEFT bulk file for ${month} — preview only.` })}>
+            <Button variant="outline" onClick={downloadBankFile}>
               <FileSpreadsheet data-icon="inline-start" /> Bank file
             </Button>
             {next && (
