@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, MapPinned, Building2, Users, CalendarDays, ClipboardCheck, Footprints, ListChecks, Plane, BarChart3, Radio, Settings, Siren,
   BellRing, OctagonAlert, ScrollText, ArrowRightLeft, Timer, Wallet, NotebookPen, Send,
-  Landmark, DoorOpen, FileBadge, ScanLine, UserCog, Blocks, MessageCircle,
+  Landmark, DoorOpen, FileBadge, ScanLine, UserCog, Blocks, MessageCircle, Handshake,
   type LucideIcon,
 } from "lucide-react";
 
@@ -33,6 +33,10 @@ export const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { href: "/post-orders", label: "Post orders", icon: ScrollText, preview: true },
       { href: "/handover", label: "Handover", icon: ArrowRightLeft, preview: true },
     ],
+  },
+  {
+    label: "Sell",
+    items: [{ href: "/sales", label: "Sales leads", icon: Handshake }],
   },
   {
     label: "Money",
