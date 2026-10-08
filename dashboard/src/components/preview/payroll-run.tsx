@@ -59,7 +59,11 @@ export function PayrollRun({ rows, month }: { rows: PayrollRow[]; month: string 
     const a = document.createElement("a");
     a.href = url;
     a.download = `neft-${month}.csv`;
+    // Chromium ignores a click on an anchor that is not in the document, so the download
+    // silently never starts — the exact "nothing happens" this button was fixed for.
+    document.body.appendChild(a);
     a.click();
+    a.remove();
     URL.revokeObjectURL(url);
 
     const held = rows.length - paid.length;
