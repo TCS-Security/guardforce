@@ -34,6 +34,9 @@ delete from public.agencies where id = 'a0000000-0000-4000-8000-00000000ea91';
 alter table public.roles enable trigger roles_protect;
 
 delete from auth.users where email like '%@eagle-demo.test';
+-- The demo phone too, so a re-run puts the guard app back to its first-run flow
+-- rather than silently signing straight in as an already-claimed guard.
+delete from auth.users where phone in ('919000000001', '+919000000001', '9000000001');
 
 -- 2. Tenant. `agencies_bootstrap` seeds the four system roles and app_config. ---
 insert into public.agencies (id, name, slug, city, status, plan, timezone,
@@ -654,5 +657,34 @@ begin
       case when r.st = 'resolved' then 'b0000000-0000-4000-8000-00000000ea01'::uuid end);
   end loop;
 end $$;
+
+commit;
+
+-- ---------------------------------------------------------------------------
+-- 13. The demo phone. One guard on the Eagle HQ day post carries the test number
+--     so the app can be claimed live in the meeting room: sign in with the OTP, set
+--     a PIN, check in against the HQ fence, walk a round, raise an incident.
+--
+--     Left deliberately unclaimed — no verified phone, no PIN, no profile — because
+--     the first-run flow is the thing worth showing. `normalize_phone` keeps the last
+--     ten digits, so +91 90000 00001 and 9000000001 are the same guard.
+-- ---------------------------------------------------------------------------
+begin;
+
+update public.guards g
+set phone = '9000000001',
+    phone_verified_at = null,
+    pin_hash = null,
+    profile_id = null,
+    full_name = 'Ravi Shankar',
+    designation = 'Head Guard'
+where g.id = (
+  select g2.id from public.guards g2
+  join public.sites s on s.id = g2.site_id
+  where g2.agency_id = 'a0000000-0000-4000-8000-00000000ea91'
+    and s.name like 'Eagle Security Agency — HQ%'
+  order by g2.employee_code
+  limit 1
+);
 
 commit;
