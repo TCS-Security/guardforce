@@ -875,6 +875,417 @@ export type Database = {
           },
         ]
       }
+      lead_activities: {
+        Row: {
+          agency_id: string
+          body: string | null
+          contact_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          kind: string
+          lead_id: string
+          outcome: string | null
+        }
+        Insert: {
+          agency_id: string
+          body?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind: string
+          lead_id: string
+          outcome?: string | null
+        }
+        Update: {
+          agency_id?: string
+          body?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind?: string
+          lead_id?: string
+          outcome?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_activities_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_activities_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "lead_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_activities_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_activities_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_contacts: {
+        Row: {
+          agency_id: string
+          created_at: string
+          created_by: string | null
+          designation: string | null
+          do_not_call: boolean
+          full_name: string
+          id: string
+          lead_id: string
+          source: string
+          source_url: string | null
+          whatsapp_ok: boolean
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string
+          created_by?: string | null
+          designation?: string | null
+          do_not_call?: boolean
+          full_name: string
+          id?: string
+          lead_id: string
+          source?: string
+          source_url?: string | null
+          whatsapp_ok?: boolean
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string
+          created_by?: string | null
+          designation?: string | null
+          do_not_call?: boolean
+          full_name?: string
+          id?: string
+          lead_id?: string
+          source?: string
+          source_url?: string | null
+          whatsapp_ok?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_contacts_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_contacts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_contacts_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_lookups: {
+        Row: {
+          agency_id: string
+          contact_id: string | null
+          cost_paise: number
+          created_at: string
+          created_by: string | null
+          id: string
+          lead_id: string
+          provider: string
+          status: string
+        }
+        Insert: {
+          agency_id: string
+          contact_id?: string | null
+          cost_paise?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lead_id: string
+          provider: string
+          status: string
+        }
+        Update: {
+          agency_id?: string
+          contact_id?: string | null
+          cost_paise?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lead_id?: string
+          provider?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_lookups_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_lookups_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "lead_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_lookups_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_lookups_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_numbers: {
+        Row: {
+          agency_id: string
+          contact_id: string | null
+          created_at: string
+          id: string
+          kind: string
+          label: string | null
+          last_tried_at: string | null
+          lead_id: string
+          source: string
+          source_url: string | null
+          status: string
+          value: string
+        }
+        Insert: {
+          agency_id: string
+          contact_id?: string | null
+          created_at?: string
+          id?: string
+          kind: string
+          label?: string | null
+          last_tried_at?: string | null
+          lead_id: string
+          source?: string
+          source_url?: string | null
+          status?: string
+          value: string
+        }
+        Update: {
+          agency_id?: string
+          contact_id?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          label?: string | null
+          last_tried_at?: string | null
+          lead_id?: string
+          source?: string
+          source_url?: string | null
+          status?: string
+          value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_numbers_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_numbers_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "lead_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_numbers_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leads: {
+        Row: {
+          address: string | null
+          agency_id: string
+          city: string | null
+          completion_on: string | null
+          created_at: string
+          created_by: string | null
+          developer: string | null
+          extra: Json
+          id: string
+          incumbent_agency: string | null
+          incumbent_software: string | null
+          incumbent_source: string | null
+          label: string
+          lat: number | null
+          lng: number | null
+          locality: string | null
+          lost_reason: string | null
+          name: string
+          next_follow_up: string | null
+          owner_id: string | null
+          prospect_id: string | null
+          reasons: Json
+          segment: string
+          size_unit: string | null
+          size_value: number | null
+          source: string
+          source_url: string | null
+          stage: string
+          tender_closes_on: string | null
+          tender_ends_on: string | null
+          tender_guards: number | null
+          tender_value_inr: number | null
+          updated_at: string
+          website: string | null
+          won_site_id: string | null
+        }
+        Insert: {
+          address?: string | null
+          agency_id: string
+          city?: string | null
+          completion_on?: string | null
+          created_at?: string
+          created_by?: string | null
+          developer?: string | null
+          extra?: Json
+          id?: string
+          incumbent_agency?: string | null
+          incumbent_software?: string | null
+          incumbent_source?: string | null
+          label?: string
+          lat?: number | null
+          lng?: number | null
+          locality?: string | null
+          lost_reason?: string | null
+          name: string
+          next_follow_up?: string | null
+          owner_id?: string | null
+          prospect_id?: string | null
+          reasons?: Json
+          segment: string
+          size_unit?: string | null
+          size_value?: number | null
+          source?: string
+          source_url?: string | null
+          stage?: string
+          tender_closes_on?: string | null
+          tender_ends_on?: string | null
+          tender_guards?: number | null
+          tender_value_inr?: number | null
+          updated_at?: string
+          website?: string | null
+          won_site_id?: string | null
+        }
+        Update: {
+          address?: string | null
+          agency_id?: string
+          city?: string | null
+          completion_on?: string | null
+          created_at?: string
+          created_by?: string | null
+          developer?: string | null
+          extra?: Json
+          id?: string
+          incumbent_agency?: string | null
+          incumbent_software?: string | null
+          incumbent_source?: string | null
+          label?: string
+          lat?: number | null
+          lng?: number | null
+          locality?: string | null
+          lost_reason?: string | null
+          name?: string
+          next_follow_up?: string | null
+          owner_id?: string | null
+          prospect_id?: string | null
+          reasons?: Json
+          segment?: string
+          size_unit?: string | null
+          size_value?: number | null
+          source?: string
+          source_url?: string | null
+          stage?: string
+          tender_closes_on?: string | null
+          tender_ends_on?: string | null
+          tender_guards?: number | null
+          tender_value_inr?: number | null
+          updated_at?: string
+          website?: string | null
+          won_site_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_prospect_id_fkey"
+            columns: ["prospect_id"]
+            isOneToOne: false
+            referencedRelation: "prospects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_won_site_id_fkey"
+            columns: ["won_site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leave_balances: {
         Row: {
           agency_id: string
@@ -1596,6 +2007,108 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      prospects: {
+        Row: {
+          address: string | null
+          city: string
+          completion_on: string | null
+          created_at: string
+          developer: string | null
+          est_guards: number | null
+          id: string
+          incumbent_agency: string | null
+          incumbent_software: string | null
+          incumbent_source_url: string | null
+          label: string
+          lat: number | null
+          lng: number | null
+          locality: string | null
+          name: string
+          notes: string | null
+          phone: string | null
+          reasons: Json
+          registered_on: string | null
+          segment: string
+          size_unit: string | null
+          size_value: number | null
+          source: string
+          source_ref: string
+          source_url: string | null
+          tender_closes_on: string | null
+          tender_ends_on: string | null
+          tender_guards: number | null
+          tender_value_inr: number | null
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string
+          completion_on?: string | null
+          created_at?: string
+          developer?: string | null
+          est_guards?: number | null
+          id?: string
+          incumbent_agency?: string | null
+          incumbent_software?: string | null
+          incumbent_source_url?: string | null
+          label?: string
+          lat?: number | null
+          lng?: number | null
+          locality?: string | null
+          name: string
+          notes?: string | null
+          phone?: string | null
+          reasons?: Json
+          registered_on?: string | null
+          segment: string
+          size_unit?: string | null
+          size_value?: number | null
+          source: string
+          source_ref: string
+          source_url?: string | null
+          tender_closes_on?: string | null
+          tender_ends_on?: string | null
+          tender_guards?: number | null
+          tender_value_inr?: number | null
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string
+          completion_on?: string | null
+          created_at?: string
+          developer?: string | null
+          est_guards?: number | null
+          id?: string
+          incumbent_agency?: string | null
+          incumbent_software?: string | null
+          incumbent_source_url?: string | null
+          label?: string
+          lat?: number | null
+          lng?: number | null
+          locality?: string | null
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          reasons?: Json
+          registered_on?: string | null
+          segment?: string
+          size_unit?: string | null
+          size_value?: number | null
+          source?: string
+          source_ref?: string
+          source_url?: string | null
+          tender_closes_on?: string | null
+          tender_ends_on?: string | null
+          tender_guards?: number | null
+          tender_value_inr?: number | null
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
       }
       roles: {
         Row: {
@@ -2957,6 +3470,53 @@ export type Database = {
         Returns: Json
       }
       run_monitors: { Args: { p_agency_id: string }; Returns: Json }
+      sales_find_prospects: {
+        Args: {
+          p_label?: string
+          p_limit?: number
+          p_q?: string
+          p_segment?: string
+        }
+        Returns: {
+          address: string | null
+          city: string
+          completion_on: string | null
+          created_at: string
+          developer: string | null
+          est_guards: number | null
+          id: string
+          incumbent_agency: string | null
+          incumbent_software: string | null
+          incumbent_source_url: string | null
+          label: string
+          lat: number | null
+          lng: number | null
+          locality: string | null
+          name: string
+          notes: string | null
+          phone: string | null
+          reasons: Json
+          registered_on: string | null
+          segment: string
+          size_unit: string | null
+          size_value: number | null
+          source: string
+          source_ref: string
+          source_url: string | null
+          tender_closes_on: string | null
+          tender_ends_on: string | null
+          tender_guards: number | null
+          tender_value_inr: number | null
+          updated_at: string
+          website: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "prospects"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       seed_system_roles: { Args: { p_agency_id: string }; Returns: undefined }
       sees_all_sites: { Args: never; Returns: boolean }
       set_guard_pin: { Args: { p_pin: string }; Returns: undefined }

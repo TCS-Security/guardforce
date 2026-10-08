@@ -20,6 +20,7 @@ export const PERMISSION_KEYS = [
   "settings:read", "settings:write",
   "team:read", "team:manage",
   "audit:read",
+  "sales:read", "sales:write", "sales:lookup",
 ] as const;
 
 export type PermissionKey = (typeof PERMISSION_KEYS)[number];
@@ -58,6 +59,15 @@ export const PERMISSION_RESOURCES: {
   { resource: "settings", label: "Settings", read: "settings:read", actions: [{ key: "settings:write", label: "Change", hint: "Edit agency defaults and the guard-app config" }] },
   { resource: "team", label: "Team", read: "team:read", actions: [{ key: "team:manage", label: "Manage", hint: "Invite users, assign roles and site scope, edit roles" }] },
   { resource: "audit", label: "Audit log", read: "audit:read", actions: [] },
+  {
+    resource: "sales",
+    label: "Sales",
+    read: "sales:read",
+    actions: [
+      { key: "sales:write", label: "Work leads", hint: "Add leads, log calls and notes, move leads through stages" },
+      { key: "sales:lookup", label: "Find mobile numbers", hint: "Use the monthly allowance of paid number lookups on top leads" },
+    ],
+  },
 ];
 
 /** The read key a route needs, used by the nav and by page guards. */
@@ -74,6 +84,7 @@ export const ROUTE_PERMISSION: Record<string, PermissionKey> = {
   "/leave": "leave:read",
   "/reports": "reports:read",
   "/settings": "settings:read",
+  "/sales": "sales:read",
   // Preview screens (sample data) borrow the nearest existing key until their own
   // catalogue rows ship with the tables behind them.
   "/sos": "events:read",
