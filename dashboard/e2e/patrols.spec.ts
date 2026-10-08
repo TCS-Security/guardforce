@@ -101,18 +101,22 @@ test.describe("patrols", () => {
     await page.getByLabel("Photos").fill("2");
     await page.getByRole("button", { name: "Save route" }).click();
 
-    await expect(page.getByText(name)).toBeVisible();
-    await expect(page.getByText(/every 1h 30m · 15 min grace · 2 photos/)).toBeVisible();
+    // Scope every assertion to this route's own row: the descriptor is not unique across
+    // the site list (several seeded rounds share "every 1h 30m · 15 min grace · 2 photos"),
+    // and an unscoped getByText trips strict mode as soon as a second one matches.
+    const row = page.getByRole("listitem").filter({ hasText: name });
+    await expect(row).toBeVisible();
+    await expect(row.getByText(/every 1h 30m · 15 min grace · 2 photos/)).toBeVisible();
 
     // edit
     await page.getByRole("button", { name: `Edit ${name}` }).click();
     await page.getByLabel("Every (min)").fill("240");
     await page.getByRole("button", { name: "Save route" }).click();
-    await expect(page.getByText(/every 4h · 15 min grace · 2 photos/)).toBeVisible();
+    await expect(row.getByText(/every 4h · 15 min grace · 2 photos/)).toBeVisible();
 
     // pause
     await page.getByRole("button", { name: `Pause ${name}` }).click();
-    await expect(page.getByText("paused")).toBeVisible();
+    await expect(row.getByText("paused")).toBeVisible();
 
     // delete (no rounds recorded yet, so it really goes)
     await page.getByRole("button", { name: `Delete ${name}` }).click();

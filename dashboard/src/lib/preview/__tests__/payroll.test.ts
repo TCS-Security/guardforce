@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computePayslip, generatePayroll, payMonth, payrollTotals, DEFAULT_PAY_POLICY } from "../payroll";
+import { DEFAULT_PAY_POLICY, MIN_WAGE_2026, computePayslip, generatePayroll, payMonth, payrollTotals } from "../payroll";
 import { overtimeMinutes, overtimePay, generateOvertime, weeklyOvertime } from "../overtime";
 import { fmtINR } from "../crew";
 import { crew } from "./fixtures";
@@ -99,5 +99,31 @@ describe("fmtINR", () => {
   it("groups digits the Indian way", () => {
     expect(fmtINR(1234567)).toBe("₹12,34,567");
     expect(fmtINR(-450)).toBe("−₹450");
+  });
+});
+
+describe("2026 Karnataka minimum wage", () => {
+  it("never generates a guard below the Zone 1 floor", () => {
+    const rows = generatePayroll(crew, "2026-09");
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) {
+      expect(row.slip.monthly_wage).toBeGreaterThanOrEqual(MIN_WAGE_2026.guard_floor);
+    }
+  });
+
+  it("puts a guard at the floor above the ESI ceiling and into professional tax", () => {
+    // Both are real consequences of the May 2026 revision, not a modelling choice: the
+    // new floor clears the Rs 21,000 ESI ceiling and the Rs 25,000 professional-tax
+    // threshold, so a guard on a full month loses ESI cover and starts paying PT.
+    const full = computePayslip({
+      monthly_wage: MIN_WAGE_2026.guard_floor,
+      days_present: DEFAULT_PAY_POLICY.working_days,
+      half_days: 0, paid_leave: 0, ot_minutes: 0, advance: 0, uniform: 0,
+    });
+    expect(full.gross).toBeGreaterThan(DEFAULT_PAY_POLICY.esi_gross_limit);
+    expect(full.esi).toBe(0);
+    expect(full.pt).toBe(DEFAULT_PAY_POLICY.pt_amount);
+    // PF still bites, because its ceiling is on basic and did not move.
+    expect(full.pf).toBe(Math.round(DEFAULT_PAY_POLICY.pf_wage_ceiling * DEFAULT_PAY_POLICY.pf_rate));
   });
 });

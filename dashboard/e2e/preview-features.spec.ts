@@ -7,7 +7,7 @@ import { login } from "./helpers";
  * state the screen itself changed.
  */
 const SCREENS = [
-  { path: "/sos", title: "SOS & lone workers" },
+  { path: "/sos", title: "SOS alerts" },
   { path: "/alertness", title: "Alertness checks" },
   { path: "/post-orders", title: "Post orders" },
   { path: "/handover", title: "Handover register" },
@@ -72,7 +72,7 @@ test.describe("preview screens", () => {
   });
 
   test("sos: owning the live alert removes the call to action", async ({ page }) => {
-    await open(page, "/sos", "SOS & lone workers");
+    await open(page, "/sos", "SOS alerts");
     const onIt = page.getByRole("button", { name: "I’m on it" });
     await expect(onIt).toHaveCount(1);
     await onIt.click();

@@ -1,4 +1,4 @@
--- GuardForce demo seed. Everything is relative to now() so the dashboard always looks live.
+-- GuardWatch AI demo seed. Everything is relative to now() so the dashboard always looks live.
 -- Logins (password for all: "guardforce"):
 --   platform@guardforce.test  (platform admin — the SaaS provider, not a tenant member)
 --   owner@sentinel.test       (Sentinel owner)
@@ -50,7 +50,7 @@ insert into public.profiles (id, agency_id, role, role_id, all_sites, full_name,
 -- ---------------------------------------------------------------------------
 select pg_temp.seed_user('b0000000-0000-4000-8000-000000000099', 'platform@guardforce.test', 'guardforce');
 insert into public.platform_admins (user_id, email, full_name, role)
-values ('b0000000-0000-4000-8000-000000000099', 'platform@guardforce.test', 'GuardForce Ops', 'platform_owner');
+values ('b0000000-0000-4000-8000-000000000099', 'platform@guardforce.test', 'GuardWatch Ops', 'platform_owner');
 
 insert into public.agencies (id, name, slug, city, status, plan)
 values ('a0000000-0000-4000-8000-000000000002', 'Falcon Facility Services', 'falcon', 'Pune', 'trial', 'pilot');
@@ -70,6 +70,18 @@ insert into public.sites (id, agency_id, name, client_name, address, city, lat, 
     '{"type":"Polygon","coordinates":[[[77.5100,12.8450],[77.5132,12.8452],[77.5134,12.8470],[77.5104,12.8468],[77.5100,12.8450]]]}'::jsonb, 50, 4, false),
   ('c0000000-0000-4000-8000-000000000003', 'a0000000-0000-4000-8000-000000000001', 'Metro Cash & Carry, Yeshwanthpur', 'Metro Wholesale', 'Tumkur Rd, Yeshwanthpur Industrial Suburb', 'Bengaluru', 13.02810, 77.54220, 'radius', 220, null, 60, 4, true),
   ('c0000000-0000-4000-8000-000000000004', 'a0000000-0000-4000-8000-000000000001', 'Sobha Dream Acres', 'Sobha Ltd', 'Panathur Main Rd, Balagere', 'Bengaluru', 12.93420, 77.72780, 'radius', 250, null, 50, 3, true);
+
+
+-- Six more live sites, so the book looks like a real mid-size agency: an IT park,
+-- a mall, a hospital, a fulfilment centre, a bank branch and a school.
+insert into public.sites (id, agency_id, name, client_name, address, city, lat, lng, fence_type, radius_m, polygon, leeway_m, guards_required, patrol_photo_required) values
+  ('c0000000-0000-4000-8000-000000000005', 'a0000000-0000-4000-8000-000000000001', 'Manyata Embassy Business Park — Block 9', 'Embassy Group', 'Outer Ring Rd, Nagavara, Rachenahalli', 'Bengaluru', 13.04560, 77.62030, 'radius', 200, null, 50, 6, true),
+  ('c0000000-0000-4000-8000-000000000006', 'a0000000-0000-4000-8000-000000000001', 'Phoenix Marketcity, Whitefield', 'Phoenix Mills', 'Whitefield Main Rd, Mahadevapura', 'Bengaluru', 12.99700, 77.69670, 'radius', 240, null, 60, 5, true),
+  ('c0000000-0000-4000-8000-000000000007', 'a0000000-0000-4000-8000-000000000001', 'Columbia Asia Hospital, Hebbal', 'Columbia Asia', 'Kirloskar Business Park, Bellary Rd, Hebbal', 'Bengaluru', 13.03580, 77.59120, 'radius', 160, null, 40, 4, true),
+  ('c0000000-0000-4000-8000-000000000008', 'a0000000-0000-4000-8000-000000000001', 'Delhivery Fulfilment Centre, Nelamangala', 'Delhivery Ltd', 'NH-48 Service Rd, Sondekoppa, Nelamangala', 'Bengaluru', 13.09940, 77.39450, 'polygon', 200,
+    '{"type":"Polygon","coordinates":[[[77.3920,13.0980],[77.3972,13.0984],[77.3976,13.1012],[77.3922,13.1008],[77.3920,13.0980]]]}'::jsonb, 60, 4, true),
+  ('c0000000-0000-4000-8000-000000000009', 'a0000000-0000-4000-8000-000000000001', 'Karnataka Bank — Jayanagar 4th Block', 'Karnataka Bank', '11th Main Rd, Jayanagar 4th Block', 'Bengaluru', 12.92790, 77.58340, 'radius', 90, null, 30, 2, false),
+  ('c0000000-0000-4000-8000-000000000010', 'a0000000-0000-4000-8000-000000000001', 'Vidyashilp Academy, Jakkur', 'Vidyashilp Trust', 'Jakkur Plantation, Yelahanka', 'Bengaluru', 13.07660, 77.60410, 'radius', 220, null, 50, 3, false);
 
 insert into public.supervisor_sites (profile_id, site_id, agency_id) values
   ('b0000000-0000-4000-8000-000000000002', 'c0000000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000001'),
@@ -107,6 +119,52 @@ insert into public.guards (id, agency_id, employee_code, full_name, phone, phone
   ('e0000000-0000-4000-8000-000000000015', 'a0000000-0000-4000-8000-000000000001', 'SSS-015', 'Manjunath B', '9900000015', null, null, null, 'c0000000-0000-4000-8000-000000000003', 'b0000000-0000-4000-8000-000000000003', 'invited', null, null, '{kn}', null),
   ('e0000000-0000-4000-8000-000000000016', 'a0000000-0000-4000-8000-000000000001', 'SSS-016', 'Rajni Kant', '9900000016', now() - interval '2 days', extensions.crypt('1234', extensions.gen_salt('bf')), null, 'c0000000-0000-4000-8000-000000000002', 'b0000000-0000-4000-8000-000000000002', 'active', 'a0000000-0000-4000-8000-000000000001/selfies/reg/SSS-016.jpg', now() - interval '2 days', '{hi,bho}', '1996-07-07');
 
+-- Twenty-four more guards for the new sites (PIN 1234 for all). Tenure is spread so the
+-- guard list shows a realistic mix of old hands and recent joiners.
+insert into public.guards (id, agency_id, employee_code, full_name, phone, phone_verified_at, pin_hash, designation, site_id, supervisor_id, status, registration_selfie_path, joined_at, languages, date_of_birth)
+select
+  ('e0000000-0000-4000-8000-' || lpad(v.n::text, 12, '0'))::uuid,
+  'a0000000-0000-4000-8000-000000000001',
+  'SSS-' || lpad(v.n::text, 3, '0'),
+  v.full_name,
+  '99000000' || lpad(v.n::text, 2, '0'),
+  now() - ((v.n * 7) || ' days')::interval,
+  extensions.crypt('1234', extensions.gen_salt('bf')),
+  v.designation,
+  v.site_id::uuid,
+  v.supervisor_id::uuid,
+  'active',
+  'a0000000-0000-4000-8000-000000000001/selfies/reg/SSS-' || lpad(v.n::text, 3, '0') || '.jpg',
+  now() - ((v.n * 7) || ' days')::interval,
+  v.languages::text[],
+  v.dob::date
+from (values
+  (17, 'Mahesh Pawar',        'Head Guard',   'c0000000-0000-4000-8000-000000000005', 'b0000000-0000-4000-8000-000000000001', '{mr,hi}',  '1983-02-11'),
+  (18, 'Satyendra Mishra',    'Gate Guard',   'c0000000-0000-4000-8000-000000000005', 'b0000000-0000-4000-8000-000000000001', '{hi}',     '1990-06-24'),
+  (19, 'Nagaraj Hiremath',    'Gate Guard',   'c0000000-0000-4000-8000-000000000005', 'b0000000-0000-4000-8000-000000000001', '{kn}',     '1988-09-30'),
+  (20, 'Pintu Mandal',        'Patrol Guard', 'c0000000-0000-4000-8000-000000000005', 'b0000000-0000-4000-8000-000000000001', '{bn,hi}',  '1994-04-02'),
+  (21, 'Jagdish Barman',      'Night Guard',  'c0000000-0000-4000-8000-000000000005', 'b0000000-0000-4000-8000-000000000001', '{as,hi}',  '1991-12-18'),
+  (22, 'Ravi Shankar Tiwari', 'Night Guard',  'c0000000-0000-4000-8000-000000000005', 'b0000000-0000-4000-8000-000000000001', '{hi,bho}', '1986-08-07'),
+  (23, 'Firoz Khan',          'Head Guard',   'c0000000-0000-4000-8000-000000000006', 'b0000000-0000-4000-8000-000000000001', '{ur,hi}',  '1985-05-19'),
+  (24, 'Sunita Rani',         'Lady Guard',   'c0000000-0000-4000-8000-000000000006', 'b0000000-0000-4000-8000-000000000001', '{hi,pa}',  '1993-03-27'),
+  (25, 'Basavaraj Kamble',    'Gate Guard',   'c0000000-0000-4000-8000-000000000006', 'b0000000-0000-4000-8000-000000000001', '{kn,mr}',  '1989-11-14'),
+  (26, 'Chandan Rai',         'Patrol Guard', 'c0000000-0000-4000-8000-000000000006', 'b0000000-0000-4000-8000-000000000001', '{hi,mai}', '1995-07-21'),
+  (27, 'Ashok Pradhan',       'Night Guard',  'c0000000-0000-4000-8000-000000000006', 'b0000000-0000-4000-8000-000000000001', '{or,hi}',  '1987-01-09'),
+  (28, 'Geetha Srinivasan',   'Lady Guard',   'c0000000-0000-4000-8000-000000000007', 'b0000000-0000-4000-8000-000000000001', '{ta,kn}',  '1992-10-05'),
+  (29, 'Devendra Chauhan',    'Gate Guard',   'c0000000-0000-4000-8000-000000000007', 'b0000000-0000-4000-8000-000000000001', '{hi}',     '1984-02-28'),
+  (30, 'Kiran Shetty',        'Head Guard',   'c0000000-0000-4000-8000-000000000007', 'b0000000-0000-4000-8000-000000000001', '{kn,tu}',  '1981-09-16'),
+  (31, 'Munna Paswan',        'Night Guard',  'c0000000-0000-4000-8000-000000000007', 'b0000000-0000-4000-8000-000000000001', '{hi}',     '1996-05-11'),
+  (32, 'Tej Bahadur Rana',    'Head Guard',   'c0000000-0000-4000-8000-000000000008', 'b0000000-0000-4000-8000-000000000001', '{ne,hi}',  '1982-12-04'),
+  (33, 'Sanjay Kurmi',        'Gate Guard',   'c0000000-0000-4000-8000-000000000008', 'b0000000-0000-4000-8000-000000000001', '{hi}',     '1990-08-23'),
+  (34, 'Mallikarjun Patil',   'Patrol Guard', 'c0000000-0000-4000-8000-000000000008', 'b0000000-0000-4000-8000-000000000001', '{kn}',     '1993-06-13'),
+  (35, 'Rakesh Oraon',        'Night Guard',  'c0000000-0000-4000-8000-000000000008', 'b0000000-0000-4000-8000-000000000001', '{hi}',     '1997-02-20'),
+  (36, 'Vinod Kulkarni',      'Head Guard',   'c0000000-0000-4000-8000-000000000009', 'b0000000-0000-4000-8000-000000000001', '{mr,kn}',  '1979-04-08'),
+  (37, 'Arvind Choudhary',    'Gate Guard',   'c0000000-0000-4000-8000-000000000009', 'b0000000-0000-4000-8000-000000000001', '{hi}',     '1991-10-29'),
+  (38, 'Shobha Hegde',        'Lady Guard',   'c0000000-0000-4000-8000-000000000010', 'b0000000-0000-4000-8000-000000000001', '{kn}',     '1994-01-17'),
+  (39, 'Ganesh Kamath',       'Gate Guard',   'c0000000-0000-4000-8000-000000000010', 'b0000000-0000-4000-8000-000000000001', '{kn,tu}',  '1988-07-26'),
+  (40, 'Hemant Dubey',        'Night Guard',  'c0000000-0000-4000-8000-000000000010', 'b0000000-0000-4000-8000-000000000001', '{hi}',     '1986-11-30')
+) as v(n, full_name, designation, site_id, supervisor_id, languages, dob);
+
 update public.guards set invited_at = now() - interval '3 days' where status = 'invited';
 insert into public.guard_invites (agency_id, guard_id, channel, sent_at, created_by)
 values ('a0000000-0000-4000-8000-000000000001', 'e0000000-0000-4000-8000-000000000015', 'whatsapp', now() - interval '3 days', 'b0000000-0000-4000-8000-000000000003');
@@ -122,6 +180,19 @@ select 'a0000000-0000-4000-8000-000000000001', g.id, t.type,
 from public.guards g
 cross join (values ('aadhaar'::public.document_type), ('pan'), ('police_verification'), ('guard_kyc')) as t(type)
 where g.employee_code between 'SSS-001' and 'SSS-013';
+
+-- Full KYC for the new guards, with two police verifications still pending so the
+-- compliance warnings have something real to point at.
+insert into public.guard_documents (agency_id, guard_id, type, file_path, mime_type, number_masked, status, verified_by, verified_at, uploaded_by, issued_on)
+select 'a0000000-0000-4000-8000-000000000001', g.id, t.type,
+  'a0000000-0000-4000-8000-000000000001/kyc/' || g.employee_code || '/' || t.type || '.jpg', 'image/jpeg',
+  case t.type when 'aadhaar' then 'XXXX XXXX ' || lpad((1000 + (random() * 8999)::int)::text, 4, '0')
+              when 'pan' then 'XXXXX' || lpad((1000 + (random() * 8999)::int)::text, 4, '0') || 'X' else null end,
+  (case when g.employee_code in ('SSS-023', 'SSS-031') and t.type = 'police_verification' then 'pending' else 'verified' end)::public.document_status,
+  'b0000000-0000-4000-8000-000000000001', g.joined_at + interval '2 days', 'b0000000-0000-4000-8000-000000000001', (g.joined_at - interval '400 days')::date
+from public.guards g
+cross join (values ('aadhaar'::public.document_type), ('pan'), ('police_verification'), ('guard_kyc')) as t(type)
+where g.employee_code between 'SSS-017' and 'SSS-040';
 
 -- marksheet for a few
 insert into public.guard_documents (agency_id, guard_id, type, file_path, mime_type, status, uploaded_by)
@@ -160,6 +231,38 @@ insert into public.roster_patterns (agency_id, site_id, guard_id, shift_type_id,
   ('a0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000003', 'e0000000-0000-4000-8000-000000000012', pg_temp.st('c0000000-0000-4000-8000-000000000003', 'Night'), '{0,1,2,3,4,5,6}', current_date - 45, 'b0000000-0000-4000-8000-000000000003'),
   ('a0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000004', 'e0000000-0000-4000-8000-000000000013', pg_temp.st('c0000000-0000-4000-8000-000000000004', 'Day'), '{1,2,3,4,5,6}', current_date - 45, 'b0000000-0000-4000-8000-000000000001');
 
+-- Roster patterns for the new sites. Day/Evening/Night split per the guards' designations.
+insert into public.roster_patterns (agency_id, site_id, guard_id, shift_type_id, weekdays, starts_on, created_by)
+select 'a0000000-0000-4000-8000-000000000001', v.site_id::uuid,
+  ('e0000000-0000-4000-8000-' || lpad(v.n::text, 12, '0'))::uuid,
+  pg_temp.st(v.site_id::uuid, v.shift), v.weekdays::int[], current_date - 45, v.created_by::uuid
+from (values
+  (17, 'c0000000-0000-4000-8000-000000000005', 'Day',     '{1,2,3,4,5,6}',   'b0000000-0000-4000-8000-000000000001'),
+  (18, 'c0000000-0000-4000-8000-000000000005', 'Day',     '{0,1,2,3,4,5,6}', 'b0000000-0000-4000-8000-000000000001'),
+  (19, 'c0000000-0000-4000-8000-000000000005', 'Evening', '{0,1,2,3,4,5,6}', 'b0000000-0000-4000-8000-000000000001'),
+  (20, 'c0000000-0000-4000-8000-000000000005', 'Evening', '{0,1,2,3,4,5,6}', 'b0000000-0000-4000-8000-000000000001'),
+  (21, 'c0000000-0000-4000-8000-000000000005', 'Night',   '{0,1,2,3,4,5,6}', 'b0000000-0000-4000-8000-000000000001'),
+  (22, 'c0000000-0000-4000-8000-000000000005', 'Night',   '{0,1,2,3,4,5,6}', 'b0000000-0000-4000-8000-000000000001'),
+  (23, 'c0000000-0000-4000-8000-000000000006', 'Day',     '{0,1,2,3,4,5,6}', 'b0000000-0000-4000-8000-000000000001'),
+  (24, 'c0000000-0000-4000-8000-000000000006', 'Day',     '{1,2,3,4,5,6}',   'b0000000-0000-4000-8000-000000000001'),
+  (25, 'c0000000-0000-4000-8000-000000000006', 'Evening', '{0,1,2,3,4,5,6}', 'b0000000-0000-4000-8000-000000000001'),
+  (26, 'c0000000-0000-4000-8000-000000000006', 'Evening', '{0,1,2,3,4,5}',   'b0000000-0000-4000-8000-000000000001'),
+  (27, 'c0000000-0000-4000-8000-000000000006', 'Night',   '{0,1,2,3,4,5,6}', 'b0000000-0000-4000-8000-000000000001'),
+  (28, 'c0000000-0000-4000-8000-000000000007', 'Day',     '{0,1,2,3,4,5,6}', 'b0000000-0000-4000-8000-000000000001'),
+  (29, 'c0000000-0000-4000-8000-000000000007', 'Day',     '{1,2,3,4,5,6}',   'b0000000-0000-4000-8000-000000000001'),
+  (30, 'c0000000-0000-4000-8000-000000000007', 'Evening', '{0,1,2,3,4,5,6}', 'b0000000-0000-4000-8000-000000000001'),
+  (31, 'c0000000-0000-4000-8000-000000000007', 'Night',   '{0,1,2,3,4,5,6}', 'b0000000-0000-4000-8000-000000000001'),
+  (32, 'c0000000-0000-4000-8000-000000000008', 'Day',     '{0,1,2,3,4,5,6}', 'b0000000-0000-4000-8000-000000000001'),
+  (33, 'c0000000-0000-4000-8000-000000000008', 'Day',     '{1,2,3,4,5,6}',   'b0000000-0000-4000-8000-000000000001'),
+  (34, 'c0000000-0000-4000-8000-000000000008', 'Evening', '{0,1,2,3,4,5,6}', 'b0000000-0000-4000-8000-000000000001'),
+  (35, 'c0000000-0000-4000-8000-000000000008', 'Night',   '{0,1,2,3,4,5,6}', 'b0000000-0000-4000-8000-000000000001'),
+  (36, 'c0000000-0000-4000-8000-000000000009', 'Day',     '{1,2,3,4,5,6}',   'b0000000-0000-4000-8000-000000000001'),
+  (37, 'c0000000-0000-4000-8000-000000000009', 'Evening', '{1,2,3,4,5,6}',   'b0000000-0000-4000-8000-000000000001'),
+  (38, 'c0000000-0000-4000-8000-000000000010', 'Day',     '{1,2,3,4,5}',     'b0000000-0000-4000-8000-000000000001'),
+  (39, 'c0000000-0000-4000-8000-000000000010', 'Day',     '{1,2,3,4,5,6}',   'b0000000-0000-4000-8000-000000000001'),
+  (40, 'c0000000-0000-4000-8000-000000000010', 'Night',   '{0,1,2,3,4,5,6}', 'b0000000-0000-4000-8000-000000000001')
+) as v(n, site_id, shift, weekdays, created_by);
+
 -- Approved leave in the past + pending ones now (must exist before materializing so on_leave shows)
 insert into public.leave_requests (agency_id, guard_id, site_id, type, start_date, end_date, reason, status, decided_by, decided_at, created_at) values
   ('a0000000-0000-4000-8000-000000000001', 'e0000000-0000-4000-8000-000000000003', 'c0000000-0000-4000-8000-000000000001', 'casual', current_date - 12, current_date - 11, 'Family function in village', 'approved', 'b0000000-0000-4000-8000-000000000002', now() - interval '14 days', now() - interval '15 days'),
@@ -191,6 +294,15 @@ insert into public.patrol_routes (id, agency_id, site_id, name, description, fre
   ('f0000000-0000-4000-8000-000000000005', 'a0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000004', 'Tower round', 'Towers A–D lobbies and terrace doors', 120, 15, 1, 'b0000000-0000-4000-8000-000000000001');
 
 -- ---------------------------------------------------------------------------
+insert into public.patrol_routes (id, agency_id, site_id, name, description, frequency_min, grace_min, min_photos, created_by) values
+  ('f0000000-0000-4000-8000-000000000006', 'a0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000005', 'Block 9 perimeter', 'Compound wall, both lobbies, generator yard and the basement ramp', 120, 15, 2, 'b0000000-0000-4000-8000-000000000002'),
+  ('f0000000-0000-4000-8000-000000000007', 'a0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000005', 'Parking sweep', 'B1 and B2 bays, two-wheeler stand, fire exits', 180, 20, 1, 'b0000000-0000-4000-8000-000000000002'),
+  ('f0000000-0000-4000-8000-000000000008', 'a0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000006', 'Mall concourse round', 'Ground to third concourse, atrium, food court and all fire exits', 90, 15, 2, 'b0000000-0000-4000-8000-000000000002'),
+  ('f0000000-0000-4000-8000-000000000009', 'a0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000006', 'Service corridor check', 'Back-of-house corridors, loading bay and waste yard', 180, 20, 1, 'b0000000-0000-4000-8000-000000000002'),
+  ('f0000000-0000-4000-8000-00000000000a', 'a0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000007', 'Ward and OPD round', 'OPD waiting, ward corridors, pharmacy shutter and the ambulance bay', 120, 15, 1, 'b0000000-0000-4000-8000-000000000003'),
+  ('f0000000-0000-4000-8000-00000000000b', 'a0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000008', 'Dock and fence line', 'All eight docks, trailer yard, rear fence and the seal-check point', 90, 15, 2, 'b0000000-0000-4000-8000-000000000003'),
+  ('f0000000-0000-4000-8000-00000000000c', 'a0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000010', 'Campus round', 'Academic blocks, playground, bus bay and the back gate', 150, 20, 1, 'b0000000-0000-4000-8000-000000000003');
+
 -- Task templates (global seeds) + tasks
 -- ---------------------------------------------------------------------------
 insert into public.task_templates (agency_id, key, title, description, photo_required) values
@@ -202,265 +314,7 @@ insert into public.task_templates (agency_id, key, title, description, photo_req
 -- ---------------------------------------------------------------------------
 -- Simulate history for past shifts and live activity for today.
 -- ---------------------------------------------------------------------------
-do $$
-declare
-  s record;
-  ag record;
-  outcome numeric;
-  st timestamptz; en timestamptz;
-  late int; worked int;
-  fl text[];
-  tr public.trust_level;
-  site record;
-  ping_t timestamptz;
-  jitter_lat double precision; jitter_lng double precision;
-  inside boolean;
-  d real;
-  away int;
-  route record;
-  p_expected timestamptz;
-  n_ping int;
-  pid uuid;
-  rt record;
-  batt int;
-  live_idx int := 0;
-begin
-  select * into ag from public.agencies limit 1;
-
-  for s in
-    select sh.*, g.full_name from public.shifts sh join public.guards g on g.id = sh.guard_id
-    where sh.status = 'scheduled' and sh.scheduled_start < now()
-    order by sh.scheduled_start
-  loop
-    select * into site from public.sites where id = s.site_id;
-    outcome := random();
-    batt := 20 + (random() * 75)::int;
-
-    -- ---------------- currently running shifts (started, not yet due to end)
-    if s.scheduled_end > now() then
-      -- Scenarios are assigned by ordinal among live shifts so the demo is time-of-day independent:
-      -- 1 = late / no-show (left scheduled), 2 = checked in outside fence, 3 = wandered out mid-shift,
-      -- 4 = location switched off, 5 = outage (stale), rest = normal.
-      live_idx := live_idx + 1;
-      if live_idx = 1 then
-        continue;
-      end if;
-      late := case when random() < 0.25 then 5 + (random() * 30)::int else (random() * 8)::int end;
-      st := s.scheduled_start + make_interval(mins => late);
-      if st > now() then st := now() - interval '3 minutes'; end if;
-      fl := '{}';
-      if late > ag.late_threshold_min then fl := array_append(fl, 'LATE_START'); end if;
-      inside := true;
-      -- Prakash (009) checks in outside the fence; Gopal (012) turned location off mid-shift
-      if live_idx = 2 then inside := false; fl := array_append(fl, 'OUTSIDE_FENCE'); end if;
-      tr := public.compute_trust(fl, 12, batt, false);
-      update public.shifts set status = 'in_progress', started_at = st, start_captured_at = st,
-        start_selfie_path = ag.id || '/selfies/' || s.id || '/start.jpg',
-        start_lat = site.lat + (case when inside then 0.0002 else 0.0045 end), start_lng = site.lng + 0.0001, start_accuracy_m = 8 + random() * 20,
-        start_in_fence = inside, start_distance_m = case when inside then 0 else 420 end,
-        flags = fl, late_by_min = late, trust = tr,
-        device = jsonb_build_object('battery_pct', batt, 'model', (array['Redmi 9A','Samsung M12','Realme C11','Vivo Y20'])[1 + (random() * 3)::int], 'app_version', '1.0.0', 'is_mock', false)
-      where id = s.id;
-      insert into public.events (agency_id, site_id, guard_id, shift_id, type, severity, title, payload, created_at)
-      values (ag.id, s.site_id, s.guard_id, s.id, 'CHECK_IN', 'info', s.full_name || ' checked in', jsonb_build_object('in_fence', inside, 'late_by_min', late), st);
-      if not inside then
-        insert into public.events (agency_id, site_id, guard_id, shift_id, type, severity, title, payload, created_at)
-        values (ag.id, s.site_id, s.guard_id, s.id, 'OUTSIDE_FENCE', 'warn', s.full_name || ' checked in outside the site fence', jsonb_build_object('distance_m', 420, 'body', '420 m beyond the buffered fence'), st);
-      end if;
-      if late > ag.late_threshold_min then
-        insert into public.events (agency_id, site_id, guard_id, shift_id, type, severity, title, payload, created_at)
-        values (ag.id, s.site_id, s.guard_id, s.id, 'LATE_START', 'warn', s.full_name || ' started ' || late || ' min late', jsonb_build_object('late_by_min', late), st);
-      end if;
-
-      -- breadcrumb pings every ~5 minutes until now; one guard wanders out for 25 min
-      ping_t := st; n_ping := 0; away := 0;
-      while ping_t < now() loop
-        n_ping := n_ping + 1;
-        inside := true;
-        if live_idx = 3 and n_ping between 8 and 12 then inside := false; end if;
-        if live_idx = 2 and n_ping < 3 then inside := false; end if;
-        jitter_lat := site.lat + (random() - 0.5) * 0.0012 + case when inside then 0 else 0.004 end;
-        jitter_lng := site.lng + (random() - 0.5) * 0.0012;
-        d := public.site_distance_m(site.id, jitter_lat, jitter_lng);
-        insert into public.location_pings (agency_id, guard_id, shift_id, recorded_at, lat, lng, accuracy_m, speed_mps, battery_pct, in_fence, distance_m)
-        values (ag.id, s.guard_id, s.id, ping_t, jitter_lat, jitter_lng, 6 + random() * 25, random() * 1.5, greatest(5, batt - n_ping / 3), d <= site.leeway_m, d);
-        ping_t := ping_t + make_interval(mins => 4 + (random() * 3)::int);
-      end loop;
-      perform public.recompute_away_time(s.id);
-
-      -- fence exit / enter events for the wanderer
-      if live_idx = 3 then
-        insert into public.events (agency_id, site_id, guard_id, shift_id, type, severity, title, payload, created_at)
-        select ag.id, s.site_id, s.guard_id, s.id, 'FENCE_EXIT', 'warn', s.full_name || ' left the site fence', jsonb_build_object('distance_m', 380, 'body', '380 m outside'), min(recorded_at)
-        from public.location_pings where shift_id = s.id and in_fence = false having count(*) > 0;
-        insert into public.events (agency_id, site_id, guard_id, shift_id, type, severity, title, payload, created_at)
-        select ag.id, s.site_id, s.guard_id, s.id, 'FENCE_ENTER', 'info', s.full_name || ' re-entered the site', '{}'::jsonb, max(recorded_at) + interval '4 minutes'
-        from public.location_pings where shift_id = s.id and in_fence = false having count(*) > 0;
-      end if;
-
-      -- presence row
-      insert into public.guard_presence (guard_id, agency_id, site_id, shift_id, lat, lng, accuracy_m, battery_pct, in_fence, location_enabled, last_seen_at)
-      select s.guard_id, ag.id, s.site_id, s.id, lat, lng, accuracy_m, battery_pct, in_fence, true, recorded_at
-      from public.location_pings where shift_id = s.id order by recorded_at desc limit 1;
-
-      -- location off for the last 40 minutes
-      if live_idx = 4 then
-        update public.shifts set location_enabled = false, location_off_since = now() - interval '40 minutes', trust = 'suspicious',
-          flags = array_append(flags, 'LOCATION_OFF'), last_warned_at = now() - interval '10 minutes' where id = s.id;
-        update public.guard_presence set location_enabled = false, last_seen_at = now() - interval '40 minutes' where guard_id = s.guard_id;
-        delete from public.location_pings where shift_id = s.id and recorded_at > now() - interval '40 minutes';
-        insert into public.events (agency_id, site_id, guard_id, shift_id, type, severity, title, payload, created_at)
-        values (ag.id, s.site_id, s.guard_id, s.id, 'LOCATION_OFF', 'critical', s.full_name || ' turned location OFF', jsonb_build_object('body', 'Shift will be void unless location is re-enabled or an exception is logged'), now() - interval '40 minutes');
-      end if;
-      -- stale (no pings for 22 min) -> outage
-      if live_idx = 5 then
-        delete from public.location_pings where shift_id = s.id and recorded_at > now() - interval '22 minutes';
-        update public.guard_presence set last_seen_at = now() - interval '22 minutes' where guard_id = s.guard_id;
-        insert into public.events (agency_id, site_id, guard_id, shift_id, type, severity, title, payload, created_at)
-        values (ag.id, s.site_id, s.guard_id, s.id, 'OUTAGE', 'warn', s.full_name || ': no location for 10+ min', jsonb_build_object('body', 'Last seen ' || to_char((now() - interval '22 minutes') at time zone ag.timezone, 'HH24:MI')), now() - interval '12 minutes');
-      end if;
-
-      -- patrols for this live shift
-      for route in select * from public.patrol_routes pr where pr.site_id = s.site_id and pr.is_active loop
-        p_expected := st + make_interval(mins => route.frequency_min);
-        while p_expected < s.scheduled_end loop
-          insert into public.patrols (agency_id, site_id, route_id, guard_id, shift_id, expected_at, status)
-          values (ag.id, s.site_id, route.id, s.guard_id, s.id, p_expected, 'scheduled') returning id into pid;
-          if p_expected + make_interval(mins => route.grace_min * 2) < now() then
-            -- past due: completed (most), late, or missed
-            if random() < 0.15 then
-              update public.patrols set status = 'missed' where id = pid;
-              insert into public.events (agency_id, site_id, guard_id, shift_id, type, severity, title, payload, created_at)
-              values (ag.id, s.site_id, s.guard_id, s.id, 'PATROL_MISSED', 'warn', s.full_name || ' missed patrol ' || route.name, jsonb_build_object('patrol_id', pid), p_expected + make_interval(mins => route.grace_min * 2));
-            else
-              update public.patrols set started_at = p_expected + make_interval(mins => (random() * 25)::int) where id = pid;
-              update public.patrols set ended_at = started_at + make_interval(mins => 12 + (random() * 15)::int),
-                status = (case when started_at > expected_at + make_interval(mins => route.grace_min) then 'late' else 'completed' end)::public.patrol_status,
-                distance_m = 300 + random() * 500, duration_s = 720 + (random() * 900)::int,
-                trail = jsonb_build_object('type', 'LineString', 'coordinates', jsonb_build_array(
-                  jsonb_build_array(site.lng, site.lat), jsonb_build_array(site.lng + 0.0008, site.lat + 0.0004),
-                  jsonb_build_array(site.lng + 0.0009, site.lat - 0.0005), jsonb_build_array(site.lng - 0.0004, site.lat - 0.0006), jsonb_build_array(site.lng, site.lat)))
-              where id = pid;
-              insert into public.patrol_photos (agency_id, patrol_id, file_path, lat, lng, taken_at)
-              select ag.id, pid, ag.id || '/patrols/' || pid || '/' || i || '.jpg', site.lat + 0.0003 * i, site.lng + 0.0002 * i, p.started_at + make_interval(mins => 4 * i)
-              from public.patrols p, generate_series(1, route.min_photos) i where p.id = pid;
-              insert into public.events (agency_id, site_id, guard_id, shift_id, type, severity, title, payload, created_at)
-              select ag.id, s.site_id, s.guard_id, s.id, 'PATROL_COMPLETED', 'info', s.full_name || ' completed patrol ' || route.name, jsonb_build_object('patrol_id', pid, 'photos', route.min_photos), coalesce(ended_at, now()) from public.patrols where id = pid;
-            end if;
-          elsif p_expected < now() - interval '3 minutes' and random() < 0.5 then
-            update public.patrols set status = 'in_progress', started_at = now() - interval '6 minutes' where id = pid;
-          end if;
-          p_expected := p_expected + make_interval(mins => route.frequency_min);
-        end loop;
-      end loop;
-      continue;
-    end if;
-
-    -- ---------------- completed history
-    if outcome < 0.06 then
-      update public.shifts set status = 'absent', attendance = 'absent' where id = s.id;
-      continue;
-    end if;
-    late := case when random() < 0.2 then 16 + (random() * 40)::int else (random() * 12)::int end;
-    st := s.scheduled_start + make_interval(mins => late);
-    fl := '{}';
-    if late > ag.late_threshold_min then fl := array_append(fl, 'LATE_START'); end if;
-    if outcome < 0.14 then
-      -- half day
-      en := st + make_interval(mins => 150 + (random() * 60)::int);
-      fl := array_append(fl, 'EARLY_CHECKOUT');
-    elsif outcome < 0.19 then
-      en := s.scheduled_end - make_interval(mins => 30 + (random() * 40)::int);
-      fl := array_append(fl, 'EARLY_CHECKOUT');
-    else
-      en := s.scheduled_end + make_interval(mins => (random() * 10)::int - 3);
-    end if;
-    inside := random() > 0.08;
-    if not inside then fl := array_append(fl, 'OUTSIDE_FENCE'); end if;
-    if random() < 0.04 then fl := array_append(fl, 'SYNCED_LATE'); end if;
-    worked := greatest(0, extract(epoch from (en - st)) / 60)::int;
-    away := case when random() < 0.35 then (random() * 2400)::int else (random() * 300)::int end;
-    tr := public.compute_trust(fl, 10, batt, false);
-
-    update public.shifts set status = 'completed', started_at = st, start_captured_at = st, ended_at = en, end_captured_at = en,
-      start_selfie_path = ag.id || '/selfies/' || s.id || '/start.jpg', end_selfie_path = ag.id || '/selfies/' || s.id || '/end.jpg',
-      start_lat = site.lat + 0.0002, start_lng = site.lng - 0.0001, start_accuracy_m = 7 + random() * 20, start_in_fence = inside, start_distance_m = case when inside then 0 else 300 end,
-      end_lat = site.lat - 0.0001, end_lng = site.lng + 0.0002, end_accuracy_m = 9 + random() * 20, end_in_fence = true,
-      flags = fl, late_by_min = late, worked_minutes = worked, away_seconds = away, trust = tr,
-      device = jsonb_build_object('battery_pct', batt, 'model', (array['Redmi 9A','Samsung M12','Realme C11','Vivo Y20'])[1 + (random() * 3)::int], 'app_version', '1.0.0')
-    where id = s.id;
-    perform public.compute_attendance(s.id);
-
-    -- a sparse trail (every ~30 min) so day views have data without millions of rows
-    ping_t := st;
-    while ping_t < en loop
-      insert into public.location_pings (agency_id, guard_id, shift_id, recorded_at, lat, lng, accuracy_m, battery_pct, in_fence, distance_m)
-      values (ag.id, s.guard_id, s.id, ping_t, site.lat + (random() - 0.5) * 0.001, site.lng + (random() - 0.5) * 0.001, 8 + random() * 20, batt, true, 0);
-      ping_t := ping_t + interval '30 minutes';
-    end loop;
-
-    insert into public.events (agency_id, site_id, guard_id, shift_id, type, severity, title, payload, created_at) values
-      (ag.id, s.site_id, s.guard_id, s.id, 'CHECK_IN', 'info', s.full_name || ' checked in', jsonb_build_object('in_fence', inside, 'late_by_min', late), st),
-      (ag.id, s.site_id, s.guard_id, s.id, 'CHECK_OUT', 'info', s.full_name || ' checked out', jsonb_build_object('worked_minutes', worked), en);
-    if late > ag.late_threshold_min then
-      insert into public.events (agency_id, site_id, guard_id, shift_id, type, severity, title, payload, created_at)
-      values (ag.id, s.site_id, s.guard_id, s.id, 'LATE_START', 'warn', s.full_name || ' started ' || late || ' min late', jsonb_build_object('late_by_min', late), st);
-    end if;
-    if not inside then
-      insert into public.events (agency_id, site_id, guard_id, shift_id, type, severity, title, payload, created_at)
-      values (ag.id, s.site_id, s.guard_id, s.id, 'OUTSIDE_FENCE', 'warn', s.full_name || ' checked in outside the site fence', jsonb_build_object('distance_m', 300), st);
-    end if;
-
-    -- patrol history
-    for route in select * from public.patrol_routes pr where pr.site_id = s.site_id and pr.is_active loop
-      p_expected := st + make_interval(mins => route.frequency_min);
-      while p_expected < en loop
-        insert into public.patrols (agency_id, site_id, route_id, guard_id, shift_id, expected_at, status)
-        values (ag.id, s.site_id, route.id, s.guard_id, s.id, p_expected, 'scheduled') returning id into pid;
-        if random() < 0.12 then
-          update public.patrols set status = 'missed' where id = pid;
-        else
-          update public.patrols set started_at = p_expected + make_interval(mins => (random() * 28)::int) where id = pid;
-          update public.patrols set ended_at = started_at + make_interval(mins => 10 + (random() * 15)::int),
-            status = (case when started_at > expected_at + make_interval(mins => route.grace_min) then 'late' else 'completed' end)::public.patrol_status,
-            distance_m = 300 + random() * 500, duration_s = 600 + (random() * 900)::int where id = pid;
-          insert into public.patrol_photos (agency_id, patrol_id, file_path, lat, lng, taken_at)
-          select ag.id, pid, ag.id || '/patrols/' || pid || '/' || i || '.jpg', site.lat, site.lng, p.started_at + make_interval(mins => 3 * i)
-          from public.patrols p, generate_series(1, route.min_photos) i where p.id = pid;
-        end if;
-        p_expected := p_expected + make_interval(mins => route.frequency_min);
-      end loop;
-    end loop;
-  end loop;
-
-  -- one void shift 3 days ago (Anil, night) with an exception logged the next morning on a different one
-  update public.shifts set status = 'void_location_off', attendance = 'absent', trust = 'suspicious',
-    flags = array_append(flags, 'LOCATION_OFF'), location_off_seconds = 5400
-  where guard_id = 'e0000000-0000-4000-8000-000000000005' and shift_date = current_date - 3;
-  insert into public.events (agency_id, site_id, guard_id, shift_id, type, severity, title, payload, created_at)
-  select agency_id, site_id, guard_id, id, 'SHIFT_VOID', 'critical', 'Anil Kumar Sahu: shift void — location was off', jsonb_build_object('location_off_seconds', 5400), coalesce(ended_at, scheduled_end)
-  from public.shifts where guard_id = 'e0000000-0000-4000-8000-000000000005' and shift_date = current_date - 3;
-
-  -- a supervisor override with audit trail (Lakshmi, 8 days ago, wrongly absent)
-  update public.shifts set override_attendance = 'present', attendance = 'present', status = 'completed', override_by = 'b0000000-0000-4000-8000-000000000002',
-    override_reason = 'Guard was present; phone battery died before check-in. Verified with client security desk.', override_at = now() - interval '7 days'
-  where guard_id = 'e0000000-0000-4000-8000-000000000007' and shift_date = current_date - 8;
-  insert into public.audit_logs (agency_id, actor_id, entity_type, entity_id, action, reason, before, after, created_at)
-  select agency_id, 'b0000000-0000-4000-8000-000000000002', 'shift', id, 'attendance_override', override_reason, '{"attendance":"absent"}'::jsonb, '{"attendance":"present"}'::jsonb, now() - interval '7 days'
-  from public.shifts where guard_id = 'e0000000-0000-4000-8000-000000000007' and shift_date = current_date - 8;
-
-  -- tamper event 2 days ago for Imran
-  insert into public.events (agency_id, site_id, guard_id, shift_id, type, severity, title, payload, created_at)
-  select agency_id, site_id, guard_id, id, 'TAMPER_SUSPECTED', 'critical', 'Imran Pasha: mock location during shift', '{"lat":13.03,"lng":77.54}'::jsonb, started_at + interval '90 minutes'
-  from public.shifts where guard_id = 'e0000000-0000-4000-8000-000000000011' and shift_date = current_date - 2 and started_at is not null;
-  update public.shifts set flags = array_append(flags, 'TAMPER_SUSPECTED'), trust = 'suspicious'
-  where guard_id = 'e0000000-0000-4000-8000-000000000011' and shift_date = current_date - 2 and started_at is not null;
-
-  -- leave events
-  insert into public.events (agency_id, site_id, guard_id, type, severity, title, payload, created_at)
-  select agency_id, site_id, guard_id, 'LEAVE_REQUESTED', 'info', (select full_name from public.guards g where g.id = lr.guard_id) || ' requested ' || type || ' leave', jsonb_build_object('leave_id', id, 'from', start_date, 'to', end_date), created_at
-  from public.leave_requests lr where status = 'pending';
-end $$;
+select public.simulate_agency_history('a0000000-0000-4000-8000-000000000001');
 
 -- Late-start alert for the no-show (scheduled, not started, already due)
 insert into public.events (agency_id, site_id, guard_id, shift_id, type, severity, title, payload, created_at)
@@ -563,4 +417,94 @@ begin
     v_site.lat - 0.0009, v_site.lng + 0.0008, 'resolved',
     'Store manager suspended both loaders pending the contractor''s enquiry. We have added a second guard to the dock for the evening peak and briefed the team to call the control room before intervening physically.',
     v_when + interval '20 hours', 'b0000000-0000-4000-8000-000000000001');
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- Seven more incidents across the expanded book, spread over the last three
+-- weeks so the list has a real newest-first spine and every status/severity
+-- combination the board can filter on is represented.
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  v_agency uuid := 'a0000000-0000-4000-8000-000000000001';
+  r record;
+  v_guard uuid;
+  v_site record;
+  v_at timestamptz;
+begin
+  for r in
+    select * from (values
+      ('11000000-0000-4000-8000-000000000004', 'c0000000-0000-4000-8000-000000000005', 'medical', 'high', 'resolved',
+       1, '15:40',
+       'Visitor collapsed in the Block 9 lobby',
+       'A visitor waiting at the Block 9 reception collapsed at around the shift-change hour. Our head guard cleared the area, put him in the recovery position and called the Embassy facility desk and 108 at the same time. The ambulance reached in eleven minutes. The client''s own first-aid kit was used for the oxygen mask. The visitor was conscious before he was moved.',
+       'Client''s facility head recorded it as handled correctly and asked us to put one first-aid trained guard on every day shift at Block 9. Two guards are booked onto the next St John first-aid batch.',
+       'b0000000-0000-4000-8000-000000000001', 'b0000000-0000-4000-8000-000000000001', true),
+
+      ('11000000-0000-4000-8000-000000000005', 'c0000000-0000-4000-8000-000000000008', 'fire', 'critical', 'resolved',
+       3, '02:15',
+       'Cardboard baler caught fire at the rear of the fulfilment centre',
+       'The cardboard baler at the rear of the FC began smoking during the night shift and caught flame. The night guard raised the alarm on the walkie, pulled the nearest two extinguishers and got the shutter down to stop the draught. The client''s own fire team and the Nelamangala tender both attended. No stock loss beyond the baled waste; no injuries.',
+       'Client''s EHS team found the baler motor had been running past its duty cycle. We have added a baler temperature check to the dock patrol round and the guard who raised the alarm has been recommended for the quarterly award.',
+       'b0000000-0000-4000-8000-000000000001', 'b0000000-0000-4000-8000-000000000001', true),
+
+      ('11000000-0000-4000-8000-000000000006', 'c0000000-0000-4000-8000-000000000007', 'altercation_with_client', 'moderate', 'investigating',
+       5, '11:05',
+       'Patient attender abused the guard at the OPD queue',
+       'An attender in the OPD queue became abusive when asked to wait behind the line and pushed our lady guard. The hospital''s duty manager intervened. Our guard did not retaliate. The attender was escorted out by hospital security. We have asked the client for CCTV of the OPD counter for the enquiry file.',
+       null,
+       'b0000000-0000-4000-8000-000000000001', null, false),
+
+      ('11000000-0000-4000-8000-000000000007', 'c0000000-0000-4000-8000-000000000004', 'theft', 'high', 'investigating',
+       8, '07:20',
+       'Two bicycles taken from the Tower C basement',
+       'Two residents reported bicycles missing from the Tower C basement stand on the same morning. The basement has no camera on the cycle stand and the night register shows no material-out entry. A scrap collector who had been let in for a flat renovation on the 9th floor is the line of enquiry; his entry was logged but his exit was not.',
+       null,
+       'b0000000-0000-4000-8000-000000000001', null, false),
+
+      ('11000000-0000-4000-8000-000000000008', 'c0000000-0000-4000-8000-000000000010', 'vandalism', 'moderate', 'investigating',
+       11, '06:10',
+       'Back gate lock broken and graffiti on the playground wall',
+       'The back gate chain lock was found cut and the playground boundary wall had fresh spray paint when the morning guard opened up. Nothing was taken from the campus. The school has asked whether the night post should be extended to cover the back gate, which is currently outside the patrol round.',
+       null,
+       'b0000000-0000-4000-8000-000000000001', null, false),
+
+      ('11000000-0000-4000-8000-000000000009', 'c0000000-0000-4000-8000-000000000006', 'unauthorised_vehicle', 'low', 'resolved',
+       14, '19:35',
+       'Car parked in the fire lane without a pass for two hours',
+       'A car with no parking pass was left in the mall''s east fire lane through the evening peak. The evening guard logged it, put a notice on the windscreen and called the mall control room; the owner was traced through a tenant and moved it.',
+       'Mall operations have agreed to a wheel-clamp for repeat offenders and we have added a fire-lane sweep to the concourse round.',
+       'b0000000-0000-4000-8000-000000000001', 'b0000000-0000-4000-8000-000000000001', true),
+
+      ('11000000-0000-4000-8000-00000000000a', 'c0000000-0000-4000-8000-000000000009', 'property_damage', 'low', 'resolved',
+       19, '10:50',
+       'ATM lobby shutter dented by a reversing auto',
+       'An auto reversing in the lane clipped the ATM lobby shutter and dented the lower panel. The shutter still operates. Our guard noted the auto number and the branch manager was informed the same morning.',
+       'Branch manager raised it with the auto owner, who paid for the panel. No claim on us.',
+       'b0000000-0000-4000-8000-000000000001', 'b0000000-0000-4000-8000-000000000001', true)
+    ) as t(id, site_id, itype, sev, st, days_ago, at_time, title, body, resolution, reporter, resolver, is_resolved)
+  loop
+    select * into v_site from public.sites where id = r.site_id::uuid;
+    v_at := ((current_date - r.days_ago) + r.at_time::time) at time zone 'Asia/Kolkata';
+
+    -- Pin it onto a guard who was actually on that post around then, when there is one.
+    select sh.guard_id into v_guard
+    from public.shifts sh
+    where sh.site_id = r.site_id::uuid
+      and sh.scheduled_start <= v_at
+      and sh.scheduled_end   >= v_at
+    order by sh.scheduled_start desc limit 1;
+    if v_guard is null then
+      select id into v_guard from public.guards where site_id = r.site_id::uuid and status = 'active' limit 1;
+    end if;
+
+    insert into public.incidents (id, agency_id, site_id, type, severity, title, description, occurred_at,
+      reported_by, guard_id, lat, lng, status, resolution, resolved_at, resolved_by)
+    values (r.id::uuid, v_agency, r.site_id::uuid, r.itype::public.incident_type, r.sev::public.incident_severity,
+      r.title, r.body, v_at, r.reporter::uuid, v_guard,
+      v_site.lat + (random() - 0.5) * 0.0018, v_site.lng + (random() - 0.5) * 0.0018,
+      r.st::public.incident_status, r.resolution,
+      case when r.is_resolved then v_at + interval '18 hours' else null end,
+      r.resolver::uuid);
+  end loop;
 end $$;

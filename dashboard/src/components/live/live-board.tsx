@@ -115,7 +115,10 @@ export function LiveBoard({
           <Count label="Location off" value={counts.locationOff} tone={counts.locationOff ? "signal" : "neutral"} />
           <Count label="Not seen" value={counts.stale} tone={counts.stale ? "neutral" : "neutral"} />
         </div>
-        <div className="ml-auto flex items-center gap-2">
+        {/* A tenant with twenty-five sites turns this into a 4,000px row that drags the
+            whole page sideways, so the strip scrolls inside itself: `min-w-0` lets it
+            shrink below its content, `overflow-x-auto` keeps the overflow local. */}
+        <div className="ml-auto flex min-w-0 items-center gap-2 overflow-x-auto">
           <Button variant={siteId ? "outline" : "secondary"} size="sm" onClick={() => { setSiteId(null); setSelected(null); }}>
             All sites
           </Button>
@@ -125,7 +128,7 @@ export function LiveBoard({
               variant={siteId === s.id ? "secondary" : "ghost"}
               size="sm"
               onClick={() => { setSiteId(s.id); setSelected(null); }}
-              className="hidden lg:inline-flex"
+              className="hidden shrink-0 lg:inline-flex"
             >
               {s.name.split("—")[0]!.trim()}
             </Button>

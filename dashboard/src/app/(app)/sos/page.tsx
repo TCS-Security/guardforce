@@ -12,17 +12,17 @@ export default async function SosPage() {
   requirePermission(session, "events:read");
   const crew = await loadPreviewCrew(session);
   const now = new Date();
-  const { alerts, lone } = generateSos(crew, now);
+  const { alerts } = generateSos(crew, now);
 
   return (
     <div className="mx-auto flex max-w-[1400px] flex-col gap-6">
       <PageHeader
         eyebrow={<>Monitor · SOS</>}
-        title="SOS & lone workers"
-        description="Panic button, fall detection, and a check-in timer for guards alone on a post. Every alert stays on top until someone owns it."
+        title="SOS alerts"
+        description="A guard presses and holds SOS, or the phone detects a fall. Every alert stays on top until someone owns it."
       />
       <PreviewBanner />
-      <SosBoard initial={alerts} lone={lone} now={now.toISOString()} canRespond={session.can("events:acknowledge")} responder={session.profile.full_name} />
+      <SosBoard initial={alerts} now={now.toISOString()} canRespond={session.can("events:acknowledge")} responder={session.profile.full_name} />
     </div>
   );
 }

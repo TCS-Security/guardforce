@@ -13,6 +13,13 @@ export type AlertnessPolicy = {
   window_end_h: number;
   /** Seconds a guard has to answer before the check counts as late. */
   respond_within_s: number;
+  /**
+   * Seconds before the phone nudges a second time, quietly, with nobody told.
+   * A guard who does not answer in the first minute is usually in the toilet, up a
+   * stairwell, or stuck with a resident at the barrier — not asleep. The reminder
+   * buys that back so the escalation below stays rare enough to mean something.
+   */
+  remind_after_s: number;
   /** Seconds after which an unanswered check is missed and the supervisor is called. */
   escalate_after_s: number;
 };
@@ -23,6 +30,7 @@ export const DEFAULT_ALERTNESS_POLICY: AlertnessPolicy = {
   window_start_h: 22,
   window_end_h: 6,
   respond_within_s: 5 * 60,
+  remind_after_s: 4 * 60,
   escalate_after_s: 10 * 60,
 };
 

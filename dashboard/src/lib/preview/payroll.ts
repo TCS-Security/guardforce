@@ -18,6 +18,22 @@ export type PayPolicy = {
   ot: OtPolicy;
 };
 
+/**
+ * Karnataka's security-guard minimum wage, as revised on 22 May 2026: the Bengaluru
+ * (Zone 1) floor for an unskilled guard went from Rs 18,997 to Rs 25,714 a month, with
+ * semi-skilled at Rs 28,285. Two consequences fall out of the arithmetic and are worth
+ * saying out loud in a demo: every guard is now above the Rs 21,000 ESI ceiling, so ESI
+ * stops applying, and every guard is above Rs 25,000, so professional tax starts.
+ */
+export const MIN_WAGE_2026 = {
+  /** Zone 1 unskilled floor. No guard may be generated below this. */
+  guard_floor: 25714,
+  guard_bands: [25714, 26500, 27400, 28285],
+  /** Ex-servicemen gunmen carry an arms licence and price at roughly 1.3x the floor. */
+  gunman_bands: [33000, 33428, 34500],
+  supervisor_bands: [30000, 32000, 34000],
+} as const;
+
 export const DEFAULT_PAY_POLICY: PayPolicy = {
   working_days: 26,
   pf_rate: 0.12,
@@ -88,7 +104,12 @@ export function generatePayroll(crew: Crew, month: string, policy: PayPolicy = D
   return crew.guards.map((guard) => {
     const r = rng(`pay:${guard.id}:${month}`);
     const supervisor = /supervisor/i.test(guard.full_name) || r.chance(0.1);
-    const monthly_wage = supervisor ? r.pick([24000, 26000, 28000]) : r.pick([16500, 17500, 18200, 19000, 21000]);
+    const gunman = !supervisor && (/gunman/i.test(guard.full_name) || r.chance(0.08));
+    const monthly_wage = supervisor
+      ? r.pick([...MIN_WAGE_2026.supervisor_bands])
+      : gunman
+        ? r.pick([...MIN_WAGE_2026.gunman_bands])
+        : r.pick([...MIN_WAGE_2026.guard_bands]);
     const absent = r.int(0, 4);
     const half_days = r.int(0, 3);
     const paid_leave = r.int(0, 2);

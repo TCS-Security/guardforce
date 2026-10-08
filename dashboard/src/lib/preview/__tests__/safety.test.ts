@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { checkStatus, generateAlertness, median, nightlySummary, repeatOffenders } from "../alertness";
-import { ackSeconds, generateSos, timerState } from "../sos";
+import { DEFAULT_ALERTNESS_POLICY, checkStatus, generateAlertness, median, nightlySummary, repeatOffenders } from "../alertness";
+import { ackSeconds, generateSos } from "../sos";
 import { crew } from "./fixtures";
 
 describe("alertness checks", () => {
@@ -36,17 +36,21 @@ describe("alertness checks", () => {
     expect(median([5, 1, 3])).toBe(3);
     expect(median([1, 2, 3, 4])).toBe(3);
   });
+
+  it("gives the guard a reminder before anyone is called", () => {
+    const p = DEFAULT_ALERTNESS_POLICY;
+    // The nudge must land before the escalation, or it can never fire.
+    expect(p.remind_after_s).toBeLessThan(p.escalate_after_s);
+    // A guard who was simply away from the phone for a few minutes is not "missed".
+    expect(checkStatus(3 * 60)).toBe("on_time");
+    expect(checkStatus(6 * 60)).toBe("late");
+    expect(checkStatus(11 * 60)).toBe("missed");
+    expect(checkStatus(null)).toBe("missed");
+  });
 });
 
 describe("sos", () => {
   const now = new Date("2026-10-08T10:00:00Z");
-
-  it("reads a dead-man timer as ok, due, or lapsed", () => {
-    const tap = (minsAgo: number) => ({ interval_min: 30, last_tap_at: new Date(now.getTime() - minsAgo * 60000).toISOString() });
-    expect(timerState(tap(10), now).state).toBe("ok");
-    expect(timerState(tap(26), now).state).toBe("due");
-    expect(timerState(tap(31), now).state).toBe("lapsed");
-  });
 
   it("always has one live, unacknowledged alert to show", () => {
     const { alerts } = generateSos(crew, now);
