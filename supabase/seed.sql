@@ -71,6 +71,18 @@ insert into public.sites (id, agency_id, name, client_name, address, city, lat, 
   ('c0000000-0000-4000-8000-000000000003', 'a0000000-0000-4000-8000-000000000001', 'Metro Cash & Carry, Yeshwanthpur', 'Metro Wholesale', 'Tumkur Rd, Yeshwanthpur Industrial Suburb', 'Bengaluru', 13.02810, 77.54220, 'radius', 220, null, 60, 4, true),
   ('c0000000-0000-4000-8000-000000000004', 'a0000000-0000-4000-8000-000000000001', 'Sobha Dream Acres', 'Sobha Ltd', 'Panathur Main Rd, Balagere', 'Bengaluru', 12.93420, 77.72780, 'radius', 250, null, 50, 3, true);
 
+
+-- Six more live sites, so the book looks like a real mid-size agency: an IT park,
+-- a mall, a hospital, a fulfilment centre, a bank branch and a school.
+insert into public.sites (id, agency_id, name, client_name, address, city, lat, lng, fence_type, radius_m, polygon, leeway_m, guards_required, patrol_photo_required) values
+  ('c0000000-0000-4000-8000-000000000005', 'a0000000-0000-4000-8000-000000000001', 'Manyata Embassy Business Park — Block 9', 'Embassy Group', 'Outer Ring Rd, Nagavara, Rachenahalli', 'Bengaluru', 13.04560, 77.62030, 'radius', 200, null, 50, 6, true),
+  ('c0000000-0000-4000-8000-000000000006', 'a0000000-0000-4000-8000-000000000001', 'Phoenix Marketcity, Whitefield', 'Phoenix Mills', 'Whitefield Main Rd, Mahadevapura', 'Bengaluru', 12.99700, 77.69670, 'radius', 240, null, 60, 5, true),
+  ('c0000000-0000-4000-8000-000000000007', 'a0000000-0000-4000-8000-000000000001', 'Columbia Asia Hospital, Hebbal', 'Columbia Asia', 'Kirloskar Business Park, Bellary Rd, Hebbal', 'Bengaluru', 13.03580, 77.59120, 'radius', 160, null, 40, 4, true),
+  ('c0000000-0000-4000-8000-000000000008', 'a0000000-0000-4000-8000-000000000001', 'Delhivery Fulfilment Centre, Nelamangala', 'Delhivery Ltd', 'NH-48 Service Rd, Sondekoppa, Nelamangala', 'Bengaluru', 13.09940, 77.39450, 'polygon', 200,
+    '{"type":"Polygon","coordinates":[[[77.3920,13.0980],[77.3972,13.0984],[77.3976,13.1012],[77.3922,13.1008],[77.3920,13.0980]]]}'::jsonb, 60, 4, true),
+  ('c0000000-0000-4000-8000-000000000009', 'a0000000-0000-4000-8000-000000000001', 'Karnataka Bank — Jayanagar 4th Block', 'Karnataka Bank', '11th Main Rd, Jayanagar 4th Block', 'Bengaluru', 12.92790, 77.58340, 'radius', 90, null, 30, 2, false),
+  ('c0000000-0000-4000-8000-000000000010', 'a0000000-0000-4000-8000-000000000001', 'Vidyashilp Academy, Jakkur', 'Vidyashilp Trust', 'Jakkur Plantation, Yelahanka', 'Bengaluru', 13.07660, 77.60410, 'radius', 220, null, 50, 3, false);
+
 insert into public.supervisor_sites (profile_id, site_id, agency_id) values
   ('b0000000-0000-4000-8000-000000000002', 'c0000000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000001'),
   ('b0000000-0000-4000-8000-000000000002', 'c0000000-0000-4000-8000-000000000002', 'a0000000-0000-4000-8000-000000000001'),
@@ -107,6 +119,52 @@ insert into public.guards (id, agency_id, employee_code, full_name, phone, phone
   ('e0000000-0000-4000-8000-000000000015', 'a0000000-0000-4000-8000-000000000001', 'SSS-015', 'Manjunath B', '9900000015', null, null, null, 'c0000000-0000-4000-8000-000000000003', 'b0000000-0000-4000-8000-000000000003', 'invited', null, null, '{kn}', null),
   ('e0000000-0000-4000-8000-000000000016', 'a0000000-0000-4000-8000-000000000001', 'SSS-016', 'Rajni Kant', '9900000016', now() - interval '2 days', extensions.crypt('1234', extensions.gen_salt('bf')), null, 'c0000000-0000-4000-8000-000000000002', 'b0000000-0000-4000-8000-000000000002', 'active', 'a0000000-0000-4000-8000-000000000001/selfies/reg/SSS-016.jpg', now() - interval '2 days', '{hi,bho}', '1996-07-07');
 
+-- Twenty-four more guards for the new sites (PIN 1234 for all). Tenure is spread so the
+-- guard list shows a realistic mix of old hands and recent joiners.
+insert into public.guards (id, agency_id, employee_code, full_name, phone, phone_verified_at, pin_hash, designation, site_id, supervisor_id, status, registration_selfie_path, joined_at, languages, date_of_birth)
+select
+  ('e0000000-0000-4000-8000-' || lpad(v.n::text, 12, '0'))::uuid,
+  'a0000000-0000-4000-8000-000000000001',
+  'SSS-' || lpad(v.n::text, 3, '0'),
+  v.full_name,
+  '99000000' || lpad(v.n::text, 2, '0'),
+  now() - ((v.n * 7) || ' days')::interval,
+  extensions.crypt('1234', extensions.gen_salt('bf')),
+  v.designation,
+  v.site_id::uuid,
+  v.supervisor_id::uuid,
+  'active',
+  'a0000000-0000-4000-8000-000000000001/selfies/reg/SSS-' || lpad(v.n::text, 3, '0') || '.jpg',
+  now() - ((v.n * 7) || ' days')::interval,
+  v.languages::text[],
+  v.dob::date
+from (values
+  (17, 'Mahesh Pawar',        'Head Guard',   'c0000000-0000-4000-8000-000000000005', 'b0000000-0000-4000-8000-000000000001', '{mr,hi}',  '1983-02-11'),
+  (18, 'Satyendra Mishra',    'Gate Guard',   'c0000000-0000-4000-8000-000000000005', 'b0000000-0000-4000-8000-000000000001', '{hi}',     '1990-06-24'),
+  (19, 'Nagaraj Hiremath',    'Gate Guard',   'c0000000-0000-4000-8000-000000000005', 'b0000000-0000-4000-8000-000000000001', '{kn}',     '1988-09-30'),
+  (20, 'Pintu Mandal',        'Patrol Guard', 'c0000000-0000-4000-8000-000000000005', 'b0000000-0000-4000-8000-000000000001', '{bn,hi}',  '1994-04-02'),
+  (21, 'Jagdish Barman',      'Night Guard',  'c0000000-0000-4000-8000-000000000005', 'b0000000-0000-4000-8000-000000000001', '{as,hi}',  '1991-12-18'),
+  (22, 'Ravi Shankar Tiwari', 'Night Guard',  'c0000000-0000-4000-8000-000000000005', 'b0000000-0000-4000-8000-000000000001', '{hi,bho}', '1986-08-07'),
+  (23, 'Firoz Khan',          'Head Guard',   'c0000000-0000-4000-8000-000000000006', 'b0000000-0000-4000-8000-000000000001', '{ur,hi}',  '1985-05-19'),
+  (24, 'Sunita Rani',         'Lady Guard',   'c0000000-0000-4000-8000-000000000006', 'b0000000-0000-4000-8000-000000000001', '{hi,pa}',  '1993-03-27'),
+  (25, 'Basavaraj Kamble',    'Gate Guard',   'c0000000-0000-4000-8000-000000000006', 'b0000000-0000-4000-8000-000000000001', '{kn,mr}',  '1989-11-14'),
+  (26, 'Chandan Rai',         'Patrol Guard', 'c0000000-0000-4000-8000-000000000006', 'b0000000-0000-4000-8000-000000000001', '{hi,mai}', '1995-07-21'),
+  (27, 'Ashok Pradhan',       'Night Guard',  'c0000000-0000-4000-8000-000000000006', 'b0000000-0000-4000-8000-000000000001', '{or,hi}',  '1987-01-09'),
+  (28, 'Geetha Srinivasan',   'Lady Guard',   'c0000000-0000-4000-8000-000000000007', 'b0000000-0000-4000-8000-000000000001', '{ta,kn}',  '1992-10-05'),
+  (29, 'Devendra Chauhan',    'Gate Guard',   'c0000000-0000-4000-8000-000000000007', 'b0000000-0000-4000-8000-000000000001', '{hi}',     '1984-02-28'),
+  (30, 'Kiran Shetty',        'Head Guard',   'c0000000-0000-4000-8000-000000000007', 'b0000000-0000-4000-8000-000000000001', '{kn,tu}',  '1981-09-16'),
+  (31, 'Munna Paswan',        'Night Guard',  'c0000000-0000-4000-8000-000000000007', 'b0000000-0000-4000-8000-000000000001', '{hi}',     '1996-05-11'),
+  (32, 'Tej Bahadur Rana',    'Head Guard',   'c0000000-0000-4000-8000-000000000008', 'b0000000-0000-4000-8000-000000000001', '{ne,hi}',  '1982-12-04'),
+  (33, 'Sanjay Kurmi',        'Gate Guard',   'c0000000-0000-4000-8000-000000000008', 'b0000000-0000-4000-8000-000000000001', '{hi}',     '1990-08-23'),
+  (34, 'Mallikarjun Patil',   'Patrol Guard', 'c0000000-0000-4000-8000-000000000008', 'b0000000-0000-4000-8000-000000000001', '{kn}',     '1993-06-13'),
+  (35, 'Rakesh Oraon',        'Night Guard',  'c0000000-0000-4000-8000-000000000008', 'b0000000-0000-4000-8000-000000000001', '{hi}',     '1997-02-20'),
+  (36, 'Vinod Kulkarni',      'Head Guard',   'c0000000-0000-4000-8000-000000000009', 'b0000000-0000-4000-8000-000000000001', '{mr,kn}',  '1979-04-08'),
+  (37, 'Arvind Choudhary',    'Gate Guard',   'c0000000-0000-4000-8000-000000000009', 'b0000000-0000-4000-8000-000000000001', '{hi}',     '1991-10-29'),
+  (38, 'Shobha Hegde',        'Lady Guard',   'c0000000-0000-4000-8000-000000000010', 'b0000000-0000-4000-8000-000000000001', '{kn}',     '1994-01-17'),
+  (39, 'Ganesh Kamath',       'Gate Guard',   'c0000000-0000-4000-8000-000000000010', 'b0000000-0000-4000-8000-000000000001', '{kn,tu}',  '1988-07-26'),
+  (40, 'Hemant Dubey',        'Night Guard',  'c0000000-0000-4000-8000-000000000010', 'b0000000-0000-4000-8000-000000000001', '{hi}',     '1986-11-30')
+) as v(n, full_name, designation, site_id, supervisor_id, languages, dob);
+
 update public.guards set invited_at = now() - interval '3 days' where status = 'invited';
 insert into public.guard_invites (agency_id, guard_id, channel, sent_at, created_by)
 values ('a0000000-0000-4000-8000-000000000001', 'e0000000-0000-4000-8000-000000000015', 'whatsapp', now() - interval '3 days', 'b0000000-0000-4000-8000-000000000003');
@@ -122,6 +180,19 @@ select 'a0000000-0000-4000-8000-000000000001', g.id, t.type,
 from public.guards g
 cross join (values ('aadhaar'::public.document_type), ('pan'), ('police_verification'), ('guard_kyc')) as t(type)
 where g.employee_code between 'SSS-001' and 'SSS-013';
+
+-- Full KYC for the new guards, with two police verifications still pending so the
+-- compliance warnings have something real to point at.
+insert into public.guard_documents (agency_id, guard_id, type, file_path, mime_type, number_masked, status, verified_by, verified_at, uploaded_by, issued_on)
+select 'a0000000-0000-4000-8000-000000000001', g.id, t.type,
+  'a0000000-0000-4000-8000-000000000001/kyc/' || g.employee_code || '/' || t.type || '.jpg', 'image/jpeg',
+  case t.type when 'aadhaar' then 'XXXX XXXX ' || lpad((1000 + (random() * 8999)::int)::text, 4, '0')
+              when 'pan' then 'XXXXX' || lpad((1000 + (random() * 8999)::int)::text, 4, '0') || 'X' else null end,
+  (case when g.employee_code in ('SSS-023', 'SSS-031') and t.type = 'police_verification' then 'pending' else 'verified' end)::public.document_status,
+  'b0000000-0000-4000-8000-000000000001', g.joined_at + interval '2 days', 'b0000000-0000-4000-8000-000000000001', (g.joined_at - interval '400 days')::date
+from public.guards g
+cross join (values ('aadhaar'::public.document_type), ('pan'), ('police_verification'), ('guard_kyc')) as t(type)
+where g.employee_code between 'SSS-017' and 'SSS-040';
 
 -- marksheet for a few
 insert into public.guard_documents (agency_id, guard_id, type, file_path, mime_type, status, uploaded_by)
@@ -160,6 +231,38 @@ insert into public.roster_patterns (agency_id, site_id, guard_id, shift_type_id,
   ('a0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000003', 'e0000000-0000-4000-8000-000000000012', pg_temp.st('c0000000-0000-4000-8000-000000000003', 'Night'), '{0,1,2,3,4,5,6}', current_date - 45, 'b0000000-0000-4000-8000-000000000003'),
   ('a0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000004', 'e0000000-0000-4000-8000-000000000013', pg_temp.st('c0000000-0000-4000-8000-000000000004', 'Day'), '{1,2,3,4,5,6}', current_date - 45, 'b0000000-0000-4000-8000-000000000001');
 
+-- Roster patterns for the new sites. Day/Evening/Night split per the guards' designations.
+insert into public.roster_patterns (agency_id, site_id, guard_id, shift_type_id, weekdays, starts_on, created_by)
+select 'a0000000-0000-4000-8000-000000000001', v.site_id::uuid,
+  ('e0000000-0000-4000-8000-' || lpad(v.n::text, 12, '0'))::uuid,
+  pg_temp.st(v.site_id::uuid, v.shift), v.weekdays::int[], current_date - 45, v.created_by::uuid
+from (values
+  (17, 'c0000000-0000-4000-8000-000000000005', 'Day',     '{1,2,3,4,5,6}',   'b0000000-0000-4000-8000-000000000001'),
+  (18, 'c0000000-0000-4000-8000-000000000005', 'Day',     '{0,1,2,3,4,5,6}', 'b0000000-0000-4000-8000-000000000001'),
+  (19, 'c0000000-0000-4000-8000-000000000005', 'Evening', '{0,1,2,3,4,5,6}', 'b0000000-0000-4000-8000-000000000001'),
+  (20, 'c0000000-0000-4000-8000-000000000005', 'Evening', '{0,1,2,3,4,5,6}', 'b0000000-0000-4000-8000-000000000001'),
+  (21, 'c0000000-0000-4000-8000-000000000005', 'Night',   '{0,1,2,3,4,5,6}', 'b0000000-0000-4000-8000-000000000001'),
+  (22, 'c0000000-0000-4000-8000-000000000005', 'Night',   '{0,1,2,3,4,5,6}', 'b0000000-0000-4000-8000-000000000001'),
+  (23, 'c0000000-0000-4000-8000-000000000006', 'Day',     '{0,1,2,3,4,5,6}', 'b0000000-0000-4000-8000-000000000001'),
+  (24, 'c0000000-0000-4000-8000-000000000006', 'Day',     '{1,2,3,4,5,6}',   'b0000000-0000-4000-8000-000000000001'),
+  (25, 'c0000000-0000-4000-8000-000000000006', 'Evening', '{0,1,2,3,4,5,6}', 'b0000000-0000-4000-8000-000000000001'),
+  (26, 'c0000000-0000-4000-8000-000000000006', 'Evening', '{0,1,2,3,4,5}',   'b0000000-0000-4000-8000-000000000001'),
+  (27, 'c0000000-0000-4000-8000-000000000006', 'Night',   '{0,1,2,3,4,5,6}', 'b0000000-0000-4000-8000-000000000001'),
+  (28, 'c0000000-0000-4000-8000-000000000007', 'Day',     '{0,1,2,3,4,5,6}', 'b0000000-0000-4000-8000-000000000001'),
+  (29, 'c0000000-0000-4000-8000-000000000007', 'Day',     '{1,2,3,4,5,6}',   'b0000000-0000-4000-8000-000000000001'),
+  (30, 'c0000000-0000-4000-8000-000000000007', 'Evening', '{0,1,2,3,4,5,6}', 'b0000000-0000-4000-8000-000000000001'),
+  (31, 'c0000000-0000-4000-8000-000000000007', 'Night',   '{0,1,2,3,4,5,6}', 'b0000000-0000-4000-8000-000000000001'),
+  (32, 'c0000000-0000-4000-8000-000000000008', 'Day',     '{0,1,2,3,4,5,6}', 'b0000000-0000-4000-8000-000000000001'),
+  (33, 'c0000000-0000-4000-8000-000000000008', 'Day',     '{1,2,3,4,5,6}',   'b0000000-0000-4000-8000-000000000001'),
+  (34, 'c0000000-0000-4000-8000-000000000008', 'Evening', '{0,1,2,3,4,5,6}', 'b0000000-0000-4000-8000-000000000001'),
+  (35, 'c0000000-0000-4000-8000-000000000008', 'Night',   '{0,1,2,3,4,5,6}', 'b0000000-0000-4000-8000-000000000001'),
+  (36, 'c0000000-0000-4000-8000-000000000009', 'Day',     '{1,2,3,4,5,6}',   'b0000000-0000-4000-8000-000000000001'),
+  (37, 'c0000000-0000-4000-8000-000000000009', 'Evening', '{1,2,3,4,5,6}',   'b0000000-0000-4000-8000-000000000001'),
+  (38, 'c0000000-0000-4000-8000-000000000010', 'Day',     '{1,2,3,4,5}',     'b0000000-0000-4000-8000-000000000001'),
+  (39, 'c0000000-0000-4000-8000-000000000010', 'Day',     '{1,2,3,4,5,6}',   'b0000000-0000-4000-8000-000000000001'),
+  (40, 'c0000000-0000-4000-8000-000000000010', 'Night',   '{0,1,2,3,4,5,6}', 'b0000000-0000-4000-8000-000000000001')
+) as v(n, site_id, shift, weekdays, created_by);
+
 -- Approved leave in the past + pending ones now (must exist before materializing so on_leave shows)
 insert into public.leave_requests (agency_id, guard_id, site_id, type, start_date, end_date, reason, status, decided_by, decided_at, created_at) values
   ('a0000000-0000-4000-8000-000000000001', 'e0000000-0000-4000-8000-000000000003', 'c0000000-0000-4000-8000-000000000001', 'casual', current_date - 12, current_date - 11, 'Family function in village', 'approved', 'b0000000-0000-4000-8000-000000000002', now() - interval '14 days', now() - interval '15 days'),
@@ -191,6 +294,15 @@ insert into public.patrol_routes (id, agency_id, site_id, name, description, fre
   ('f0000000-0000-4000-8000-000000000005', 'a0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000004', 'Tower round', 'Towers A–D lobbies and terrace doors', 120, 15, 1, 'b0000000-0000-4000-8000-000000000001');
 
 -- ---------------------------------------------------------------------------
+insert into public.patrol_routes (id, agency_id, site_id, name, description, frequency_min, grace_min, min_photos, created_by) values
+  ('f0000000-0000-4000-8000-000000000006', 'a0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000005', 'Block 9 perimeter', 'Compound wall, both lobbies, generator yard and the basement ramp', 120, 15, 2, 'b0000000-0000-4000-8000-000000000002'),
+  ('f0000000-0000-4000-8000-000000000007', 'a0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000005', 'Parking sweep', 'B1 and B2 bays, two-wheeler stand, fire exits', 180, 20, 1, 'b0000000-0000-4000-8000-000000000002'),
+  ('f0000000-0000-4000-8000-000000000008', 'a0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000006', 'Mall concourse round', 'Ground to third concourse, atrium, food court and all fire exits', 90, 15, 2, 'b0000000-0000-4000-8000-000000000002'),
+  ('f0000000-0000-4000-8000-000000000009', 'a0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000006', 'Service corridor check', 'Back-of-house corridors, loading bay and waste yard', 180, 20, 1, 'b0000000-0000-4000-8000-000000000002'),
+  ('f0000000-0000-4000-8000-00000000000a', 'a0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000007', 'Ward and OPD round', 'OPD waiting, ward corridors, pharmacy shutter and the ambulance bay', 120, 15, 1, 'b0000000-0000-4000-8000-000000000003'),
+  ('f0000000-0000-4000-8000-00000000000b', 'a0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000008', 'Dock and fence line', 'All eight docks, trailer yard, rear fence and the seal-check point', 90, 15, 2, 'b0000000-0000-4000-8000-000000000003'),
+  ('f0000000-0000-4000-8000-00000000000c', 'a0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000010', 'Campus round', 'Academic blocks, playground, bus bay and the back gate', 150, 20, 1, 'b0000000-0000-4000-8000-000000000003');
+
 -- Task templates (global seeds) + tasks
 -- ---------------------------------------------------------------------------
 insert into public.task_templates (agency_id, key, title, description, photo_required) values
@@ -563,4 +675,94 @@ begin
     v_site.lat - 0.0009, v_site.lng + 0.0008, 'resolved',
     'Store manager suspended both loaders pending the contractor''s enquiry. We have added a second guard to the dock for the evening peak and briefed the team to call the control room before intervening physically.',
     v_when + interval '20 hours', 'b0000000-0000-4000-8000-000000000001');
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- Seven more incidents across the expanded book, spread over the last three
+-- weeks so the list has a real newest-first spine and every status/severity
+-- combination the board can filter on is represented.
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  v_agency uuid := 'a0000000-0000-4000-8000-000000000001';
+  r record;
+  v_guard uuid;
+  v_site record;
+  v_at timestamptz;
+begin
+  for r in
+    select * from (values
+      ('11000000-0000-4000-8000-000000000004', 'c0000000-0000-4000-8000-000000000005', 'medical', 'high', 'resolved',
+       1, '15:40',
+       'Visitor collapsed in the Block 9 lobby',
+       'A visitor waiting at the Block 9 reception collapsed at around the shift-change hour. Our head guard cleared the area, put him in the recovery position and called the Embassy facility desk and 108 at the same time. The ambulance reached in eleven minutes. The client''s own first-aid kit was used for the oxygen mask. The visitor was conscious before he was moved.',
+       'Client''s facility head recorded it as handled correctly and asked us to put one first-aid trained guard on every day shift at Block 9. Two guards are booked onto the next St John first-aid batch.',
+       'b0000000-0000-4000-8000-000000000001', 'b0000000-0000-4000-8000-000000000001', true),
+
+      ('11000000-0000-4000-8000-000000000005', 'c0000000-0000-4000-8000-000000000008', 'fire', 'critical', 'resolved',
+       3, '02:15',
+       'Cardboard baler caught fire at the rear of the fulfilment centre',
+       'The cardboard baler at the rear of the FC began smoking during the night shift and caught flame. The night guard raised the alarm on the walkie, pulled the nearest two extinguishers and got the shutter down to stop the draught. The client''s own fire team and the Nelamangala tender both attended. No stock loss beyond the baled waste; no injuries.',
+       'Client''s EHS team found the baler motor had been running past its duty cycle. We have added a baler temperature check to the dock patrol round and the guard who raised the alarm has been recommended for the quarterly award.',
+       'b0000000-0000-4000-8000-000000000001', 'b0000000-0000-4000-8000-000000000001', true),
+
+      ('11000000-0000-4000-8000-000000000006', 'c0000000-0000-4000-8000-000000000007', 'altercation_with_client', 'moderate', 'investigating',
+       5, '11:05',
+       'Patient attender abused the guard at the OPD queue',
+       'An attender in the OPD queue became abusive when asked to wait behind the line and pushed our lady guard. The hospital''s duty manager intervened. Our guard did not retaliate. The attender was escorted out by hospital security. We have asked the client for CCTV of the OPD counter for the enquiry file.',
+       null,
+       'b0000000-0000-4000-8000-000000000001', null, false),
+
+      ('11000000-0000-4000-8000-000000000007', 'c0000000-0000-4000-8000-000000000004', 'theft', 'high', 'investigating',
+       8, '07:20',
+       'Two bicycles taken from the Tower C basement',
+       'Two residents reported bicycles missing from the Tower C basement stand on the same morning. The basement has no camera on the cycle stand and the night register shows no material-out entry. A scrap collector who had been let in for a flat renovation on the 9th floor is the line of enquiry; his entry was logged but his exit was not.',
+       null,
+       'b0000000-0000-4000-8000-000000000001', null, false),
+
+      ('11000000-0000-4000-8000-000000000008', 'c0000000-0000-4000-8000-000000000010', 'vandalism', 'moderate', 'investigating',
+       11, '06:10',
+       'Back gate lock broken and graffiti on the playground wall',
+       'The back gate chain lock was found cut and the playground boundary wall had fresh spray paint when the morning guard opened up. Nothing was taken from the campus. The school has asked whether the night post should be extended to cover the back gate, which is currently outside the patrol round.',
+       null,
+       'b0000000-0000-4000-8000-000000000001', null, false),
+
+      ('11000000-0000-4000-8000-000000000009', 'c0000000-0000-4000-8000-000000000006', 'unauthorised_vehicle', 'low', 'resolved',
+       14, '19:35',
+       'Car parked in the fire lane without a pass for two hours',
+       'A car with no parking pass was left in the mall''s east fire lane through the evening peak. The evening guard logged it, put a notice on the windscreen and called the mall control room; the owner was traced through a tenant and moved it.',
+       'Mall operations have agreed to a wheel-clamp for repeat offenders and we have added a fire-lane sweep to the concourse round.',
+       'b0000000-0000-4000-8000-000000000001', 'b0000000-0000-4000-8000-000000000001', true),
+
+      ('11000000-0000-4000-8000-00000000000a', 'c0000000-0000-4000-8000-000000000009', 'property_damage', 'low', 'resolved',
+       19, '10:50',
+       'ATM lobby shutter dented by a reversing auto',
+       'An auto reversing in the lane clipped the ATM lobby shutter and dented the lower panel. The shutter still operates. Our guard noted the auto number and the branch manager was informed the same morning.',
+       'Branch manager raised it with the auto owner, who paid for the panel. No claim on us.',
+       'b0000000-0000-4000-8000-000000000001', 'b0000000-0000-4000-8000-000000000001', true)
+    ) as t(id, site_id, itype, sev, st, days_ago, at_time, title, body, resolution, reporter, resolver, is_resolved)
+  loop
+    select * into v_site from public.sites where id = r.site_id::uuid;
+    v_at := ((current_date - r.days_ago) + r.at_time::time) at time zone 'Asia/Kolkata';
+
+    -- Pin it onto a guard who was actually on that post around then, when there is one.
+    select sh.guard_id into v_guard
+    from public.shifts sh
+    where sh.site_id = r.site_id::uuid
+      and sh.scheduled_start <= v_at
+      and sh.scheduled_end   >= v_at
+    order by sh.scheduled_start desc limit 1;
+    if v_guard is null then
+      select id into v_guard from public.guards where site_id = r.site_id::uuid and status = 'active' limit 1;
+    end if;
+
+    insert into public.incidents (id, agency_id, site_id, type, severity, title, description, occurred_at,
+      reported_by, guard_id, lat, lng, status, resolution, resolved_at, resolved_by)
+    values (r.id::uuid, v_agency, r.site_id::uuid, r.itype::public.incident_type, r.sev::public.incident_severity,
+      r.title, r.body, v_at, r.reporter::uuid, v_guard,
+      v_site.lat + (random() - 0.5) * 0.0018, v_site.lng + (random() - 0.5) * 0.0018,
+      r.st::public.incident_status, r.resolution,
+      case when r.is_resolved then v_at + interval '18 hours' else null end,
+      r.resolver::uuid);
+  end loop;
 end $$;

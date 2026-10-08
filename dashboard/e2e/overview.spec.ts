@@ -113,23 +113,39 @@ test.describe("overview", () => {
   });
 
   test("the on-duty and flagged tiles land on the guards they counted", async ({ page }) => {
+    const db = admin();
     const shiftId = await checkInHarish();
     try {
+      // Both the row we assert on and the guard who must be missing are resolved at run
+      // time. Naming them only held outside 06:00-14:00 IST: the seeded day shifts really
+      // are in progress during the day, so a hard-coded "must be absent" guard can be
+      // legitimately on duty, and Harish picks up a second row next to the one we just
+      // made. Here the row is the created shift's own link, and the absent guard is one
+      // whose every shift today is still scheduled — never started, so it can be neither
+      // on duty nor flagged.
+      const { data: rows } = await db.from("shifts").select("guard_id,status").eq("shift_date", agencyDate());
+      const byGuard = new Map<string, string[]>();
+      for (const r of rows ?? []) byGuard.set(r.guard_id!, [...(byGuard.get(r.guard_id!) ?? []), r.status]);
+      const idleId = [...byGuard].find(([, statuses]) => statuses.every((st) => st === "scheduled"))?.[0];
+      expect(idleId, "seed has no guard whose shifts today are all unstarted").toBeTruthy();
+      const { data: idleGuard } = await db.from("guards").select("full_name").eq("id", idleId!).single();
+      const idleName = idleGuard!.full_name;
+
       await login(page);
       const table = page.getByRole("table", { name: "Attendance" });
+      const checkedInRow = table.locator(`a[href="/attendance/${shiftId}"]`);
 
       await page.getByRole("link", { name: "See the guards who are on duty now" }).click();
       await expect(page).toHaveURL(/status=on_duty/);
-      // Only the in-progress shift survives the server-side filter: the seeded rows for
-      // today have not started, so their guards must be gone from the table.
-      await expect(table.getByRole("link", { name: "Harish Chandra" })).toBeVisible();
-      await expect(table.getByText("Ramesh Yadav")).toHaveCount(0);
+      // Only in-progress shifts survive the server-side filter.
+      await expect(checkedInRow).toBeVisible();
+      await expect(table.getByText(idleName)).toHaveCount(0);
 
       await page.goBack();
       await page.getByRole("link", { name: "See the check-ins we could not verify" }).click();
       await expect(page).toHaveURL(/trust=any_flag/);
-      await expect(table.getByRole("link", { name: "Harish Chandra" })).toBeVisible();
-      await expect(table.getByText("Ramesh Yadav")).toHaveCount(0);
+      await expect(checkedInRow).toBeVisible();
+      await expect(table.getByText(idleName)).toHaveCount(0);
     } finally {
       await removeShift(shiftId);
     }

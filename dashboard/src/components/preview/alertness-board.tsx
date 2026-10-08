@@ -64,7 +64,7 @@ export function AlertnessBoard({ checks: generated, guards, canConfigure }: { ch
           title={lastNight ? `Last night · ${fmtDate(`${lastNight}T12:00:00+05:30`, undefined, "EEE d MMM")}` : "Last night"}
           description="Every check sent, latest first"
           bodyClassName="p-0"
-          actions={<SendCheckDialog guards={guards} escalateMin={policy.escalate_after_s / 60} />}
+          actions={<SendCheckDialog guards={guards} remindMin={policy.remind_after_s / 60} escalateMin={policy.escalate_after_s / 60} />}
           className="xl:self-start"
           style={{ ["--i" as string]: 5 }}
         >
@@ -159,8 +159,10 @@ export function AlertnessBoard({ checks: generated, guards, canConfigure }: { ch
                 onChange={(v) => update({ checks_per_night: Number(v) })} />
               <PolicySelect label="Guard must answer within" value={String(policy.respond_within_s)} disabled={!canConfigure || !policy.enabled}
                 options={["120", "300", "600"]} format={(v) => `${Number(v) / 60} minutes`} onChange={(v) => update({ respond_within_s: Number(v) })} />
+              <PolicySelect label="Quiet reminder after" value={String(policy.remind_after_s)} disabled={!canConfigure || !policy.enabled}
+                options={["120", "240", "300"]} format={(v) => `${Number(v) / 60} minutes`} onChange={(v) => update({ remind_after_s: Number(v) })} />
               <p className="text-xs text-muted-foreground">
-                Rings between <Mono className="text-xs">{pad(policy.window_start_h)}</Mono> and <Mono className="text-xs">{pad(policy.window_end_h)}</Mono>. Unanswered after {policy.escalate_after_s / 60} minutes, the site supervisor gets a call.
+                Rings between <Mono className="text-xs">{pad(policy.window_start_h)}</Mono> and <Mono className="text-xs">{pad(policy.window_end_h)}</Mono>. The guard has {policy.respond_within_s / 60} minutes to answer, with a quiet second nudge at {policy.remind_after_s / 60}. Only after {policy.escalate_after_s / 60} minutes with no answer at all does the site supervisor get a call — a guard in the toilet or held up by a resident is not an emergency.
               </p>
             </div>
           </Section>
@@ -185,7 +187,7 @@ function PolicySelect({ label, value, options, onChange, format = (v) => v, disa
   );
 }
 
-function SendCheckDialog({ guards, escalateMin }: { guards: CrewGuard[]; escalateMin: number }) {
+function SendCheckDialog({ guards, remindMin, escalateMin }: { guards: CrewGuard[]; remindMin: number; escalateMin: number }) {
   const [open, setOpen] = useState(false);
   const [guard, setGuard] = useState<string | null>(null);
   const chosen = guards.find((g) => g.id === guard);
@@ -205,7 +207,7 @@ function SendCheckDialog({ guards, escalateMin }: { guards: CrewGuard[]; escalat
           </Select>
         </Field>
         <p className="flex items-start gap-2 text-xs text-muted-foreground">
-          <Camera className="mt-px size-3.5 shrink-0" /> The phone rings at full volume until the guard takes a selfie. <TriangleAlert className="mt-px size-3.5 shrink-0" /> No answer in {escalateMin} minutes calls the supervisor.
+          <Camera className="mt-px size-3.5 shrink-0" /> The phone rings at full volume until the guard takes a selfie, then nudges again at {remindMin} minutes. <TriangleAlert className="mt-px size-3.5 shrink-0" /> Nobody is called before {escalateMin} minutes of silence. Only an SOS the guard raises himself escalates straight away.
         </p>
         <div className="flex justify-end gap-2">
           <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>

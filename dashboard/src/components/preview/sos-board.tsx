@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, MapPin, OctagonAlert, Phone, Timer } from "lucide-react";
+import { Check, MapPin, OctagonAlert, Phone } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -15,12 +15,12 @@ import { EmptyState } from "@/components/gf/empty-state";
 import { GuardAvatar } from "@/components/gf/guard-avatar";
 import { GuardCell } from "./guard-cell";
 import { fmtAgo, fmtDateTime, fmtSeconds, mapsUrl } from "@/lib/domain/format";
-import { SOS_KIND, ackSeconds, timerState, type LoneWorker, type SosAlert } from "@/lib/preview/sos";
+import { SOS_KIND, ackSeconds, type SosAlert } from "@/lib/preview/sos";
 import { median } from "@/lib/preview/alertness";
 import { cn } from "cn";
 
-export function SosBoard({ initial, lone, now: serverNow, canRespond, responder }: {
-  initial: SosAlert[]; lone: LoneWorker[]; now: string; canRespond: boolean; responder: string;
+export function SosBoard({ initial, now: serverNow, canRespond, responder }: {
+  initial: SosAlert[]; now: string; canRespond: boolean; responder: string;
 }) {
   const [alerts, setAlerts] = useState(initial);
   const [resolving, setResolving] = useState<SosAlert | null>(null);
@@ -89,63 +89,41 @@ export function SosBoard({ initial, lone, now: serverNow, canRespond, responder 
         <EmptyState title="All clear" description="No open SOS alerts. A new one appears here and in the alerts bell, with a siren." icon={<OctagonAlert />} />
       )}
 
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-3">
         <StatTile label="Open now" value={open.length} tone={open.length ? "signal" : "neutral"} hint={`${open.filter((a) => a.status === "active").length} with nobody on it`} style={{ ["--i" as string]: 3 }} />
         <StatTile label="Last 30 days" value={month.length} hint={`${month.filter((a) => a.kind === "man_down").length} man-down`} style={{ ["--i" as string]: 4 }} />
         <StatTile label="Median time to answer" value={ackMed == null ? "—" : fmtSeconds(ackMed)} hint="raise to “I’m on it”" style={{ ["--i" as string]: 5 }} />
-        <StatTile label="Lone workers on shift" value={lone.length} hint="on a 30-minute check-in timer" style={{ ["--i" as string]: 6 }} />
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.9fr)]">
-        <Section title="Lone-worker timers" description="Guard taps “I’m OK” every 30 min; a lapse raises an SOS" bodyClassName="p-0" style={{ ["--i" as string]: 7 }}>
-          {lone.length === 0 ? <p className="p-4 text-sm text-muted-foreground">Nobody is on a single-guard post right now.</p> : (
-            <ul className="divide-y">
-              {lone
-                .map((w) => ({ w, t: timerState(w, now) }))
-                .sort((a, b) => a.t.remaining_s - b.t.remaining_s)
-                .map(({ w, t }) => (
-                  <li key={w.guard.id} className="flex items-center justify-between gap-3 px-4 py-2.5">
-                    <GuardCell guard={w.guard} sub={`tapped ${fmtAgo(w.last_tap_at)}`} />
-                    <StatusPill tone={t.state === "ok" ? "present" : t.state === "due" ? "half-day" : "signal"} size="xs" pulse={t.state === "lapsed"}>
-                      <Timer className="size-3" />
-                      <Mono className="text-[11px]">{t.state === "lapsed" ? `lapsed ${fmtSeconds(-t.remaining_s)}` : `${fmtSeconds(t.remaining_s)} left`}</Mono>
-                    </StatusPill>
-                  </li>
-                ))}
-            </ul>
-          )}
-        </Section>
-
-        <Section title="Handled" description="Closed alerts, newest first, with what happened" bodyClassName="p-0" style={{ ["--i" as string]: 8 }}>
-          <div className="max-h-[480px] overflow-auto">
-            <table className="w-full text-sm" aria-label="Handled SOS alerts">
-              <thead className="sticky top-0 z-10 bg-card">
-                <tr className="eyebrow border-b text-left [&>th]:px-4 [&>th]:py-2 [&>th]:font-normal">
-                  <th className="min-w-[170px]">Guard</th>
-                  <th>Type</th>
-                  <th>Raised</th>
-                  <th className="whitespace-nowrap">Answered</th>
-                  <th className="min-w-[200px]">Outcome</th>
+      <Section title="Handled" description="Closed alerts, newest first, with what happened" bodyClassName="p-0" style={{ ["--i" as string]: 6 }}>
+        <div className="max-h-[480px] overflow-auto">
+          <table className="w-full text-sm" aria-label="Handled SOS alerts">
+            <thead className="sticky top-0 z-10 bg-card">
+              <tr className="eyebrow border-b text-left [&>th]:px-4 [&>th]:py-2 [&>th]:font-normal">
+                <th className="min-w-[170px]">Guard</th>
+                <th>Type</th>
+                <th>Raised</th>
+                <th className="whitespace-nowrap">Answered</th>
+                <th className="min-w-[200px]">Outcome</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {[...handled].sort((a, b) => b.raised_at.localeCompare(a.raised_at)).map((a) => (
+                <tr key={a.id} className="transition-colors hover:bg-muted/50">
+                  <td className="px-4 py-2.5"><GuardCell guard={a.guard} /></td>
+                  <td className="px-4 py-2.5"><StatusPill tone={a.kind === "man_down" ? "absent" : "neutral"} size="xs" dot={false}>{SOS_KIND[a.kind].label}</StatusPill></td>
+                  <td className="px-4 py-2.5 whitespace-nowrap"><Mono className="text-xs">{fmtDateTime(a.raised_at)}</Mono></td>
+                  <td className="px-4 py-2.5"><Mono className="text-xs">{fmtSeconds(ackSeconds(a))}</Mono></td>
+                  <td className="px-4 py-2.5 text-xs">
+                    <div>{a.note}</div>
+                    <div className="text-muted-foreground">by {a.acknowledged_by}</div>
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y">
-                {[...handled].sort((a, b) => b.raised_at.localeCompare(a.raised_at)).map((a) => (
-                  <tr key={a.id} className="transition-colors hover:bg-muted/50">
-                    <td className="px-4 py-2.5"><GuardCell guard={a.guard} /></td>
-                    <td className="px-4 py-2.5"><StatusPill tone={a.kind === "man_down" ? "absent" : "neutral"} size="xs" dot={false}>{SOS_KIND[a.kind].label}</StatusPill></td>
-                    <td className="px-4 py-2.5 whitespace-nowrap"><Mono className="text-xs">{fmtDateTime(a.raised_at)}</Mono></td>
-                    <td className="px-4 py-2.5"><Mono className="text-xs">{fmtSeconds(ackSeconds(a))}</Mono></td>
-                    <td className="px-4 py-2.5 text-xs">
-                      <div>{a.note}</div>
-                      <div className="text-muted-foreground">by {a.acknowledged_by}</div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Section>
-      </div>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Section>
 
       <ResolveDialog alert={resolving} onClose={() => setResolving(null)} onResolve={resolve} />
     </>
