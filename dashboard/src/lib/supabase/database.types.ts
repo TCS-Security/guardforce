@@ -654,11 +654,15 @@ export type Database = {
         Row: {
           address: string | null
           agency_id: string
+          bank_account_masked: string | null
+          bank_ifsc: string | null
+          bank_name: string | null
           created_at: string
           date_of_birth: string | null
           designation: string | null
           emergency_contact: string | null
           employee_code: string | null
+          esic_ip: string | null
           full_name: string
           id: string
           invited_at: string | null
@@ -672,16 +676,21 @@ export type Database = {
           site_id: string | null
           status: Database["public"]["Enums"]["guard_status"]
           supervisor_id: string | null
+          uan: string | null
           updated_at: string
         }
         Insert: {
           address?: string | null
           agency_id: string
+          bank_account_masked?: string | null
+          bank_ifsc?: string | null
+          bank_name?: string | null
           created_at?: string
           date_of_birth?: string | null
           designation?: string | null
           emergency_contact?: string | null
           employee_code?: string | null
+          esic_ip?: string | null
           full_name: string
           id?: string
           invited_at?: string | null
@@ -695,16 +704,21 @@ export type Database = {
           site_id?: string | null
           status?: Database["public"]["Enums"]["guard_status"]
           supervisor_id?: string | null
+          uan?: string | null
           updated_at?: string
         }
         Update: {
           address?: string | null
           agency_id?: string
+          bank_account_masked?: string | null
+          bank_ifsc?: string | null
+          bank_name?: string | null
           created_at?: string
           date_of_birth?: string | null
           designation?: string | null
           emergency_contact?: string | null
           employee_code?: string | null
+          esic_ip?: string | null
           full_name?: string
           id?: string
           invited_at?: string | null
@@ -718,6 +732,7 @@ export type Database = {
           site_id?: string | null
           status?: Database["public"]["Enums"]["guard_status"]
           supervisor_id?: string | null
+          uan?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -2956,6 +2971,10 @@ export type Database = {
           ends_at: string
           starts_at: string
         }[]
+      }
+      simulate_agency_history: {
+        Args: { p_agency_id: string }
+        Returns: undefined
       }
       site_day_summary: {
         Args: { p_agency_id: string; p_date: string }

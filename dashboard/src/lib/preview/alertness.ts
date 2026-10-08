@@ -55,7 +55,7 @@ export function checkStatus(responseS: number | null, policy: AlertnessPolicy = 
   return responseS <= policy.respond_within_s ? "on_time" : "late";
 }
 
-const SUPERVISORS = ["Priya (supervisor)", "Arun (supervisor)"];
+
 
 /** Seven nights of checks for roughly the night-shift half of the crew. */
 export function generateAlertness(crew: Crew, policy: AlertnessPolicy = DEFAULT_ALERTNESS_POLICY): AlertCheck[] {
@@ -86,7 +86,7 @@ export function generateAlertness(crew: Crew, policy: AlertnessPolicy = DEFAULT_
           response_s,
           status,
           face_match: response_s == null ? null : !r.chance(0.04),
-          escalated_to: status === "missed" ? r.pick(SUPERVISORS) : null,
+          escalated_to: status === "missed" ? (crew.staff.length ? r.pick(crew.staff) : "Control room") : null,
         });
       }
     }

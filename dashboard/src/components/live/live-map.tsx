@@ -99,17 +99,24 @@ export function LiveMap({
       const state = presenceState(p, stalenessMin);
       const name = p.guards?.full_name ?? "Guard";
       const existing = markersRef.current.get(p.guard_id);
-      const el = existing?.getElement() ?? document.createElement("button");
+      // MapLibre positions a marker by writing `transform: translate(...)` onto the element
+      // it was given, so nothing else may touch that property — a `scale()` written here, or
+      // a Tailwind `hover:scale-*` class, replaces the translate and strands the pin at the
+      // map's origin until the next render moves it again. Hence a bare wrapper that MapLibre
+      // owns outright, with every visual on a child it never looks at.
+      const el = existing?.getElement() ?? document.createElement("div");
+      const pin = (el.firstElementChild as HTMLButtonElement | null) ?? el.appendChild(document.createElement("button"));
 
-      el.setAttribute("type", "button");
-      el.setAttribute("data-guard", p.guard_id);
-      el.setAttribute("aria-label", `${name} — ${MARKER_STYLE[state].label}`);
-      el.className = "flex size-7 items-center justify-center rounded-full text-[10px] font-semibold text-white shadow ring-2 ring-background transition-transform hover:scale-110";
-      el.style.background = MARKER_STYLE[state].color;
-      el.style.outline = p.in_fence === false ? "3px solid var(--half-day)" : "";
-      el.style.transform = p.guard_id === selectedGuardId ? "scale(1.25)" : "";
-      el.textContent = initials(name);
-      el.onclick = () => selectRef.current(p.guard_id);
+      pin.setAttribute("type", "button");
+      pin.setAttribute("data-guard", p.guard_id);
+      pin.setAttribute("aria-label", `${name} — ${MARKER_STYLE[state].label}`);
+      pin.className =
+        "flex size-7 items-center justify-center rounded-full text-[10px] font-semibold text-white shadow ring-2 ring-background transition-transform hover:scale-110" +
+        (p.guard_id === selectedGuardId ? " scale-125" : "");
+      pin.style.background = MARKER_STYLE[state].color;
+      pin.style.outline = p.in_fence === false ? "3px solid var(--half-day)" : "";
+      pin.textContent = initials(name);
+      pin.onclick = () => selectRef.current(p.guard_id);
 
       const popup = new Popup({ offset: 16, closeButton: false }).setHTML(
         `<strong>${escapeHtml(name)}</strong><br/>${escapeHtml(p.shifts?.shift_types?.name ?? "Shift")} · since ${escapeHtml(

@@ -86,6 +86,32 @@ export default async function GuardProfilePage({ params }: PageProps<"/guards/[i
         <ProfileSection guard={guard} sites={sites} supervisors={supervisors} selfieUrl={selfieUrl} />
       </Section>
 
+      <Section
+        title="Pay & next of kin"
+        description="What a salary run needs, and who to call if something happens on a night shift."
+      >
+        <dl className="grid gap-x-8 gap-y-3 px-4 py-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
+          {[
+            ["Bank", guard.bank_name],
+            ["Account", guard.bank_account_masked],
+            ["IFSC", guard.bank_ifsc],
+            ["UAN", guard.uan],
+            ["ESIC number", guard.esic_ip],
+            ["Emergency contact", guard.emergency_contact],
+            ["Address", guard.address],
+          ].map(([label, value]) => (
+            <div key={label as string} className="min-w-0">
+              <dt className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">{label}</dt>
+              <dd className="truncate">{value ? String(value) : <span className="text-muted-foreground">Not on file</span>}</dd>
+            </div>
+          ))}
+        </dl>
+        <p className="border-t px-4 py-2 text-xs text-muted-foreground">
+          Only the last four digits of the account are held here. The full number belongs in the
+          bank mandate, not in a row every manager can read.
+        </p>
+      </Section>
+
       <Section title="Scorecard" description="Last 30 days">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <StatTile label="Shifts" value={scorecard.shifts ?? 0} />
