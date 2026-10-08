@@ -557,7 +557,7 @@ function AddPersonForm({ leadId, segment, onDone }: { leadId: string; segment: S
         </div>
       </div>
       <label className="flex items-center gap-2 text-sm">
-        <Checkbox name="whatsapp_ok" /> They said it's OK to WhatsApp them
+        <Checkbox name="whatsapp_ok" /> They said it&apos;s OK to WhatsApp them
       </label>
       {state?.error && <FormAlert>{state.error}</FormAlert>}
       <div className="flex justify-end gap-2">
@@ -629,13 +629,19 @@ function FindMobileButton({ leadId, allowed, why }: { leadId: string; allowed: b
 function AgencySection({ detail, canWrite }: { detail: LeadDetail; canWrite: boolean }) {
   const { lead } = detail;
   const [editing, setEditing] = useState(false);
-  const [state, action, pending] = useActionState<ActionState, FormData>(updateLeadFacts, undefined);
-  useEffect(() => {
-    if (state?.ok) {
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  function saveFacts(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = e.currentTarget;
+    startTransition(async () => {
+      const res = await updateLeadFacts(undefined, new FormData(form));
+      if (res?.error) { setError(res.error); return; }
       toast.success("Saved. Hot / Warm / Cold re-checked.");
       setEditing(false);
-    }
-  }, [state]);
+    });
+  }
   const isAgencyLead = lead.segment === "agency";
   const title = isAgencyLead ? "Current software" : "Current agency";
   const sw = lead.incumbent_software ? SOFTWARE_TEXT[lead.incumbent_software] : null;
@@ -672,7 +678,7 @@ function AgencySection({ detail, canWrite }: { detail: LeadDetail; canWrite: boo
         </>
       )}
       {editing && (
-        <form action={action} className="flex flex-col gap-3" aria-label={`Edit ${title.toLowerCase()}`}>
+        <form onSubmit={saveFacts} className="flex flex-col gap-3" aria-label={`Edit ${title.toLowerCase()}`}>
           <input type="hidden" name="lead_id" value={lead.id} />
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
@@ -721,7 +727,7 @@ function AgencySection({ detail, canWrite }: { detail: LeadDetail; canWrite: boo
               </>
             )}
           </div>
-          {state?.error && <FormAlert>{state.error}</FormAlert>}
+          {error && <FormAlert>{error}</FormAlert>}
           <div className="flex justify-end gap-2">
             <Button type="button" variant="ghost" size="sm" onClick={() => setEditing(false)}>Cancel</Button>
             <Button type="submit" size="sm" disabled={pending}>Save</Button>
@@ -741,21 +747,26 @@ function swAgencyText(s: string | null) {
 // ---------------------------------------------------------------------------
 
 function HistorySection({ detail, canWrite, timezone }: { detail: LeadDetail; canWrite: boolean; timezone: string }) {
-  const [state, action, pending] = useActionState<ActionState, FormData>(logNote, undefined);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
   const [kind, setKind] = useState<"note" | "visit">("note");
   const [formKey, setFormKey] = useState(0);
-  useEffect(() => {
-    if (state?.ok) {
+
+  function saveNote(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = e.currentTarget;
+    startTransition(async () => {
+      const res = await logNote(undefined, new FormData(form));
+      if (res?.error) { setError(res.error); return; }
       toast.success(kind === "visit" ? "Visit logged" : "Note saved");
       setFormKey((k) => k + 1);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state]);
+    });
+  }
 
   return (
     <CardSection title="Notes and history">
       {canWrite && (
-        <form key={formKey} action={action} className="mb-4 flex flex-col gap-2" aria-label="Add a note">
+        <form key={formKey} onSubmit={saveNote} className="mb-4 flex flex-col gap-2" aria-label="Add a note">
           <input type="hidden" name="lead_id" value={detail.lead.id} />
           <input type="hidden" name="kind" value={kind} />
           <Textarea name="body" rows={2} placeholder="Add a note: what happened, what they need, who to meet…" aria-label="Note" />
@@ -779,7 +790,7 @@ function HistorySection({ detail, canWrite, timezone }: { detail: LeadDetail; ca
               <Button type="submit" size="sm" disabled={pending}>Save</Button>
             </div>
           </div>
-          {state?.error && <FormAlert>{state.error}</FormAlert>}
+          {error && <FormAlert>{error}</FormAlert>}
         </form>
       )}
       {detail.activities.length === 0 ? (
